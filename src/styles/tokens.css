@@ -1,0 +1,84 @@
+/*
+ * Tachyon Native UI design tokens.
+ * Single source of truth for the design system.
+ * Spec: docs/src/tachyon-apps/native-ui/design-system.md
+ *
+ * Color values are HSL triplets (H S% L%) so Tailwind can apply
+ * alpha via `hsl(var(--nui-x) / <alpha-value>)`.
+ * All variables are prefixed with `--nui-` to coexist with the
+ * legacy shadcn variables defined by each app.
+ */
+
+:root {
+  /* Typography */
+  --nui-font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  --nui-font-mono: ui-monospace, 'SF Mono', SFMono-Regular,
+    'JetBrains Mono', Menlo, monospace;
+
+  /* Color — light */
+  --nui-background: 0 0% 100%;
+  --nui-surface: 240 20% 98.5%;
+  --nui-foreground: 228 8% 17%;
+  --nui-muted: 228 12% 95.5%;
+  --nui-muted-foreground: 228 5% 42%;
+  --nui-subtle-foreground: 228 5% 60%;
+  --nui-border: 228 10% 90%;
+  --nui-border-strong: 228 8% 82%;
+  --nui-primary: 234 59% 60%;
+  --nui-primary-foreground: 0 0% 100%;
+  --nui-selected: 233 60% 96%;
+  --nui-popover: 0 0% 100%;
+  --nui-popover-foreground: 228 8% 17%;
+  --nui-destructive: 4 72% 55%;
+  --nui-destructive-foreground: 0 0% 100%;
+  --nui-success: 152 50% 40%;
+  --nui-warning: 36 92% 50%;
+  --nui-ring: 234 59% 60%;
+  --nui-overlay: 0 0% 0% / 0.4;
+
+  /* Radius */
+  --nui-radius-sm: 4px;
+  --nui-radius-md: 6px;
+  --nui-radius-lg: 8px;
+  --nui-radius-xl: 12px;
+
+  /* Elevation (always pair with a border in dark mode) */
+  --nui-shadow-overlay: 0 4px 16px -2px rgb(0 0 0 / 0.1),
+    0 1px 3px rgb(0 0 0 / 0.06);
+  --nui-shadow-modal: 0 16px 48px -8px rgb(0 0 0 / 0.2);
+
+  /* Motion */
+  --nui-duration-fast: 100ms;
+  --nui-duration-base: 150ms;
+  --nui-duration-slow: 250ms;
+  --nui-ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --nui-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.dark {
+  /* Color — dark */
+  --nui-background: 228 7% 10%;
+  --nui-surface: 228 7% 13%;
+  --nui-foreground: 220 10% 89%;
+  --nui-muted: 228 7% 17%;
+  --nui-muted-foreground: 224 6% 62%;
+  --nui-subtle-foreground: 224 5% 48%;
+  --nui-border: 227 7% 20%;
+  --nui-border-strong: 227 7% 28%;
+  --nui-primary: 235 70% 70%;
+  --nui-primary-foreground: 0 0% 100%;
+  --nui-selected: 234 35% 22%;
+  --nui-popover: 228 7% 13%;
+  --nui-popover-foreground: 220 10% 89%;
+  --nui-destructive: 4 70% 60%;
+  --nui-destructive-foreground: 0 0% 100%;
+  --nui-success: 152 45% 50%;
+  --nui-warning: 36 90% 60%;
+  --nui-ring: 235 70% 70%;
+  --nui-overlay: 0 0% 0% / 0.6;
+
+  --nui-shadow-overlay: 0 4px 16px -2px rgb(0 0 0 / 0.4),
+    0 1px 3px rgb(0 0 0 / 0.3);
+  --nui-shadow-modal: 0 16px 48px -8px rgb(0 0 0 / 0.55);
+}

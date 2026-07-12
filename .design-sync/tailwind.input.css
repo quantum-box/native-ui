@@ -1,0 +1,10 @@
+/*
+ * design-sync build input: compiles the Tailwind utilities the
+ * native-ui components reference, the same way a consumer app does
+ * (preset + tokens.css + scan of the package source).
+ */
+@import '../src/styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

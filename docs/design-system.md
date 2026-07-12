@@ -1,0 +1,239 @@
+# Tachyon Native UI デザインシステム
+
+`@tachyon-sdk/native-ui`（リポジトリ直下）のデザインシステム仕様。Linear / Notion のような「ネイティブアプリらしい」操作感を Web で実現するためのデザイントークンと原則を定義する。
+
+- 実装（Single Source of Truth）: `src/styles/tokens.css`
+- Tailwind 連携: `src/tailwind-preset.ts`
+- コンポーネント基盤: shadcn/ui（new-york スタイル、cssVariables 方式）
+
+## デザイン原則
+
+1. **高密度・コンテンツファースト**: ベース 13px、コントロール高 28px を標準とし、1画面あたりの情報量を最大化する。装飾よりコンテンツ。
+2. **境界はボーダーで、浮遊はシャドウで**: 面の区切りは 1px ボーダーを基本とし、シャドウはポップオーバー/モーダルなど「浮いている」要素にのみ使う。
+3. **静かな配色**: 画面の 95% はニュートラルグレー。アクセント（indigo）は主要アクション・選択状態・フォーカスにのみ使用する。
+4. **即時フィードバック**: hover は 100ms 以下、開閉は 150ms 前後。ユーザーを待たせるアニメーションは入れない。
+5. **キーボードファースト**: すべてのインタラクティブ要素に focus-visible リングを表示し、ショートカットは `kbd` スタイルで明示する。
+
+## デザイントークン
+
+CSS 変数はすべて `--nui-` プレフィックスで定義し、既存アプリの shadcn 変数（`--background` 等）と共存できるようにする。色は HSL 分解値（`H S% L%`）で保持し、Tailwind からは `hsl(var(--nui-x) / <alpha-value>)` で参照する。
+
+### カラー
+
+```yaml
+# セマンティックカラートークン（HSL分解値）
+colors:
+  light:
+    background: "0 0% 100%"        # ページ背景
+    surface: "240 20% 98.5%"       # サイドバー・パネル・セカンダリボタン面
+    foreground: "228 8% 17%"       # 標準テキスト (#282a30 相当)
+    muted: "228 12% 95.5%"         # hover背景・無効面
+    muted-foreground: "228 5% 42%" # 補助テキスト
+    subtle-foreground: "228 5% 60%" # placeholder・微弱テキスト
+    border: "228 10% 90%"          # 標準ボーダー
+    border-strong: "228 8% 82%"    # 入力欄などフォーム系ボーダー
+    primary: "234 59% 60%"         # アクセント (#5E6AD2 / Linear indigo 系)
+    primary-foreground: "0 0% 100%"
+    selected: "233 60% 96%"        # 選択行・選択項目の背景（アクセント淡色）
+    popover: "0 0% 100%"
+    destructive: "4 72% 55%"
+    destructive-foreground: "0 0% 100%"
+    success: "152 50% 40%"
+    warning: "36 92% 50%"
+    ring: "234 59% 60%"            # フォーカスリング＝アクセント
+
+  dark:
+    background: "228 7% 10%"       # #17181c 相当
+    surface: "228 7% 13%"
+    foreground: "220 10% 89%"
+    muted: "228 7% 17%"
+    muted-foreground: "224 6% 62%"
+    subtle-foreground: "224 5% 48%"
+    border: "227 7% 20%"
+    border-strong: "227 7% 28%"
+    primary: "235 70% 70%"
+    primary-foreground: "0 0% 100%"
+    selected: "234 35% 22%"
+    popover: "228 7% 13%"
+    destructive: "4 70% 60%"
+    destructive-foreground: "0 0% 100%"
+    success: "152 45% 50%"
+    warning: "36 90% 60%"
+    ring: "235 70% 70%"
+```
+
+使い分けの原則:
+
+- `background` はページ全体、`surface` はサイドバー・ツールバー・カード等の面
+- hover は `muted`、選択状態は `selected`（アクセント淡色）で区別する
+- `success` / `warning` はステータス表示専用。ボタン等のアクションには使わない
+
+### タイポグラフィ
+
+```yaml
+typography:
+  font_family:
+    sans: >-
+      Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif
+    mono: >-
+      ui-monospace, "SF Mono", SFMono-Regular, "JetBrains Mono",
+      Menlo, monospace
+
+  # Tailwind の fontSize スケールを上書きする（native-app 密度）
+  scale:
+    2xs: { size: 11px, line_height: 16px }  # バッジ・メタ情報
+    xs:  { size: 12px, line_height: 18px }  # ラベル・キャプション
+    sm:  { size: 13px, line_height: 20px }  # ★ UI標準（ボタン・メニュー・テーブル）
+    base: { size: 14px, line_height: 22px } # 本文・詳細ペイン
+    lg:  { size: 16px, line_height: 24px }  # セクション見出し
+    xl:  { size: 20px, line_height: 28px }  # ページタイトル
+    2xl: { size: 24px, line_height: 32px }  # 大見出し
+
+  weight:
+    normal: 400    # 本文
+    medium: 500    # ★ UI要素の標準（ボタン・見出し・選択項目）
+    semibold: 600  # ページタイトル・強調
+    # bold(700) は原則使わない
+
+  letter_spacing:
+    heading: "-0.01em"  # lg 以上の見出しに適用
+```
+
+### 密度・サイズ
+
+```yaml
+density:
+  spacing_grid: 4px  # 余白は 4px グリッド
+
+  control_height:
+    sm: 24px       # インライン・テーブル内ボタン (h-6)
+    md: 28px       # ★ 標準（ボタン・入力欄・セレクト） (h-7)
+    lg: 32px       # 主要CTA・検索バー (h-8)
+
+  layout:
+    sidebar_width: 240px
+    list_row_height: 32px    # サイドバー項目・リスト行
+    table_row_height: 36px
+    menu_item_height: 28px
+
+  icon_size:
+    sm: 14px
+    md: 16px       # ★ 標準
+    lg: 20px
+```
+
+### 角丸
+
+```yaml
+radius:
+  sm: 4px    # チェックボックス・バッジ・kbd
+  md: 6px    # ★ 標準（ボタン・入力欄・メニュー項目）
+  lg: 8px    # ポップオーバー・カード
+  xl: 12px   # モーダル
+  full: 9999px  # アバター・ピル
+```
+
+### エレベーション（影）
+
+```yaml
+elevation:
+  level_0:  # 面の区切り（カード・パネル）
+    shadow: none
+    border: "1px solid var(--nui-border)"
+  level_1:  # ドロップダウン・ポップオーバー・ツールチップ
+    shadow: "0 4px 16px -2px rgb(0 0 0 / 0.10), 0 1px 3px rgb(0 0 0 / 0.06)"
+  level_2:  # モーダル・コマンドパレット
+    shadow: "0 16px 48px -8px rgb(0 0 0 / 0.20)"
+  overlay:  # モーダル背面
+    light: "rgb(0 0 0 / 0.40)"
+    dark: "rgb(0 0 0 / 0.60)"
+# dark テーマでは影が視認しづらいため、level_1/2 は必ず border と併用する
+```
+
+### モーション
+
+```yaml
+motion:
+  duration:
+    fast: 100ms    # hover / active の色変化
+    base: 150ms    # ポップオーバー・ドロップダウンの開閉
+    slow: 250ms    # モーダル・サイドパネルのスライド
+  easing:
+    out: "cubic-bezier(0.25, 1, 0.5, 1)"   # 開く・現れる
+    in_out: "cubic-bezier(0.45, 0, 0.55, 1)" # 移動・リサイズ
+  rules:
+    - 閉じる動作は開く動作より速くする（または即時）
+    - hoverの背景色変化は 100ms 以下、遅延を感じさせない
+    - スピナー表示は 300ms 以上待つ場合のみ（フラッシュ防止）
+```
+
+### フォーカス・キーボード
+
+```yaml
+focus:
+  ring: "0 0 0 2px hsl(var(--nui-background)), 0 0 0 4px hsl(var(--nui-ring) / 0.5)"
+  # :focus-visible のみに適用（マウスクリックでは表示しない）
+
+kbd:
+  font: mono 11px
+  style: "muted背景 + border + radius-sm、大文字表記（⌘K 等）"
+```
+
+## Tailwind との対応
+
+`tailwind-preset.ts` が上記トークンを shadcn 互換のユーティリティ名にマップする。コンポーネントは shadcn 生成物の class 名（`bg-background`, `text-muted-foreground` 等）をそのまま使える。
+
+| Tailwind クラス | トークン |
+|---|---|
+| `bg-background` / `bg-surface` / `bg-muted` / `bg-selected` | colors.* |
+| `text-foreground` / `text-muted-foreground` / `text-subtle-foreground` | colors.* |
+| `border-border` / `border-border-strong` | colors.border* |
+| `bg-primary` `text-primary` / `bg-destructive` / `text-success` / `text-warning` | colors.* |
+| `text-2xs`〜`text-2xl` | typography.scale（デフォルトスケールを上書き） |
+| `rounded-sm/md/lg/xl` | radius（4/6/8/12px に上書き） |
+| `shadow-overlay` / `shadow-modal` | elevation level_1 / level_2 |
+| `duration-fast/base/slow`・`ease-out-quart` | motion |
+
+## 利用方法（consumer アプリ）
+
+```ts
+// tailwind.config.ts
+import nativeUiPreset from '@tachyon-sdk/native-ui/src/tailwind-preset'
+
+export default {
+  presets: [nativeUiPreset],
+  content: [
+    './src/**/*.{ts,tsx}',
+    // ライブラリのソースも scan 対象に含める（source直参照のため必須）
+    './node_modules/@tachyon-sdk/native-ui/src/**/*.{ts,tsx}',
+  ],
+}
+```
+
+```css
+/* globals.css */
+@import '@tachyon-sdk/native-ui/src/styles/tokens.css';
+```
+
+```js
+// next.config.js
+module.exports = {
+  transpilePackages: ['@tachyon-sdk/native-ui'],
+}
+```
+
+ダークモードは既存アプリと同じく `<html class="dark">`（`darkMode: ['class']`）で切り替える。
+
+## コンポーネント追加ワークフロー
+
+1. リポジトリ直下 で shadcn CLI を実行してベースを取得する（`components.json` 設定済み）
+2. 生成物の import を**相対パス**に修正する（`@/lib/utils` → `../../lib/utils`）。consumer アプリの `@/` alias と衝突するため、パッケージ内で `@/` は使用禁止
+3. トークン準拠に調整する（サイズを `control_height` に、`text-sm`=13px 前提の余白に、`duration-fast` に）
+4. `src/index.ts` から export し、Storybook story を追加する
+
+## 非目標（やらないこと）
+
+- マーケティングサイト向けの大ぶりなスタイル（hero、大きな余白）は対象外
+- テーマのカスタマイズ機構（テナント別テーマ等）は初期スコープ外。トークンの差し替えのみで将来対応
+- Tailwind v4 対応は preset の差し替えで行う（トークン CSS はそのまま流用可能）
