@@ -90,4 +90,26 @@ yarn format  # フォーマット確認（修正は format:write）
 
 ## Claude Design 連携
 
-このリポジトリは claude.ai/design の「Tachyon Native UI」プロジェクトと `/design-sync` で同期しています。設定は `.design-sync/` 配下（同期先の pin・変換設定・プレビュー）。トークンやコンポーネントを変更したら `/design-sync` を再実行してください。
+このリポジトリは claude.ai/design のデザインシステムプロジェクト **[Tachyon Native UI](https://claude.ai/design/p/7c8aade7-758e-4cca-b966-97ba577775fa)** と同期しています。Claude Design のエージェントは、この実コンポーネント（コンパイル済みバンドル）と `docs/*.md`（デザインシステム仕様・ページ構成例）を読んだ上で画面を組むため、生成されるデザインはそのままこのライブラリのコードにマップできます。
+
+### 同期されるもの
+
+| プロジェクト内 | ソース |
+|---|---|
+| コンポーネントカード・型定義・使い方ガイド | `src/components/ui/*` + `.design-sync/previews/*`（手書きプレビュー） |
+| コンパイル済みバンドル（実レンダリング用） | `src/index.ts` を esbuild でバンドル |
+| スタイル（トークン込みTailwindコンパイル） | `src/styles/tokens.css` + `src/tailwind-preset.ts` |
+| guidelines（デザインエージェントへの指針） | `docs/*.md` |
+| README冒頭の規約ヘッダー | `.design-sync/conventions.md` |
+
+### 再同期の手順
+
+トークン・コンポーネント・`docs/*.md` を変更したら再同期する:
+
+1. このリポジトリで対話型の `claude` セッションを開く（初回のみ `/design-login` で認可）
+2. `/design-sync` を実行する — 同期先の pin と変換設定は `.design-sync/config.json` にあるので、差分だけが検証・アップロードされる
+3. 新しいコンポーネントを追加した場合は `.design-sync/previews/<Name>.tsx` のプレビュー追加と、`config.json` の `componentSrcMap`（サブコンポーネント除外）への追記を忘れずに
+
+機械的な注意点（ドライバの起動コマンド、`dist/` の再ビルド、既知の警告など）は [.design-sync/NOTES.md](./.design-sync/NOTES.md) に集約してあります。
+
+Claude Design 上でユーザーが作成したデザイン（`templates/` 等）は同期の管理外で、上書き・削除されません。
