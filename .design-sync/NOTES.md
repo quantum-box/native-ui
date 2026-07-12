@@ -2,7 +2,7 @@
 
 ## Repo specifics
 
-- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; yarn hoists react there, the package's own node_modules is sparse).
+- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; pnpm since 2026-07-13, direct deps are top-level symlinks and esbuild follows them fine).
 - Styling is consumer-compiled Tailwind v3: `cfg.buildCmd` runs the Tailwind CLI with `.design-sync/tailwind.build.ts` (uses the package's own `tailwind-preset.ts`; content = package src + `.design-sync/previews/`) into `dist/native-ui.css` (`dist/` is gitignored repo-wide). **Run buildCmd before package-build.mjs whenever a preview adds new utility classes.**
 - Tokens (`--nui-*`) are inlined into the compiled CSS by postcss-import — no separate tokens/ dir, `tokensGlob` doesn't apply (it requires `tokensPkg`).
 - Inter is provided by consumer apps via `next/font/google`, not shipped in the repo. Downloaded Inter variable woff2 (latin + latin-ext, OFL) into `.design-sync/fonts/inter/` and wired via `cfg.extraFonts` (user-approved 2026-07-07).
@@ -28,7 +28,7 @@
 
 - **Compiled-CSS coverage**: `dist/native-ui.css` only contains utilities used by package src + `.design-sync/previews/`. New/edited previews with new classes need `buildCmd` re-run BEFORE package-build, or they render unstyled in capture (agents worked around with inline styles).
 - **Inter woff2 is a pinned copy** (`.design-sync/fonts/inter/`, downloaded 2026-07-07 from Google Fonts, latin+latin-ext only). If the apps change font (next/font in `apps/tachyon/src/app/layout.tsx`), this goes stale. Japanese text renders via system fallbacks (Hiragino/Noto Sans JP are not shipped).
-- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 12 roots) after any package export change.
+- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 13 roots, Sidebar added 2026-07-13) after any package export change.
 - **Playwright/chromium matching** is machine-specific (this machine: playwright@1.61.0 ↔ cached chromium-1228). Re-verify on a new machine.
 - Partial verification: dark-mode rendering (`.dark`) was never captured — previews cover light mode only.
 
@@ -41,7 +41,7 @@
 
 ## Repo move (2026-07-12)
 
-- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own yarn install now, no monorepo hoisting). The Claude Design project pin is unchanged.
+- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own install now (pnpm as of 2026-07-13), no monorepo hoisting). The Claude Design project pin is unchanged.
 - Consumers (tachyon-apps `apps/tachyon`, field, …) install via GitHub dependency `"quantum-box/native-ui"` + `transpilePackages`. Inter is still consumer-provided via `next/font`.
 
 ## Re-sync after repo move (2026-07-12)
