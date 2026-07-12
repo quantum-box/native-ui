@@ -43,3 +43,11 @@
 
 - Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own yarn install now, no monorepo hoisting). The Claude Design project pin is unchanged.
 - Consumers (tachyon-apps `apps/tachyon`, field, …) install via GitHub dependency `"quantum-box/native-ui"` + `transpilePackages`. Inter is still consumer-provided via `next/font`.
+
+## Re-sync after repo move (2026-07-12)
+
+- First re-sync from this standalone repo completed clean. All 12 sourceKeys held (grades carried forward); renderHashes churned across the board — expected pipeline churn from the move (entry path change + Biome now formats `src/components/ui/*` with tabs, which the monorepo root config had excluded). Canary spot-check (Badge/Separator/Button/Kbd/Dialog) graded good 5/5.
+- `guidelinesGlob: "docs/*.md"` emits `guidelines/docs/<name>.md` (nested, mirrors the glob dir). The old flat `guidelines/design-system.md` / `guidelines/page-example.md` were deleted remotely in the same plan.
+- `fonts/JetBrainsMono-Regular.ttf` exists REMOTELY but is not emitted by this build (mono stays system-fallback per the earlier decision). Left in place as a harmless orphan; delete on a future close-out if it bothers anyone.
+- Remote anchor fetch: save `DesignSync get_file _ds_sync.json` to `.design-sync/.cache/remote-anchor.json` and pass via `--remote`. Driver invocation from this repo: `node .ds-sync/resync.mjs --config .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle --remote .design-sync/.cache/remote-anchor.json --entry src/index.ts` (run `cfg.buildCmd` first — `dist/` is gitignored and must be rebuilt on a fresh clone).
+- `.ds-sync/` (converter toolchain) is gitignored; it was carried over from the tachyon-apps worktree. On a new machine, a fresh /design-sync run re-stages it from the skill.
