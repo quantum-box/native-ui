@@ -6,7 +6,7 @@ import { Search } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '../../lib/utils'
-import { Dialog, DialogContent } from './dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from './dialog'
 
 const Command = React.forwardRef<
 	React.ElementRef<typeof CommandPrimitive>,
@@ -23,14 +23,28 @@ const Command = React.forwardRef<
 ))
 Command.displayName = CommandPrimitive.displayName
 
+interface CommandDialogProps extends DialogProps {
+	/** Accessible dialog title announced to screen readers. */
+	title?: string
+	/** Accessible dialog description announced to screen readers. */
+	description?: string
+}
+
 /**
  * Command palette dialog (⌘K). Renders near the top of the viewport
  * like Linear's palette rather than vertically centered.
  */
-const CommandDialog = ({ children, ...props }: DialogProps) => {
+const CommandDialog = ({
+	title = 'Command Palette',
+	description = 'Search for a command to run...',
+	children,
+	...props
+}: CommandDialogProps) => {
 	return (
 		<Dialog {...props}>
 			<DialogContent className='top-[18%] max-w-xl translate-y-0 overflow-hidden p-0'>
+				<DialogTitle className='sr-only'>{title}</DialogTitle>
+				<DialogDescription className='sr-only'>{description}</DialogDescription>
 				<Command className='[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-subtle-foreground'>
 					{children}
 				</Command>
