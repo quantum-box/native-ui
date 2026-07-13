@@ -177,6 +177,13 @@ consumer 実装（tachyon-apps `apps/platform-ui`）で検証済みのルール�
   件数は右端に `text-2xs` の `subtle-foreground`（Badge より静か）。
 - **折りたたみセクション**: `SidebarSectionLabel` の末尾に `ChevronDown` を置く
   （開閉状態・回転はアプリ側）。
+- **ピン留め**: ピン留め済み項目は最上部の「Pinned」セクションにまとめる。
+  行アクションは `SidebarItemRow`（relative ラッパー）+ `SidebarItemAction`（右端に
+  浮く 24px アイコンボタン、`Pin` アイコン 14px）で付ける。SidebarItem は `<button>`
+  なのでアクションを子に入れず、必ず SidebarItemRow の兄弟として置くこと。
+  デフォルトは行 hover / focus で出現、ピン留め済みの行では `alwaysVisible`。
+  `aria-label`（Pin / Unpin）必須。アクション付き行に Kbd や Badge は置かない
+  （右端スロットが競合する）。ピン状態の保持はアプリ側の責務。
 - **ワークスペーススイッチャー**: `SidebarAccount` をヘッダー位置（最初の子）に置く。
   ワークスペースのアバターは `rounded-md bg-primary text-primary-foreground` で角丸スクエアに。
 - **リンクとして使う**: `SidebarItem asChild` で `next/link` 等をラップする。

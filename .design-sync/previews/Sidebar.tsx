@@ -8,7 +8,9 @@ import {
 	SidebarFooter,
 	SidebarHeader,
 	SidebarItem,
+	SidebarItemAction,
 	SidebarItemLabel,
+	SidebarItemRow,
 	SidebarSection,
 	SidebarSectionLabel,
 } from '@tachyon-sdk/native-ui'
@@ -21,6 +23,7 @@ import {
 	Inbox,
 	Layers,
 	LayoutGrid,
+	Pin,
 	Search,
 	Settings,
 	Target,
@@ -79,10 +82,10 @@ const accountBar = (
 	</SidebarAccount>
 )
 
-// Five composition patterns in one card. Pick the pieces a screen needs —
+// Six composition patterns in one card. Pick the pieces a screen needs —
 // every pattern is plain composition of the same primitives.
 export const Variations = () => (
-	<div className='flex w-[570px] flex-wrap gap-4'>
+	<div className='flex w-[770px] flex-wrap gap-4'>
 		{/* 1. Default: workspace header + nav + account bar */}
 		<Frame label='Default'>
 			<Sidebar>
@@ -174,7 +177,64 @@ export const Variations = () => (
 			</Sidebar>
 		</Frame>
 
-		{/* 5. Workspace switcher: SidebarAccount as the header */}
+		{/* 5. Pinned: SidebarItemRow + SidebarItemAction (pin reveals on hover;
+		    alwaysVisible marks the ones shown here for the static capture) */}
+		<Frame label='Pinned'>
+			<Sidebar>
+				<SidebarHeader>
+					<span className='flex-1 truncate'>Tachyon Inc.</span>
+					<Bell />
+				</SidebarHeader>
+				<SidebarSection>
+					<SidebarSectionLabel>
+						Pinned
+						<ChevronDown />
+					</SidebarSectionLabel>
+					<SidebarItemRow>
+						<SidebarItem active>
+							<FolderKanban />
+							<SidebarItemLabel>Native UI</SidebarItemLabel>
+						</SidebarItem>
+						<SidebarItemAction alwaysVisible aria-label='Unpin'>
+							<Pin />
+						</SidebarItemAction>
+					</SidebarItemRow>
+					<SidebarItemRow>
+						<SidebarItem>
+							<Target />
+							<SidebarItemLabel>Cycle 24</SidebarItemLabel>
+						</SidebarItem>
+						<SidebarItemAction alwaysVisible aria-label='Unpin'>
+							<Pin />
+						</SidebarItemAction>
+					</SidebarItemRow>
+				</SidebarSection>
+				<SidebarSection>
+					<SidebarSectionLabel>Workspace</SidebarSectionLabel>
+					{/* Unpinned rows: the pin action appears on hover only */}
+					<SidebarItemRow>
+						<SidebarItem>
+							<Layers />
+							<SidebarItemLabel>Views</SidebarItemLabel>
+						</SidebarItem>
+						<SidebarItemAction aria-label='Pin'>
+							<Pin />
+						</SidebarItemAction>
+					</SidebarItemRow>
+					<SidebarItemRow>
+						<SidebarItem>
+							<LayoutGrid />
+							<SidebarItemLabel>Projects</SidebarItemLabel>
+						</SidebarItem>
+						<SidebarItemAction aria-label='Pin'>
+							<Pin />
+						</SidebarItemAction>
+					</SidebarItemRow>
+				</SidebarSection>
+			</Sidebar>
+		</Frame>
+
+		{/* 6. Workspace switcher: SidebarAccount as the header */}
 		<Frame label='Workspace switcher'>
 			<Sidebar>
 				<SidebarAccount>

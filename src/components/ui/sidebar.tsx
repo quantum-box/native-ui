@@ -147,6 +147,56 @@ const SidebarItemLabel = React.forwardRef<
 ))
 SidebarItemLabel.displayName = 'SidebarItemLabel'
 
+/**
+ * Wrapper that lets a SidebarItem carry a floating SidebarItemAction
+ * (pin, more-menu…). Needed because SidebarItem renders a <button> and
+ * can't nest another one — the action is an absolutely-positioned sibling.
+ */
+const SidebarItemRow = React.forwardRef<
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+	<div
+		ref={ref}
+		className={cn('group/row relative shrink-0', className)}
+		{...props}
+	/>
+))
+SidebarItemRow.displayName = 'SidebarItemRow'
+
+export interface SidebarItemActionProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	/** Keep the action visible instead of revealing it on row hover/focus. */
+	alwaysVisible?: boolean
+	/** Render as the child element (e.g. DropdownMenuTrigger asChild target). */
+	asChild?: boolean
+}
+
+/**
+ * Floating action at the row's right edge (pin/unpin, more-menu…).
+ * Hidden until the row is hovered or focused unless `alwaysVisible`.
+ * Give it an aria-label, and don't put Kbd/Badge hints on the same row
+ * (the action occupies the trailing slot). Hidden while collapsed.
+ */
+const SidebarItemAction = React.forwardRef<
+	HTMLButtonElement,
+	SidebarItemActionProps
+>(({ className, alwaysVisible = false, asChild = false, ...props }, ref) => {
+	const Comp = asChild ? Slot : 'button'
+	return (
+		<Comp
+			ref={ref}
+			data-visible={alwaysVisible || undefined}
+			className={cn(
+				'-translate-y-1/2 absolute top-1/2 right-1 flex size-6 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity duration-fast hover:bg-border-strong/40 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-focus-within/row:opacity-100 group-hover/row:opacity-100 data-[visible]:opacity-100 group-data-[collapsed]/sidebar:hidden [&_svg]:size-3.5 [&_svg]:shrink-0',
+				className,
+			)}
+			{...props}
+		/>
+	)
+})
+SidebarItemAction.displayName = 'SidebarItemAction'
+
 /** Pinned to the bottom (settings, help, invite…). */
 const SidebarFooter = React.forwardRef<
 	HTMLDivElement,
@@ -243,7 +293,9 @@ export {
 	SidebarFooter,
 	SidebarHeader,
 	SidebarItem,
+	SidebarItemAction,
 	SidebarItemLabel,
+	SidebarItemRow,
 	SidebarSection,
 	SidebarSectionLabel,
 }
