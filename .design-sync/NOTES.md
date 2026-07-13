@@ -39,6 +39,10 @@
 - Command palette chrome: `w-[420px] overflow-hidden rounded-lg border border-border bg-popover shadow-modal` renders the Linear-style level-2 panel.
 - Default Button variant is `secondary` (quiet bordered); `primary` reserved for the main action — previews follow that convention.
 
+## Upload checklist learning (2026-07-13)
+
+- **Always upload `_ds_needs_recompile` with every sync.** The Design System pane's card index (`_ds_manifest.json`) is rebuilt REMOTELY by the app's self-check, triggered by this marker file. The driver emits it into `ds-bundle/` but if the upload plan omits it, new components (e.g. Sidebar) won't appear as cards even though all their files are uploaded — the stale remote manifest keeps serving the old card list.
+
 ## Repo move (2026-07-12)
 
 - Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own install now (pnpm as of 2026-07-13), no monorepo hoisting). The Claude Design project pin is unchanged.
