@@ -19,7 +19,7 @@
     "DropdownMenu": { "cardMode": "single", "viewport": "480x420" },
     "Popover": { "cardMode": "single", "viewport": "480x360" },
     "Select": { "cardMode": "single", "viewport": "480x400" },
-    "Sidebar": { "cardMode": "single", "viewport": "360x520" },
+    "Sidebar": { "cardMode": "single", "viewport": "640x920" },
     "Tooltip": { "cardMode": "single", "viewport": "480x240" }
   },
   "componentSrcMap": {

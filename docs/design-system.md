@@ -170,6 +170,15 @@ consumer 実装（tachyon-apps `apps/platform-ui`）で検証済みのルール�
   ラベル・Kbd・セクションラベル・アカウント情報は自動的に非表示（アバターとアイコンのみ残る）。
   幅は `transition-[width] duration-slow` でアニメーション。折りたたみ中の項目には
   `Tooltip` でラベルを補うこと。
+- **検索エントリ**: 専用コンポーネントは作らない。`SidebarItem` + `Search` アイコン +
+  右端 `<Kbd>⌘</Kbd><Kbd>K</Kbd>` の1行をナビ先頭に置き、クリックでコマンドパレットを開く。
+- **ツリー／サブ項目（inset）**: `SidebarItem inset` で親の文字位置（32px）にインデントした
+  アイコンなしサブ項目になる。プロジェクト → スプリント等の2階層まで。コンパクト時は自動非表示。
+  件数は右端に `text-2xs` の `subtle-foreground`（Badge より静か）。
+- **折りたたみセクション**: `SidebarSectionLabel` の末尾に `ChevronDown` を置く
+  （開閉状態・回転はアプリ側）。
+- **ワークスペーススイッチャー**: `SidebarAccount` をヘッダー位置（最初の子）に置く。
+  ワークスペースのアバターは `rounded-md bg-primary text-primary-foreground` で角丸スクエアに。
 - **リンクとして使う**: `SidebarItem asChild` で `next/link` 等をラップする。
   現在地は `active`（`aria-current='page'` が付与される）。
 - 開閉状態の保持・トグルはアプリ側の責務（コンポーネントは `collapsed` prop を受けるだけ）。

@@ -79,7 +79,10 @@ const SidebarSection = React.forwardRef<
 ))
 SidebarSection.displayName = 'SidebarSection'
 
-/** Quiet section heading, e.g. "Projects". */
+/**
+ * Quiet section heading, e.g. "Projects". Append a `<ChevronDown />` when the
+ * app makes the section collapsible (the toggle state lives in the app).
+ */
 const SidebarSectionLabel = React.forwardRef<
 	HTMLDivElement,
 	React.HTMLAttributes<HTMLDivElement>
@@ -87,7 +90,7 @@ const SidebarSectionLabel = React.forwardRef<
 	<div
 		ref={ref}
 		className={cn(
-			'flex h-6 select-none items-center px-2 font-medium text-subtle-foreground text-xs group-data-[collapsed]/sidebar:hidden',
+			'flex h-6 select-none items-center gap-1 px-2 font-medium text-subtle-foreground text-xs group-data-[collapsed]/sidebar:hidden [&_svg]:size-3 [&_svg]:shrink-0',
 			className,
 		)}
 		{...props}
@@ -101,6 +104,11 @@ export interface SidebarItemProps
 	active?: boolean
 	/** Render as the child element (e.g. next/link) instead of a button. */
 	asChild?: boolean
+	/**
+	 * Sub-item under a parent row (project tree etc.): indents the label to
+	 * the parent's text column. Hidden entirely while collapsed.
+	 */
+	inset?: boolean
 }
 
 /**
@@ -108,7 +116,10 @@ export interface SidebarItemProps
  * Selection is the quiet `selected` tint — never the primary accent.
  */
 const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
-	({ className, active = false, asChild = false, ...props }, ref) => {
+	(
+		{ className, active = false, asChild = false, inset = false, ...props },
+		ref,
+	) => {
 		const Comp = asChild ? Slot : 'button'
 		return (
 			<Comp
@@ -117,6 +128,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 				aria-current={active ? 'page' : undefined}
 				className={cn(
 					'flex h-8 w-full select-none items-center gap-2 rounded-md px-2 text-left font-medium text-muted-foreground text-sm transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-muted/70 data-[active]:bg-selected data-[active]:text-foreground group-data-[collapsed]/sidebar:justify-center group-data-[collapsed]/sidebar:gap-0 group-data-[collapsed]/sidebar:px-0 group-data-[collapsed]/sidebar:[&>:not(svg)]:hidden [&_svg]:size-4 [&_svg]:shrink-0',
+					inset && 'pl-8 group-data-[collapsed]/sidebar:hidden',
 					className,
 				)}
 				{...props}
