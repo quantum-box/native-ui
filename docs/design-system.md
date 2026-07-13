@@ -162,9 +162,17 @@ consumer 実装（tachyon-apps `apps/platform-ui`）で検証済みのルール�
 - **セクションラベル（SidebarSectionLabel）**: 12px medium・`subtle-foreground`・高さ 24px。
   大文字化（uppercase）はしない。
 - **フッター（SidebarFooter）**: `mt-auto` で最下部に固定。Settings / Help 等の低頻度項目。
+- **アカウントバー（SidebarAccount + SidebarAvatar + SidebarAccountInfo）**:
+  高さ 40px・アバター 24px（`--nui-selected` 背景にイニシャル、または img）・
+  名前 13px medium + 詳細 11px muted の2行。右端に `ChevronsUpDown` 等のアイコン。
+  フッターに置き、`asChild` で `DropdownMenuTrigger` をラップしてアカウントメニューを開く。
+- **コンパクト表示（collapsed）**: `<Sidebar collapsed>` で 48px のアイコンレールになる。
+  ラベル・Kbd・セクションラベル・アカウント情報は自動的に非表示（アバターとアイコンのみ残る）。
+  幅は `transition-[width] duration-slow` でアニメーション。折りたたみ中の項目には
+  `Tooltip` でラベルを補うこと。
 - **リンクとして使う**: `SidebarItem asChild` で `next/link` 等をラップする。
   現在地は `active`（`aria-current='page'` が付与される）。
-- 開閉・折りたたみの状態管理はアプリ側の責務（コンポーネントは静的レイアウトのみ）。
+- 開閉状態の保持・トグルはアプリ側の責務（コンポーネントは `collapsed` prop を受けるだけ）。
 
 ### 角丸
 

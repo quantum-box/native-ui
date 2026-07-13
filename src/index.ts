@@ -72,11 +72,17 @@ export {
 export { Separator } from './components/ui/separator'
 export {
 	Sidebar,
+	SidebarAccount,
+	type SidebarAccountInfoProps,
+	SidebarAccountInfo,
+	type SidebarAccountProps,
+	SidebarAvatar,
 	SidebarFooter,
 	SidebarHeader,
 	SidebarItem,
 	type SidebarItemProps,
 	SidebarItemLabel,
+	type SidebarProps,
 	SidebarSection,
 	SidebarSectionLabel,
 } from './components/ui/sidebar'

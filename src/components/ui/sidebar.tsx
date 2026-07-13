@@ -3,12 +3,18 @@ import * as React from 'react'
 
 import { cn } from '../../lib/utils'
 
+export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
+	/** Icon-only 48px rail. Labels/hints hide automatically — pair items with Tooltip. */
+	collapsed?: boolean
+}
+
 /**
  * App navigation sidebar (Linear/Notion style).
- * Static layout components only — collapse/persist state is the app's concern.
+ * Static layout components only — collapse/persist state is the app's concern
+ * (pass it down via the `collapsed` prop).
  *
  * Structure:
- *   <Sidebar>
+ *   <Sidebar collapsed={collapsed}>
  *     <SidebarHeader>Workspace</SidebarHeader>
  *     <SidebarSection>
  *       <SidebarItem active><Icon /><SidebarItemLabel>Inbox</SidebarItemLabel><Kbd>G</Kbd></SidebarItem>
@@ -17,22 +23,28 @@ import { cn } from '../../lib/utils'
  *       <SidebarSectionLabel>Projects</SidebarSectionLabel>
  *       ...
  *     </SidebarSection>
- *     <SidebarFooter>...</SidebarFooter>
+ *     <SidebarFooter>
+ *       <SidebarAccount>
+ *         <SidebarAvatar>TF</SidebarAvatar>
+ *         <SidebarAccountInfo name='Takanori' detail='Tachyon Inc.' />
+ *         <ChevronsUpDown />
+ *       </SidebarAccount>
+ *     </SidebarFooter>
  *   </Sidebar>
  */
-const Sidebar = React.forwardRef<
-	HTMLElement,
-	React.HTMLAttributes<HTMLElement>
->(({ className, ...props }, ref) => (
-	<nav
-		ref={ref}
-		className={cn(
-			'flex h-full w-60 shrink-0 flex-col gap-0.5 overflow-y-auto border-border border-r bg-surface p-2 text-sm',
-			className,
-		)}
-		{...props}
-	/>
-))
+const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
+	({ className, collapsed = false, ...props }, ref) => (
+		<nav
+			ref={ref}
+			data-collapsed={collapsed || undefined}
+			className={cn(
+				'group/sidebar flex h-full w-60 shrink-0 flex-col gap-0.5 overflow-y-auto border-border border-r bg-surface p-2 text-sm transition-[width] duration-slow ease-in-out data-[collapsed]:w-12 data-[collapsed]:overflow-x-hidden',
+				className,
+			)}
+			{...props}
+		/>
+	),
+)
 Sidebar.displayName = 'Sidebar'
 
 /** Workspace row at the top: name (semibold) + optional trailing icon buttons. */
@@ -43,7 +55,7 @@ const SidebarHeader = React.forwardRef<
 	<div
 		ref={ref}
 		className={cn(
-			'flex h-8 shrink-0 items-center gap-2 px-2 font-semibold text-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+			'flex h-8 shrink-0 items-center gap-2 px-2 font-semibold text-foreground group-data-[collapsed]/sidebar:justify-center group-data-[collapsed]/sidebar:px-0 group-data-[collapsed]/sidebar:[&>:not(svg)]:hidden [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
 			className,
 		)}
 		{...props}
@@ -75,7 +87,7 @@ const SidebarSectionLabel = React.forwardRef<
 	<div
 		ref={ref}
 		className={cn(
-			'flex h-6 select-none items-center px-2 font-medium text-subtle-foreground text-xs',
+			'flex h-6 select-none items-center px-2 font-medium text-subtle-foreground text-xs group-data-[collapsed]/sidebar:hidden',
 			className,
 		)}
 		{...props}
@@ -104,7 +116,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 				data-active={active || undefined}
 				aria-current={active ? 'page' : undefined}
 				className={cn(
-					'flex h-8 w-full select-none items-center gap-2 rounded-md px-2 text-left font-medium text-muted-foreground text-sm transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-muted/70 data-[active]:bg-selected data-[active]:text-foreground [&_svg]:size-4 [&_svg]:shrink-0',
+					'flex h-8 w-full select-none items-center gap-2 rounded-md px-2 text-left font-medium text-muted-foreground text-sm transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-muted/70 data-[active]:bg-selected data-[active]:text-foreground group-data-[collapsed]/sidebar:justify-center group-data-[collapsed]/sidebar:gap-0 group-data-[collapsed]/sidebar:px-0 group-data-[collapsed]/sidebar:[&>:not(svg)]:hidden [&_svg]:size-4 [&_svg]:shrink-0',
 					className,
 				)}
 				{...props}
@@ -136,8 +148,86 @@ const SidebarFooter = React.forwardRef<
 ))
 SidebarFooter.displayName = 'SidebarFooter'
 
+export interface SidebarAccountProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	/** Render as the child element (e.g. DropdownMenuTrigger asChild target). */
+	asChild?: boolean
+}
+
+/**
+ * Account bar: avatar + name/detail + trailing chevron. Usually lives in
+ * SidebarFooter and opens an account DropdownMenu. When the sidebar is
+ * collapsed only the avatar stays visible.
+ */
+const SidebarAccount = React.forwardRef<HTMLButtonElement, SidebarAccountProps>(
+	({ className, asChild = false, ...props }, ref) => {
+		const Comp = asChild ? Slot : 'button'
+		return (
+			<Comp
+				ref={ref}
+				className={cn(
+					'flex h-10 w-full select-none items-center gap-2 rounded-md px-2 text-left transition-colors duration-fast hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-muted/70 group-data-[collapsed]/sidebar:justify-center group-data-[collapsed]/sidebar:gap-0 group-data-[collapsed]/sidebar:px-0 group-data-[collapsed]/sidebar:[&>:not([data-avatar])]:hidden [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+					className,
+				)}
+				{...props}
+			/>
+		)
+	},
+)
+SidebarAccount.displayName = 'SidebarAccount'
+
+/** 24px round avatar. Children are initials, or an <img> (clipped to the circle). */
+const SidebarAvatar = React.forwardRef<
+	HTMLSpanElement,
+	React.HTMLAttributes<HTMLSpanElement>
+>(({ className, ...props }, ref) => (
+	<span
+		ref={ref}
+		data-avatar=''
+		className={cn(
+			'flex size-6 shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-selected font-medium text-2xs text-primary',
+			className,
+		)}
+		{...props}
+	/>
+))
+SidebarAvatar.displayName = 'SidebarAvatar'
+
+export interface SidebarAccountInfoProps
+	extends React.HTMLAttributes<HTMLSpanElement> {
+	/** Account or workspace name (13px medium). */
+	name: string
+	/** Secondary line: plan, email, workspace… (11px muted). */
+	detail?: string
+}
+
+/** Two-line text block for SidebarAccount; truncates instead of wrapping. */
+const SidebarAccountInfo = React.forwardRef<
+	HTMLSpanElement,
+	SidebarAccountInfoProps
+>(({ className, name, detail, ...props }, ref) => (
+	<span
+		ref={ref}
+		className={cn('flex min-w-0 flex-1 flex-col', className)}
+		{...props}
+	>
+		<span className='truncate font-medium text-foreground text-sm leading-tight'>
+			{name}
+		</span>
+		{detail ? (
+			<span className='truncate text-2xs text-muted-foreground leading-tight'>
+				{detail}
+			</span>
+		) : null}
+	</span>
+))
+SidebarAccountInfo.displayName = 'SidebarAccountInfo'
+
 export {
 	Sidebar,
+	SidebarAccount,
+	SidebarAccountInfo,
+	SidebarAvatar,
 	SidebarFooter,
 	SidebarHeader,
 	SidebarItem,
