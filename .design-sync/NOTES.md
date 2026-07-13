@@ -41,7 +41,8 @@
 
 ## Upload checklist learning (2026-07-13)
 
-- **Always upload `_ds_needs_recompile` with every sync.** The Design System pane's card index (`_ds_manifest.json`) is rebuilt REMOTELY by the app's self-check, triggered by this marker file. The driver emits it into `ds-bundle/` but if the upload plan omits it, new components (e.g. Sidebar) won't appear as cards even though all their files are uploaded — the stale remote manifest keeps serving the old card list.
+- **Always upload `_ds_needs_recompile` with every sync.** The Design System pane's card index (`_ds_manifest.json`) is rebuilt REMOTELY by the app's self-check, triggered by this marker file. The driver emits it into `ds-bundle/` but if the upload plan omits it, new components (e.g. Sidebar) won't appear as cards even though all their files are uploaded — the stale remote manifest keeps serving the old card list. (Observed 2026-07-13: the self-check did NOT fire on project reload after uploading the marker; the manifest had to be patched and uploaded directly — Sidebar entries added to `components[]` and `cards[]`.)
+- **NEW remote paths can be silently dropped by write_files under a glob-based plan.** Uploading Sidebar's 4 files + `_preview/Sidebar.js` in batches planned with `components/general/**` / `_preview/*.js` reported `written: N` but the files did not appear in `list_files` (existing-path overwrites in the same batches persisted fine). Re-finalizing a plan with the EXACT new paths and re-writing persisted them. Rule: after any sync that adds a component, `list_files` and verify the new paths exist; if missing, redo with exact-path plan.
 
 ## Repo move (2026-07-12)
 
