@@ -9,6 +9,11 @@ export {
 	buttonVariants,
 } from './components/ui/button'
 export {
+	Combobox,
+	type ComboboxOption,
+	type ComboboxProps,
+} from './components/ui/combobox'
+export {
 	Command,
 	CommandDialog,
 	CommandEmpty,
