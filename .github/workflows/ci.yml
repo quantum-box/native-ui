@@ -5,9 +5,37 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
-    runs-on: ubuntu-latest
+    name: Quality checks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ts
+      - run: pnpm lint
+      - run: pnpm format
+      - run: pnpm build-storybook
+
+  web:
+    name: Web build and serving
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,6 +43,131 @@ jobs:
           node-version: 22
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm ts
-      - run: pnpm lint
-      - run: pnpm format
+      - run: pnpm build:web
+      - name: Verify 2xx responses
+        shell: bash
+        run: |
+          pnpm preview:web --host 127.0.0.1 --port 4173 > /tmp/native-ui-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
+              curl --fail --silent --show-error http://127.0.0.1:4173/roadmap > /dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/native-ui-preview.log
+          exit 1
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/client/dist
+          if-no-files-found: error
+
+  desktop:
+    name: Desktop build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-22.04
+            bundle: deb
+          - name: macOS
+            os: macos-15
+            bundle: app
+          - name: Windows
+            os: windows-2022
+            bundle: nsis
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: pnpm install --frozen-lockfile
+      - name: Build and upload desktop bundle
+        uses: tauri-apps/tauri-action@v1
+        with:
+          projectPath: apps/client
+          tauriScript: pnpm tauri
+          args: --debug --bundles ${{ matrix.bundle }}
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: desktop-[platform]-[arch]-[bundle]
+
+  android:
+    name: Mobile build (Android)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri
+      - name: Configure Android NDK
+        shell: bash
+        run: echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - run: pnpm install --frozen-lockfile
+      - name: Initialize Android project
+        run: pnpm --dir apps/client tauri android init --ci --skip-targets-install
+      - name: Build and upload Android APK
+        uses: tauri-apps/tauri-action@v1
+        with:
+          projectPath: apps/client
+          tauriScript: pnpm tauri
+          mobile: android
+          args: --debug --apk --target aarch64 --ci
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: mobile-android-[arch]-[bundle]
+
+  ios:
+    name: Mobile build (iOS simulator)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri
+      - run: pnpm install --frozen-lockfile
+      - name: Initialize iOS project
+        run: pnpm --dir apps/client tauri ios init --ci --skip-targets-install
+      - name: Build iOS simulator bundle
+        run: pnpm --dir apps/client tauri ios build --debug --target aarch64-sim --ci
+      - name: Upload iOS simulator bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ios-aarch64-sim-app
+          path: apps/client/src-tauri/gen/apple/build/arm64-sim/*.app
+          if-no-files-found: error
