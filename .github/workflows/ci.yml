@@ -28,6 +28,7 @@ jobs:
           components: rustfmt
       - run: pnpm install --frozen-lockfile
       - run: pnpm ts
+      - run: pnpm test
       - run: pnpm lint
       - run: pnpm format
       - run: pnpm build-storybook
@@ -53,12 +54,26 @@ jobs:
           for attempt in {1..20}; do
             if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
               curl --fail --silent --show-error http://127.0.0.1:4173/roadmap > /dev/null
+              curl --fail --silent --show-error http://127.0.0.1:4173/sign-in > /dev/null
+              curl --fail --silent --show-error 'http://127.0.0.1:4173/callback?error=access_denied&state=probe' > /dev/null
               exit 0
             fi
             sleep 1
           done
           cat /tmp/native-ui-preview.log
           exit 1
+      - name: Probe Cognito Hosted UI
+        shell: bash
+        run: |
+          response=$(curl --silent --show-error --output /dev/null \
+            --max-time 20 --write-out '%{http_code} %{redirect_url}' \
+            'https://auth-pool.n1.tachy.one/oauth2/authorize?response_type=code&client_id=2keb54tbqmrk1srd1603mqtspu&redirect_uri=https%3A%2F%2Fnative-ui.txcloud.app%2Fcallback&scope=openid%20email%20profile%20aws.cognito.signin.user.admin&state=ci-probe&nonce=ci-probe&code_challenge=ci-probe-code-challenge-000000000000000000&code_challenge_method=S256')
+          read -r status redirect_url <<< "$response"
+          test "$status" = 302
+          case "$redirect_url" in
+            https://auth-pool.n1.tachy.one/login\?*) ;;
+            *) exit 1 ;;
+          esac
       - name: Upload Web artifact
         uses: actions/upload-artifact@v4
         with:

@@ -48,7 +48,9 @@ export function HomePage() {
 						<ArrowRight />
 					</Link>
 				</Button>
-				<span className='text-xs text-muted-foreground'>認証はPR2で追加</span>
+				<span className='text-xs text-muted-foreground'>
+					Cognito PKCE session
+				</span>
 			</div>
 		</div>
 	)
