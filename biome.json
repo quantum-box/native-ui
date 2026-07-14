@@ -6,7 +6,15 @@
   },
   "formatter": {
     "enabled": true,
-    "include": ["./src/**/*.ts", "./src/**/*.tsx", "./tsconfig.json"],
+    "include": [
+      "./src/**/*.ts",
+      "./src/**/*.tsx",
+      "./apps/client/**/*.ts",
+      "./apps/client/**/*.tsx",
+      "./apps/client/tsconfig.json",
+      "./apps/client/tsconfig.node.json",
+      "./tsconfig.json"
+    ],
     "ignore": ["node_modules", "dist"]
   },
   "javascript": {

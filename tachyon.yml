@@ -5,6 +5,20 @@ metadata:
   tenantId: tn_01hjjn348rn3t49zz6hvmfq67p
 spec:
   apps:
+    - name: native-ui
+      repository:
+        url: https://github.com/quantum-box/native-ui
+        owner: quantum-box
+        name: native-ui
+        defaultBranch: main
+      rootDirectory: ''
+      framework: vite
+      deploymentTarget: cloudflare_pages
+      build:
+        installCommand: pnpm install --frozen-lockfile
+        command: pnpm run build:web
+        outputDirectory: apps/client/dist
+        nodeVersion: '22'
     - name: native-ui-storybook
       repository:
         url: https://github.com/quantum-box/native-ui

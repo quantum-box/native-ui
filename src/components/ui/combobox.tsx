@@ -67,6 +67,7 @@ const Combobox = ({
 	className,
 	contentClassName,
 }: ComboboxProps) => {
+	const contentId = React.useId()
 	const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
 	const open = openProp ?? uncontrolledOpen
 	const setOpen = (next: boolean) => {
@@ -83,6 +84,7 @@ const Combobox = ({
 					<button
 						type='button'
 						role='combobox'
+						aria-controls={contentId}
 						aria-expanded={open}
 						disabled={disabled}
 						className={cn(
@@ -100,6 +102,7 @@ const Combobox = ({
 				)}
 			</PopoverTrigger>
 			<PopoverContent
+				id={contentId}
 				align={align}
 				className={cn('w-64 p-0', contentClassName)}
 			>
