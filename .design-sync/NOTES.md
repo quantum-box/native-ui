@@ -2,7 +2,7 @@
 
 ## Repo specifics
 
-- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; yarn hoists react there, the package's own node_modules is sparse).
+- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; pnpm since 2026-07-13, direct deps are top-level symlinks and esbuild follows them fine).
 - Styling is consumer-compiled Tailwind v3: `cfg.buildCmd` runs the Tailwind CLI with `.design-sync/tailwind.build.ts` (uses the package's own `tailwind-preset.ts`; content = package src + `.design-sync/previews/`) into `dist/native-ui.css` (`dist/` is gitignored repo-wide). **Run buildCmd before package-build.mjs whenever a preview adds new utility classes.**
 - Tokens (`--nui-*`) are inlined into the compiled CSS by postcss-import — no separate tokens/ dir, `tokensGlob` doesn't apply (it requires `tokensPkg`).
 - Inter is provided by consumer apps via `next/font/google`, not shipped in the repo. Downloaded Inter variable woff2 (latin + latin-ext, OFL) into `.design-sync/fonts/inter/` and wired via `cfg.extraFonts` (user-approved 2026-07-07).
@@ -28,7 +28,7 @@
 
 - **Compiled-CSS coverage**: `dist/native-ui.css` only contains utilities used by package src + `.design-sync/previews/`. New/edited previews with new classes need `buildCmd` re-run BEFORE package-build, or they render unstyled in capture (agents worked around with inline styles).
 - **Inter woff2 is a pinned copy** (`.design-sync/fonts/inter/`, downloaded 2026-07-07 from Google Fonts, latin+latin-ext only). If the apps change font (next/font in `apps/tachyon/src/app/layout.tsx`), this goes stale. Japanese text renders via system fallbacks (Hiragino/Noto Sans JP are not shipped).
-- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 12 roots) after any package export change.
+- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 13 roots, Sidebar added 2026-07-13) after any package export change.
 - **Playwright/chromium matching** is machine-specific (this machine: playwright@1.61.0 ↔ cached chromium-1228). Re-verify on a new machine.
 - Partial verification: dark-mode rendering (`.dark`) was never captured — previews cover light mode only.
 
@@ -39,9 +39,14 @@
 - Command palette chrome: `w-[420px] overflow-hidden rounded-lg border border-border bg-popover shadow-modal` renders the Linear-style level-2 panel.
 - Default Button variant is `secondary` (quiet bordered); `primary` reserved for the main action — previews follow that convention.
 
+## Upload checklist learning (2026-07-13)
+
+- **Always upload `_ds_needs_recompile` with every sync.** The Design System pane's card index (`_ds_manifest.json`) is rebuilt REMOTELY by the app's self-check, triggered by this marker file. The driver emits it into `ds-bundle/` but if the upload plan omits it, new components (e.g. Sidebar) won't appear as cards even though all their files are uploaded — the stale remote manifest keeps serving the old card list. (Observed 2026-07-13: the self-check did NOT fire on project reload after uploading the marker; the manifest had to be patched and uploaded directly — Sidebar entries added to `components[]` and `cards[]`.)
+- **NEW remote paths can be silently dropped by write_files under a glob-based plan.** Uploading Sidebar's 4 files + `_preview/Sidebar.js` in batches planned with `components/general/**` / `_preview/*.js` reported `written: N` but the files did not appear in `list_files` (existing-path overwrites in the same batches persisted fine). Re-finalizing a plan with the EXACT new paths and re-writing persisted them. Rule: after any sync that adds a component, `list_files` and verify the new paths exist; if missing, redo with exact-path plan.
+
 ## Repo move (2026-07-12)
 
-- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own yarn install now, no monorepo hoisting). The Claude Design project pin is unchanged.
+- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own install now (pnpm as of 2026-07-13), no monorepo hoisting). The Claude Design project pin is unchanged.
 - Consumers (tachyon-apps `apps/tachyon`, field, …) install via GitHub dependency `"quantum-box/native-ui"` + `transpilePackages`. Inter is still consumer-provided via `next/font`.
 
 ## Re-sync after repo move (2026-07-12)

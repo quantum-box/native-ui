@@ -19,6 +19,7 @@
     "DropdownMenu": { "cardMode": "single", "viewport": "480x420" },
     "Popover": { "cardMode": "single", "viewport": "480x360" },
     "Select": { "cardMode": "single", "viewport": "480x400" },
+    "Sidebar": { "cardMode": "single", "viewport": "840x960" },
     "Tooltip": { "cardMode": "single", "viewport": "480x240" }
   },
   "componentSrcMap": {
@@ -65,6 +66,17 @@
     "SelectSeparator": null,
     "SelectTrigger": null,
     "SelectValue": null,
+    "SidebarAccount": null,
+    "SidebarAccountInfo": null,
+    "SidebarAvatar": null,
+    "SidebarFooter": null,
+    "SidebarHeader": null,
+    "SidebarItem": null,
+    "SidebarItemAction": null,
+    "SidebarItemLabel": null,
+    "SidebarItemRow": null,
+    "SidebarSection": null,
+    "SidebarSectionLabel": null,
     "TooltipContent": null,
     "TooltipProvider": null,
     "TooltipTrigger": null

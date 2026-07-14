@@ -71,6 +71,25 @@ export {
 } from './components/ui/select'
 export { Separator } from './components/ui/separator'
 export {
+	Sidebar,
+	SidebarAccount,
+	type SidebarAccountInfoProps,
+	SidebarAccountInfo,
+	type SidebarAccountProps,
+	SidebarAvatar,
+	SidebarFooter,
+	SidebarHeader,
+	SidebarItem,
+	SidebarItemAction,
+	type SidebarItemActionProps,
+	type SidebarItemProps,
+	SidebarItemLabel,
+	SidebarItemRow,
+	type SidebarProps,
+	SidebarSection,
+	SidebarSectionLabel,
+} from './components/ui/sidebar'
+export {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
