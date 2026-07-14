@@ -2,10 +2,6 @@
 
 Linear / Notion のようなネイティブアプリらしい UI を実現する共通コンポーネントライブラリ。shadcn/ui（new-york）ベース。
 
-このリポジトリは pnpm workspace で、ルートのコンポーネントライブラリと
-`apps/client` の React + Vite + Tauri v2 アプリを管理します。ライブラリの配置と
-source 直接参照方式は従来どおりです。
-
 - デザインシステム仕様: [docs/design-system.md](./docs/design-system.md)
 - トークン実装: `src/styles/tokens.css`（`--nui-*` CSS 変数）
 - Tailwind v3 preset: `src/tailwind-preset.ts`
@@ -99,19 +95,6 @@ pnpm ts      # 型チェック
 pnpm lint    # Biome lint
 pnpm format  # フォーマット確認（修正は format:write）
 ```
-
-### クロスプラットフォームアプリ
-
-```bash
-pnpm dev:web          # http://localhost:1420
-pnpm build:web
-pnpm dev:desktop
-pnpm build:desktop
-```
-
-Android/iOSの初回build前には、各SDKを導入したhostで `pnpm init:android` または
-`pnpm init:ios` を実行します。iOSはmacOS/Xcodeが必要です。詳細は
-[`apps/client/README.md`](./apps/client/README.md) を参照してください。
 
 ## コンポーネント追加ワークフロー
 
