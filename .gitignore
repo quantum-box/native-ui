@@ -3,7 +3,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 storybook-static/
-target/
 
 # design-sync working dirs (converter staging & output)
 .ds-sync/
