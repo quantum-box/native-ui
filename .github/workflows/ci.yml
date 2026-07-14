@@ -163,12 +163,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Initialize iOS project
         run: pnpm --dir apps/client tauri ios init --ci --skip-targets-install
-      - name: Build and upload iOS simulator bundle
-        uses: tauri-apps/tauri-action@v1
+      - name: Build iOS simulator bundle
+        run: pnpm --dir apps/client tauri ios build --debug --target aarch64-sim --ci
+      - name: Upload iOS simulator bundle
+        uses: actions/upload-artifact@v4
         with:
-          projectPath: apps/client
-          tauriScript: pnpm tauri
-          mobile: ios
-          args: --debug --target aarch64-sim --ci
-          uploadWorkflowArtifacts: true
-          workflowArtifactNamePattern: mobile-ios-[arch]-[bundle]
+          name: mobile-ios-aarch64-sim-app
+          path: apps/client/src-tauri/gen/apple/build/arm64-sim/*.app
+          if-no-files-found: error
