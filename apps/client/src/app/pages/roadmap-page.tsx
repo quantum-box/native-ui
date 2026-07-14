@@ -1,8 +1,8 @@
 import { Badge } from '@tachyon-sdk/native-ui'
 
 const phases = [
-	{ label: 'PR1', status: '進行中', title: 'Cross-platform scaffold' },
-	{ label: 'PR2', status: '次', title: 'Cognito authentication' },
+	{ label: 'PR1', status: '完了', title: 'Cross-platform scaffold' },
+	{ label: 'PR2', status: '進行中', title: 'Cognito authentication' },
 	{ label: 'PR3', status: '予定', title: 'IAM and app shell' },
 	{ label: 'PR4+', status: '予定', title: 'Admin feature migration' },
 ]

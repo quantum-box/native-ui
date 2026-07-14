@@ -18,6 +18,7 @@
     "format": "biome format ./src ./apps/client/src ./apps/client/vite.config.ts ./apps/client/tailwind.config.ts ./apps/client/tsconfig.json ./apps/client/tsconfig.node.json && pnpm format:rust",
     "format:write": "biome format --write ./src ./apps/client/src ./apps/client/vite.config.ts ./apps/client/tailwind.config.ts ./apps/client/tsconfig.json ./apps/client/tsconfig.node.json && cargo fmt --manifest-path apps/client/src-tauri/Cargo.toml",
     "format:rust": "cargo fmt --manifest-path apps/client/src-tauri/Cargo.toml -- --check",
+    "test": "pnpm --filter @tachyon-sdk/native-client test",
     "ts": "pnpm ts:library && pnpm ts:client",
     "ts:library": "tsc --noEmit --incremental",
     "ts:client": "pnpm --filter @tachyon-sdk/native-client ts",
