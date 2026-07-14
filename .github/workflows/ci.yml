@@ -76,7 +76,7 @@ jobs:
             os: ubuntu-22.04
             bundle: deb
           - name: macOS
-            os: macos-14
+            os: macos-15
             bundle: app
           - name: Windows
             os: windows-2022
@@ -146,7 +146,7 @@ jobs:
 
   ios:
     name: Mobile build (iOS simulator)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +156,7 @@ jobs:
       - run: corepack enable
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-apple-ios
+          targets: aarch64-apple-ios-sim
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: apps/client/src-tauri
@@ -169,6 +169,6 @@ jobs:
           projectPath: apps/client
           tauriScript: pnpm tauri
           mobile: ios
-          args: --debug --target x86_64 --ci
+          args: --debug --target aarch64-sim --ci
           uploadWorkflowArtifacts: true
           workflowArtifactNamePattern: mobile-ios-[arch]-[bundle]
