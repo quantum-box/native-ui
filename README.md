@@ -67,16 +67,33 @@ import { Button } from '@tachyon-sdk/native-ui'
 <Button variant='ghost' size='icon'><SettingsIcon /></Button>
 ```
 
-コンポーネント一覧: Badge / Button / Command / Dialog / DropdownMenu / Input / Kbd / Label / Popover / Select / Separator / Tooltip
+コンポーネント一覧: Badge / Button / Command / Dialog / DropdownMenu / Input / Kbd / Label / Popover / Select / Separator / Sidebar / Tooltip
+
+```tsx
+// アプリのナビゲーションは Sidebar 一式で組む
+<Sidebar>
+	<SidebarHeader>Tachyon Inc.</SidebarHeader>
+	<SidebarSection>
+		<SidebarItem asChild active={pathname === '/inbox'}>
+			<Link href='/inbox'>
+				<Inbox />
+				<SidebarItemLabel>Inbox</SidebarItemLabel>
+				<Kbd>G</Kbd>
+			</Link>
+		</SidebarItem>
+	</SidebarSection>
+	<SidebarFooter>…</SidebarFooter>
+</Sidebar>
+```
 
 ## 開発
 
 ```bash
 corepack enable
-yarn install
-yarn ts      # 型チェック
-yarn lint    # Biome lint
-yarn format  # フォーマット確認（修正は format:write）
+pnpm install
+pnpm ts      # 型チェック
+pnpm lint    # Biome lint
+pnpm format  # フォーマット確認（修正は format:write）
 ```
 
 ## コンポーネント追加ワークフロー

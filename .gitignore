@@ -3,15 +3,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# yarn berry
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
-
 # design-sync working dirs (converter staging & output)
 .ds-sync/
 ds-bundle/

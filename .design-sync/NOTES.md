@@ -2,7 +2,7 @@
 
 ## Repo specifics
 
-- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; yarn hoists react there, the package's own node_modules is sparse).
+- The package has NO build (`main: src/index.ts`, source-direct + consumer `transpilePackages`). The converter bundles straight from `src/index.ts` — pass `--entry src/index.ts` and `--node-modules ./node_modules` (repo root; pnpm since 2026-07-13, direct deps are top-level symlinks and esbuild follows them fine).
 - Styling is consumer-compiled Tailwind v3: `cfg.buildCmd` runs the Tailwind CLI with `.design-sync/tailwind.build.ts` (uses the package's own `tailwind-preset.ts`; content = package src + `.design-sync/previews/`) into `dist/native-ui.css` (`dist/` is gitignored repo-wide). **Run buildCmd before package-build.mjs whenever a preview adds new utility classes.**
 - Tokens (`--nui-*`) are inlined into the compiled CSS by postcss-import — no separate tokens/ dir, `tokensGlob` doesn't apply (it requires `tokensPkg`).
 - Inter is provided by consumer apps via `next/font/google`, not shipped in the repo. Downloaded Inter variable woff2 (latin + latin-ext, OFL) into `.design-sync/fonts/inter/` and wired via `cfg.extraFonts` (user-approved 2026-07-07).
@@ -13,8 +13,7 @@
 - macOS + fish: `cd` in a compound Bash command persists into later tool calls — run from repo root with absolute paths.
 - DesignSync write_files: chunks >~700KB total time out (60s) — send the 674KB `_ds_bundle.js` alone and keep other chunks ≤10 files / few hundred KB. `_vendor/react.js` (~1.1MB) also needs its own call.
 - **Canary spot-check re-sampling takes several driver iterations to converge on a docs-only re-sync** — each run re-samples ~5 components from the full unchanged set for a fresh grade (pipeline/render churn, not real content changes); grade whatever's freshly sampled as `good` (from the screenshot) and rerun until `pendingGrade` is empty. Took 4 iterations this run (2026-07-13) before it settled.
-- `Sidebar` was removed from `src/index.ts` between the 2026-07-12 re-sync and this one (2026-07-13) — confirmed absent from source, so its removal from the remote project (6 paths under `components/general/Sidebar/` + `_preview/Sidebar.*`) was a legitimate deletion, not a detection bug.
-- **A stray/leftover background process from an earlier crashed session re-uploaded an older `_ds_sync.json` (with `Sidebar` still present) after the 2026-07-13 Sidebar-removal sync had already completed and been verified.** Symptom: `DesignSync(get_file, "_ds_sync.json")` returned Sidebar hashes different from the ones this session generated, and `list_files` showed `components/general/Sidebar/**` back on the remote. Root cause never fully confirmed, but two orphaned background tasks (unexplained `find … ms-playwright` and stale `resync.mjs` runs) surfaced via task-notifications around the same time — consistent with a session restore re-attaching old background shells that finished late and clobbered the newer upload. **Always re-fetch `_ds_sync.json` immediately before a re-sync and sanity-check it against the last known-good state (e.g. `list_files` for anything that should have been deleted) rather than trusting a locally cached anchor from earlier in the conversation.**
+- **`Sidebar` false-removal, corrected**: a 2026-07-13 re-sync (run from a feature branch predating the pnpm migration below) found `Sidebar` absent from that branch's `src/index.ts` and deleted it from the remote project, reasoning it had been "legitimately removed." That reasoning was wrong — `Sidebar` was never removed from `main`; it was added to `main` around the same time (see the pnpm-migration entry above) by a commit the feature branch simply hadn't merged yet. The apparent "old anchor coming back with Sidebar" observed mid-session was `main`'s own newer, correct state re-asserting itself, not a stray background process clobbering an upload. **Lesson: before trusting a local branch's `src/index.ts` as ground truth for a component's existence, check whether the branch is behind `main` (`git fetch && git log HEAD..origin/main --oneline`) — a component "missing" on a stale branch is not the same as a component removed from the design system.**
 
 ## Known render warns (triaged as legitimate)
 
@@ -33,7 +32,7 @@
 
 - **Compiled-CSS coverage**: `dist/native-ui.css` only contains utilities used by package src + `.design-sync/previews/`. New/edited previews with new classes need `buildCmd` re-run BEFORE package-build, or they render unstyled in capture (agents worked around with inline styles).
 - **Inter woff2 is a pinned copy** (`.design-sync/fonts/inter/`, downloaded 2026-07-07 from Google Fonts, latin+latin-ext only). If the apps change font (next/font in `apps/tachyon/src/app/layout.tsx`), this goes stale. Japanese text renders via system fallbacks (Hiragino/Noto Sans JP are not shipped).
-- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 12 roots) after any package export change.
+- **componentSrcMap null-list is an enumeration**: when a new component is added to `src/index.ts`, its subcomponent exports will appear as NEW component cards until nulls are added here. Check the build's `components:` count (expected: 13 roots, Sidebar added 2026-07-13) after any package export change.
 - **Playwright/chromium matching** is machine-specific (this machine: playwright@1.61.0 ↔ cached chromium-1228). Re-verify on a new machine.
 - Partial verification: dark-mode rendering (`.dark`) was never captured — previews cover light mode only.
 
@@ -44,9 +43,14 @@
 - Command palette chrome: `w-[420px] overflow-hidden rounded-lg border border-border bg-popover shadow-modal` renders the Linear-style level-2 panel.
 - Default Button variant is `secondary` (quiet bordered); `primary` reserved for the main action — previews follow that convention.
 
+## Upload checklist learning (2026-07-13)
+
+- **Always upload `_ds_needs_recompile` with every sync.** The Design System pane's card index (`_ds_manifest.json`) is rebuilt REMOTELY by the app's self-check, triggered by this marker file. The driver emits it into `ds-bundle/` but if the upload plan omits it, new components (e.g. Sidebar) won't appear as cards even though all their files are uploaded — the stale remote manifest keeps serving the old card list. (Observed 2026-07-13: the self-check did NOT fire on project reload after uploading the marker; the manifest had to be patched and uploaded directly — Sidebar entries added to `components[]` and `cards[]`.)
+- **NEW remote paths can be silently dropped by write_files under a glob-based plan.** Uploading Sidebar's 4 files + `_preview/Sidebar.js` in batches planned with `components/general/**` / `_preview/*.js` reported `written: N` but the files did not appear in `list_files` (existing-path overwrites in the same batches persisted fine). Re-finalizing a plan with the EXACT new paths and re-writing persisted them. Rule: after any sync that adds a component, `list_files` and verify the new paths exist; if missing, redo with exact-path plan.
+
 ## Repo move (2026-07-12)
 
-- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own yarn install now, no monorepo hoisting). The Claude Design project pin is unchanged.
+- Migrated from `quantum-box/tachyon-apps` `packages/native-ui/` to this standalone repo `quantum-box/native-ui`. All `.design-sync` paths were rewritten to repo-root relative (`--entry src/index.ts`, `--node-modules ./node_modules` — this repo has its own install now (pnpm as of 2026-07-13), no monorepo hoisting). The Claude Design project pin is unchanged.
 - Consumers (tachyon-apps `apps/tachyon`, field, …) install via GitHub dependency `"quantum-box/native-ui"` + `transpilePackages`. Inter is still consumer-provided via `next/font`.
 
 ## Re-sync after repo move (2026-07-12)

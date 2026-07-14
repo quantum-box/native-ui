@@ -229,6 +229,53 @@ function CreateIssueForm({ onSubmit, onDone }: { onSubmit: (values: IssueInput) 
 - **フォーム送信（作成・更新ダイアログ等）**: submit 時点でダイアログを閉じる／画面遷移するなど「完了」として扱い、実処理はバックグラウンドで継続する。結果は `toast` で非同期に通知し、成功時は関連ページへのリンクを、失敗時は再試行アクションを添える。送信ボタンをローディング表示で塞ぐ設計は避ける。
 - **決済確定・不可逆操作**: 楽観更新の対象外。サーバー応答を待ち、ボタンをローディング状態にする。
 
+### ナビゲーション（サイドバー）
+
+アプリの主ナビゲーションは `Sidebar` コンポーネント一式で組む（`Sidebar` / `SidebarHeader` /
+`SidebarSection` / `SidebarSectionLabel` / `SidebarItem` / `SidebarItemLabel` / `SidebarFooter`）。
+インライン style で自作しない。
+
+- **寸法**: 幅 240px 固定・`--nui-surface` 背景・右 1px `--nui-border`・内側 padding 8px。
+  項目間ギャップ 2px、セクション間は 16px。
+- **項目（SidebarItem）**: 高さ 32px・radius-md・アイコン 16px・ラベル 13px medium。
+  状態は3段 — 通常 `muted-foreground` / hover `--nui-muted` 背景 + `foreground` /
+  選択 `--nui-selected` 背景 + `foreground`（`active` prop）。
+  **選択状態にアクセント色は使わない**。selected の淡色ティントだけで示す。
+- **トレーリングヒント**: ラベルが `flex-1` を取るので、`Kbd`（ショートカット）や
+  `Badge variant='neutral'`（件数）を子要素の末尾に置くだけで右端に揃う。
+- **ヘッダー（SidebarHeader）**: ワークスペース名を semibold で。高さ 32px。
+  右端にベル等の ghost アイコンを置ける。
+- **セクションラベル（SidebarSectionLabel）**: 12px medium・`subtle-foreground`・高さ 24px。
+  大文字化（uppercase）はしない。
+- **フッター（SidebarFooter）**: `mt-auto` で最下部に固定。Settings / Help 等の低頻度項目。
+- **アカウントバー（SidebarAccount + SidebarAvatar + SidebarAccountInfo）**:
+  高さ 40px・アバター 24px（`--nui-selected` 背景にイニシャル、または img）・
+  名前 13px medium + 詳細 11px muted の2行。右端に `ChevronsUpDown` 等のアイコン。
+  フッターに置き、`asChild` で `DropdownMenuTrigger` をラップしてアカウントメニューを開く。
+- **コンパクト表示（collapsed）**: `<Sidebar collapsed>` で 48px のアイコンレールになる。
+  ラベル・Kbd・セクションラベル・アカウント情報は自動的に非表示（アバターとアイコンのみ残る）。
+  幅は `transition-[width] duration-slow` でアニメーション。折りたたみ中の項目には
+  `Tooltip` でラベルを補うこと。
+- **検索エントリ**: 専用コンポーネントは作らない。`SidebarItem` + `Search` アイコン +
+  右端 `<Kbd>⌘</Kbd><Kbd>K</Kbd>` の1行をナビ先頭に置き、クリックでコマンドパレットを開く。
+- **ツリー／サブ項目（inset）**: `SidebarItem inset` で親の文字位置（32px）にインデントした
+  アイコンなしサブ項目になる。プロジェクト → スプリント等の2階層まで。コンパクト時は自動非表示。
+  件数は右端に `text-2xs` の `subtle-foreground`（Badge より静か）。
+- **折りたたみセクション**: `SidebarSectionLabel` の末尾に `ChevronDown` を置く
+  （開閉状態・回転はアプリ側）。
+- **ピン留め**: ピン留め済み項目は最上部の「Pinned」セクションにまとめる。
+  行アクションは `SidebarItemRow`（relative ラッパー）+ `SidebarItemAction`（右端に
+  浮く 24px アイコンボタン、`Pin` アイコン 14px）で付ける。SidebarItem は `<button>`
+  なのでアクションを子に入れず、必ず SidebarItemRow の兄弟として置くこと。
+  デフォルトは行 hover / focus で出現、ピン留め済みの行では `alwaysVisible`。
+  `aria-label`（Pin / Unpin）必須。アクション付き行に Kbd や Badge は置かない
+  （右端スロットが競合する）。ピン状態の保持はアプリ側の責務。
+- **ワークスペーススイッチャー**: `SidebarAccount` をヘッダー位置（最初の子）に置く。
+  ワークスペースのアバターは `rounded-md bg-primary text-primary-foreground` で角丸スクエアに。
+- **リンクとして使う**: `SidebarItem asChild` で `next/link` 等をラップする。
+  現在地は `active`（`aria-current='page'` が付与される）。
+- 開閉状態の保持・トグルはアプリ側の責務（コンポーネントは `collapsed` prop を受けるだけ）。
+
 ### 角丸
 
 ```yaml

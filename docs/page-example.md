@@ -7,6 +7,7 @@
 ## この例が示す構成ルール
 
 - **レイアウトグルーはインライン style + `--nui-*` トークン**で書く。色は `hsl(var(--nui-*))`、角丸は `var(--nui-radius-*)`。ユーティリティクラスを発明しない。
+- **ナビゲーションは `Sidebar` コンポーネント一式**で組む（インライン style で自作しない）。項目は `SidebarItem`、現在地は `active` prop。
 - **密度**: サイドバー 240px、サイドバー項目 32px、テーブル行 36px、ツールバーは `size='sm'` の ghost ボタン、本文 13px。
 - **色の階層**: アプリ背景 `--nui-background` → パネル `--nui-surface` → 選択中 `--nui-selected`。テキストは `foreground` → `muted-foreground` → `subtle-foreground` の3段。
 - **アクセントは1箇所**: `variant='primary'` は「New issue」だけ。他は secondary / ghost。
@@ -22,6 +23,11 @@ import {
 	Input,
 	Kbd,
 	Separator,
+	Sidebar,
+	SidebarHeader,
+	SidebarItem,
+	SidebarItemLabel,
+	SidebarSection,
 	TooltipProvider,
 } from '@tachyon-sdk/native-ui'
 import {
@@ -60,50 +66,29 @@ export const IssuesPage = () => (
 			}}
 		>
 			{/* Sidebar — 240px, list rows 32px */}
-			<nav
-				style={{
-					width: 240,
-					flexShrink: 0,
-					background: 'hsl(var(--nui-surface))',
-					borderRight: '1px solid hsl(var(--nui-border))',
-					padding: 8,
-					display: 'flex',
-					flexDirection: 'column',
-					gap: 2,
-				}}
-			>
-				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', fontWeight: 600 }}>
-					Tachyon Inc.
-					<Bell size={14} style={{ color: 'hsl(var(--nui-muted-foreground))' }} />
-				</div>
-				{[
-					{ icon: Inbox, label: 'Inbox', kbd: 'G I' },
-					{ icon: CircleDot, label: 'My issues', kbd: 'G A', active: true },
-					{ icon: LayoutGrid, label: 'Projects', kbd: 'G P' },
-				].map(({ icon: Icon, label, kbd, active }) => (
-					<div
-						key={label}
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: 8,
-							height: 32,
-							padding: '0 8px',
-							borderRadius: 'var(--nui-radius-md)',
-							background: active ? 'hsl(var(--nui-selected))' : 'transparent',
-							color: active ? 'hsl(var(--nui-foreground))' : 'hsl(var(--nui-muted-foreground))',
-						}}
-					>
-						<Icon size={16} />
-						<span style={{ flex: 1 }}>{label}</span>
-						<span style={{ display: 'flex', gap: 2 }}>
-							{kbd.split(' ').map((k) => (
-								<Kbd key={k}>{k}</Kbd>
-							))}
-						</span>
-					</div>
-				))}
-			</nav>
+			<Sidebar>
+				<SidebarHeader>
+					<span style={{ flex: 1 }}>Tachyon Inc.</span>
+					<Bell />
+				</SidebarHeader>
+				<SidebarSection>
+					{[
+						{ icon: Inbox, label: 'Inbox', kbd: 'G I' },
+						{ icon: CircleDot, label: 'My issues', kbd: 'G A', active: true },
+						{ icon: LayoutGrid, label: 'Projects', kbd: 'G P' },
+					].map(({ icon: Icon, label, kbd, active }) => (
+						<SidebarItem key={label} active={active}>
+							<Icon />
+							<SidebarItemLabel>{label}</SidebarItemLabel>
+							<span style={{ display: 'flex', gap: 2 }}>
+								{kbd.split(' ').map((k) => (
+									<Kbd key={k}>{k}</Kbd>
+								))}
+							</span>
+						</SidebarItem>
+					))}
+				</SidebarSection>
+			</Sidebar>
 
 			{/* Main */}
 			<main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

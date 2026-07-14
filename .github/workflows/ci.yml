@@ -12,9 +12,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: corepack enable
-      - run: yarn install --immutable
-      - run: yarn ts
-      - run: yarn lint
-      - run: yarn format
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ts
+      - run: pnpm lint
+      - run: pnpm format
