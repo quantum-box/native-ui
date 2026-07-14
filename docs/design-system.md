@@ -13,6 +13,7 @@
 3. **静かな配色**: 画面の 95% はニュートラルグレー。アクセント（indigo）は主要アクション・選択状態・フォーカスにのみ使用する。
 4. **即時フィードバック**: hover は 100ms 以下、開閉は 150ms 前後。ユーザーを待たせるアニメーションは入れない。
 5. **キーボードファースト**: すべてのインタラクティブ要素に focus-visible リングを表示し、ショートカットは `kbd` スタイルで明示する。
+6. **楽観UIを既定とする**: 作成・更新・削除・並び替えなど、成功率の高い操作はサーバー応答を待たずに即座にUIへ反映する。失敗時のみロールバックし、エラー表示（トースト等）で通知する。ネイティブアプリらしい「待たされない」体験を最優先とし、ローディングスピナーでの待機はサーバー応答を待つ必然性が高い操作（決済確定など）に限定する。
 
 ## デザイントークン
 
@@ -142,6 +143,91 @@ consumer 実装（tachyon-apps `apps/platform-ui`）で検証済みのルール�
   `--nui-primary` インセットバー（`inset 2px 0 0`）。
 - **詳細ページも同様**: ページ全体を 1 つの padding で包まず、
   情報セクションごとに余白を持たせ、ページ内のテーブルは full-bleed にする。
+
+### 楽観UI実装テンプレート
+
+デザイン原則6を実装に落とし込むための標準パターン。consumer アプリでの実装は
+以下のいずれかに揃える。
+
+**React 19（`useOptimistic` が使える場合）**
+
+```tsx
+import { useOptimistic, startTransition } from 'react'
+
+function TodoItem({ todo, onToggle }: { todo: Todo; onToggle: (id: string, done: boolean) => Promise<void> }) {
+  const [optimisticDone, setOptimisticDone] = useOptimistic(todo.done)
+
+  const handleToggle = () => {
+    const next = !optimisticDone
+    startTransition(async () => {
+      setOptimisticDone(next) // 即時反映。失敗時は元の todo.done に自動で戻る
+      try {
+        await onToggle(todo.id, next)
+      } catch {
+        toast.error('更新に失敗しました')
+      }
+    })
+  }
+
+  return <Checkbox checked={optimisticDone} onCheckedChange={handleToggle} />
+}
+```
+
+**React 18 互換（手動ロールバック）**
+
+```tsx
+function TodoItem({ todo, onToggle }: { todo: Todo; onToggle: (id: string, done: boolean) => Promise<void> }) {
+  const [done, setDone] = useState(todo.done)
+
+  const handleToggle = async () => {
+    const previous = done
+    const next = !done
+    setDone(next) // 即時反映
+    try {
+      await onToggle(todo.id, next)
+    } catch {
+      setDone(previous) // 失敗時のみロールバック
+      toast.error('更新に失敗しました')
+    }
+  }
+
+  return <Checkbox checked={done} onCheckedChange={handleToggle} />
+}
+```
+
+**フォーム送信（submit）**: クリック直後にダイアログ/フォームを閉じて完了状態を表示し、実際の送信はバックグラウンドで進める。成否は `toast` で後から通知する。ボタンを `disabled`+スピナーにして送信完了まで画面を止める作りにしない。
+
+```tsx
+function CreateIssueForm({ onSubmit, onDone }: { onSubmit: (values: IssueInput) => Promise<Issue>; onDone: () => void }) {
+  const [values, setValues] = useState<IssueInput>(initialValues)
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    onDone() // 即座にダイアログを閉じる・一覧に戻すなど、UI 上は完了扱い
+    onSubmit(values)
+      .then((issue) => {
+        toast.success(`Issue ${issue.key} を作成しました`, {
+          action: { label: '開く', onClick: () => router.push(`/issues/${issue.key}`) },
+        })
+      })
+      .catch(() => {
+        toast.error('作成に失敗しました', {
+          action: { label: '再試行', onClick: () => onSubmit(values) },
+        })
+      })
+  }
+
+  return <form onSubmit={handleSubmit}>{/* ... */}</form>
+}
+```
+
+適用の指針:
+
+- **一覧の削除・並び替え**: 対象行を即座にリストから除去/移動し、失敗時のみ元の位置に戻す（フェードやシュリンクではなく即時除去でよい）。
+- **作成（新規行追加）**: 一時 ID で即座にリストへ追加し、サーバー確定後に本 ID へ差し替える。失敗時は追加した行を除去してトースト表示。
+- **インライン編集**: 入力確定と同時に表示値を更新し、保存 API はバックグラウンドで実行する。スピナーは出さない。
+- **フォーム送信（作成・更新ダイアログ等）**: submit 時点でダイアログを閉じる／画面遷移するなど「完了」として扱い、実処理はバックグラウンドで継続する。結果は `toast` で非同期に通知し、成功時は関連ページへのリンクを、失敗時は再試行アクションを添える。送信ボタンをローディング表示で塞ぐ設計は避ける。
+- **決済確定・不可逆操作**: 楽観更新の対象外。サーバー応答を待ち、ボタンをローディング状態にする。
 
 ### 角丸
 
