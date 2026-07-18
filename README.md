@@ -67,7 +67,7 @@ import { Button } from '@tachyon-sdk/native-ui'
 <Button variant='ghost' size='icon'><SettingsIcon /></Button>
 ```
 
-コンポーネント一覧: Badge / Button / Command / Dialog / DropdownMenu / Input / Kbd / Label / Popover / Select / Separator / Sidebar / Tooltip
+コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip
 
 ```tsx
 // アプリのナビゲーションは Sidebar 一式で組む
@@ -94,6 +94,8 @@ pnpm install
 pnpm ts      # 型チェック
 pnpm lint    # Biome lint
 pnpm format  # フォーマット確認（修正は format:write）
+pnpm test    # Vitest smoke test
+pnpm build   # Storybook build
 ```
 
 ## コンポーネント追加ワークフロー
