@@ -53,9 +53,16 @@ tauri = { version = "2", features = ["unstable"] }
 {
   "identifier": "default",
   "webviews": ["main", "app-tab-*"],
-  "permissions": ["core:default", "opener:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "opener:default"
+  ]
 }
 ```
+
+`data-tauri-drag-region` からウインドウをドラッグするため、
+`core:window:allow-start-dragging` も明示する。
 
 labelは `app-tab-<monotonic counter>` のようにプロセス内で一意にし、閉じたlabelを
 再利用しない。外部URLをchild WebViewの初期URLとして受け付けず、アプリ内pathだけを

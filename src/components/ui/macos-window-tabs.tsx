@@ -53,6 +53,15 @@ const MacOSWindowTabs = React.forwardRef<HTMLElement, MacOSWindowTabsProps>(
 		ref,
 	) => {
 		const tabButtonRefs = React.useRef(new Map<string, HTMLButtonElement>())
+		const restoreFocusAfterClose = React.useRef(false)
+
+		React.useEffect(() => {
+			if (!restoreFocusAfterClose.current) return
+			const activeTab = tabButtonRefs.current.get(activeTabId)
+			if (!activeTab) return
+			activeTab.focus()
+			restoreFocusAfterClose.current = false
+		}, [activeTabId, tabs])
 
 		const selectRelativeTab = (
 			currentIndex: number,
@@ -145,7 +154,10 @@ const MacOSWindowTabs = React.forwardRef<HTMLElement, MacOSWindowTabsProps>(
 									<button
 										type='button'
 										aria-label={closeTabLabel(tab)}
-										onClick={() => onTabClose(tab.id)}
+										onClick={() => {
+											restoreFocusAfterClose.current = true
+											onTabClose(tab.id)
+										}}
 										className='mr-1 inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-subtle-foreground opacity-70 transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100'
 									>
 										<X className='size-3' strokeWidth={2} />
