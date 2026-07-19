@@ -3,6 +3,7 @@
 Linear / Notion のようなネイティブアプリらしい UI を実現する共通コンポーネントライブラリ。shadcn/ui（new-york）ベース。
 
 - デザインシステム仕様: [docs/design-system.md](./docs/design-system.md)
+- Tauri macOSタブ実装ガイド: [docs/tauri-macos-tabs.md](./docs/tauri-macos-tabs.md)
 - トークン実装: `src/styles/tokens.css`（`--nui-*` CSS 変数）
 - Tailwind v3 preset: `src/tailwind-preset.ts`
 
@@ -67,7 +68,7 @@ import { Button } from '@tachyon-sdk/native-ui'
 <Button variant='ghost' size='icon'><SettingsIcon /></Button>
 ```
 
-コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip
+コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / MacOSWindowTabs / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip
 
 ```tsx
 // アプリのナビゲーションは Sidebar 一式で組む
@@ -84,6 +85,18 @@ import { Button } from '@tachyon-sdk/native-ui'
 	</SidebarSection>
 	<SidebarFooter>…</SidebarFooter>
 </Sidebar>
+```
+
+```tsx
+// Tauri macOSのtraffic lightと統合する38pxのウインドウタブ。
+// IPCとWebView lifecycleはconsumerがcallbackへ接続する。
+<MacOSWindowTabs
+	tabs={tabs}
+	activeTabId={activeTabId}
+	onTabSelect={activateTab}
+	onTabClose={closeTab}
+	onNewTab={createTab}
+/>
 ```
 
 ## 開発

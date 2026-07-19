@@ -17,6 +17,7 @@
     "Badge": { "cardMode": "column" },
     "Dialog": { "cardMode": "single", "viewport": "640x480" },
     "DropdownMenu": { "cardMode": "single", "viewport": "480x420" },
+    "MacOSWindowTabs": { "cardMode": "single", "viewport": "900x180" },
     "Popover": { "cardMode": "single", "viewport": "480x360" },
     "Select": { "cardMode": "single", "viewport": "480x400" },
     "Sidebar": { "cardMode": "single", "viewport": "840x960" },

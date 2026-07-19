@@ -68,6 +68,11 @@ export { Input, type InputProps } from './components/ui/input'
 export { Kbd, type KbdProps } from './components/ui/kbd'
 export { Label } from './components/ui/label'
 export {
+	type MacOSWindowTab,
+	MacOSWindowTabs,
+	type MacOSWindowTabsProps,
+} from './components/ui/macos-window-tabs'
+export {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,

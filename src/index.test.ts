@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import * as nativeUi from './index'
 
-describe('CRUD primitive public API', () => {
+describe('public API', () => {
 	it.each([
 		'Table',
 		'TableHeader',
@@ -26,6 +26,7 @@ describe('CRUD primitive public API', () => {
 		'toast',
 		'Checkbox',
 		'Switch',
+		'MacOSWindowTabs',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})
