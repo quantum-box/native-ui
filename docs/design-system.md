@@ -337,6 +337,22 @@ kbd:
   style: "muted背景 + border + radius-sm、大文字表記（⌘K 等）"
 ```
 
+### macOSネイティブアプリのWebリンクコピー
+
+アドレスバーを持たないmacOSアプリで、表示中画面に対応するWeb URLを共有できる場合は
+`MacOSWebLinkCopyShortcut`を使う。`⌘L`はplain URL、`⌘⇧L`はページタイトルを
+`text/html`のリンクとしてコピーし、同時に`text/plain`のURLをfallbackとして持たせる。
+
+- コンポーネントはheadlessであり、Tauri API・route・toastへ直接依存しない。
+- consumerはmacOS native runtimeであることを確認した場合だけ`enabled`をtrueにする。
+  Web版の標準`⌘L`を上書きしてはならない。
+- Web originはconsumerが信頼済みの固定値から組み立てる。Tauri WebViewの
+  `location.origin`（`tauri://localhost`等）を共有URLに使わない。
+- URLとページタイトルはkeydown時に解決し、route、query、fragmentの最新値を反映する。
+- 成功、rich clipboard非対応によるURL fallback、失敗は`onCopy` / `onError`から
+  `Toast`で通知する。
+- 実装例と検証項目は[macOS Webリンクコピーガイド](./tauri-macos-web-link-copy.md)を参照する。
+
 ## Tailwind との対応
 
 `tailwind-preset.ts` が上記トークンを shadcn 互換のユーティリティ名にマップする。コンポーネントは shadcn 生成物の class 名（`bg-background`, `text-muted-foreground` 等）をそのまま使える。
