@@ -27,6 +27,7 @@ describe('public API', () => {
 		'Checkbox',
 		'Switch',
 		'MacOSWindowTabs',
+		'MacOSWebLinkCopyShortcut',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})

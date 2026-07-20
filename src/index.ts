@@ -73,6 +73,12 @@ export {
 	type MacOSWindowTabsProps,
 } from './components/ui/macos-window-tabs'
 export {
+	type MacOSWebLinkCopyKind,
+	type MacOSWebLinkCopyResult,
+	MacOSWebLinkCopyShortcut,
+	type MacOSWebLinkCopyShortcutProps,
+} from './components/ui/macos-web-link-copy-shortcut'
+export {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,
