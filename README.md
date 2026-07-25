@@ -69,7 +69,7 @@ import { Button } from '@tachyon-sdk/native-ui'
 <Button variant='ghost' size='icon'><SettingsIcon /></Button>
 ```
 
-コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / MacOSWindowTabs / MacOSWebLinkCopyShortcut / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip
+コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / MacOSWindowTabs / MacOSWebLinkCopyShortcut / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip。Tauriタブnavigation向けに`isDesktopWindowTabOpenClick`もexportする。
 
 ```tsx
 // アプリのナビゲーションは Sidebar 一式で組む

@@ -68,6 +68,10 @@ export { Input, type InputProps } from './components/ui/input'
 export { Kbd, type KbdProps } from './components/ui/kbd'
 export { Label } from './components/ui/label'
 export {
+	type DesktopWindowTabOpenClickEvent,
+	isDesktopWindowTabOpenClick,
+} from './components/ui/desktop-window-tab-open-click'
+export {
 	type MacOSWindowTab,
 	MacOSWindowTabs,
 	type MacOSWindowTabsProps,

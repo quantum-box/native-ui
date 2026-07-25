@@ -140,6 +140,22 @@ Rust側は状態変更後に全child WebViewへ `tabs-changed` eventを送り、
 タイトルはroute変更時に更新する。`⌘+クリック` は `create_tab({ path, activate: false })` とし、
 現在画面と選択状態を維持したままbackgroundでreadyまで進める。
 
+navigation controlでは共通helperを使い、macOSの`⌘+クリック`とWindowsの
+`Ctrl+クリック`を同じ契約で判定する。
+
+```tsx
+import { isDesktopWindowTabOpenClick } from '@tachyon-sdk/native-ui'
+
+function openRoute(event: React.MouseEvent, path: string) {
+  if (isDesktopWindowTabOpenClick(event)) {
+    event.preventDefault()
+    invoke('create_tab', { path, activate: false })
+    return
+  }
+  navigate(path)
+}
+```
+
 ## キーボードとアクセシビリティ
 
 - Fileメニューに `New Tab` / `CmdOrCtrl+T` を追加する。
