@@ -1,3 +1,8 @@
 allowBuilds:
   '@biomejs/biome': true
   esbuild: true
+
+overrides:
+  # GHSA-g7r4-m6w7-qqqr: dev-server file read on Windows, patched in 0.28.1.
+  # tsup pins ^0.27, so force the patched line until it catches up.
+  'esbuild@<0.28.1': '>=0.28.1'
