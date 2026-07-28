@@ -7,8 +7,12 @@ Linear / Notion のようなネイティブアプリらしい UI を実現する
 - Tauri macOS Webリンクコピーガイド: [docs/tauri-macos-web-link-copy.md](./docs/tauri-macos-web-link-copy.md)
 - トークン実装: `src/styles/tokens.css`（`--nui-*` CSS 変数）
 - Tailwind v3 preset: `src/tailwind-preset.ts`
+- Tailwind v4 theme: `src/styles/theme.css`
 
-ビルドせず source を直接参照する方式（`main: src/index.ts`）のため、consumer 側で transpile が必要です。
+エントリはビルド出力（`dist/`、ESM + CJS + 型定義同梱）です。`prepare` script が
+tsup ビルドを実行するため、GitHub 依存としてインストールしても `dist/` が生成されます。
+consumer 側での transpile（`transpilePackages` など）は不要になりました。
+`@tachyon-sdk/native-ui/src/*` の直接参照も後方互換のため引き続き可能です。
 
 ## インストール
 
@@ -25,35 +29,44 @@ npm publish はしていません。GitHub 依存として追加します（priv
 
 特定コミットに固定する場合は `"quantum-box/native-ui#<commit-ish>"`。
 
-## セットアップ（consumer アプリ）
-
-```js
-// next.config.js
-module.exports = {
-  transpilePackages: ['@tachyon-sdk/native-ui'],
-}
-```
+## セットアップ（consumer アプリ・Tailwind v3）
 
 ```ts
 // tailwind.config.ts
-import nativeUiPreset from '@tachyon-sdk/native-ui/src/tailwind-preset'
+import nativeUiPreset from '@tachyon-sdk/native-ui/tailwind-preset'
 
 export default {
   presets: [nativeUiPreset],
   content: [
     './src/**/*.{ts,tsx}',
-    // source 直参照のためライブラリも scan 対象に含める
-    './node_modules/@tachyon-sdk/native-ui/src/**/*.{ts,tsx}',
+    // ライブラリのクラス名も scan 対象に含める
+    './node_modules/@tachyon-sdk/native-ui/dist/**/*.{js,mjs}',
   ],
 }
 ```
 
 ```css
 /* globals.css */
-@import '@tachyon-sdk/native-ui/src/styles/tokens.css';
+@import '@tachyon-sdk/native-ui/styles/tokens.css';
 ```
 
-ダークモードは `<html class="dark">` で切り替え（`darkMode: ['class']`）。
+## セットアップ（consumer アプリ・Tailwind v4）
+
+```css
+/* app.css */
+@import 'tailwindcss';
+@import '@tachyon-sdk/native-ui/styles/theme.css';
+@source '../node_modules/@tachyon-sdk/native-ui/dist';
+
+/* class ベースのダークモードを使う場合（この design system は class ベース） */
+@custom-variant dark (&:where(.dark, .dark *));
+```
+
+`theme.css` は `tokens.css` を import した上で `--nui-*` トークンを Tailwind v4 の
+theme 変数（`--color-*` / `--text-*` / `--radius-*` など）にマップします。
+v3 preset と同じユーティリティ名（`bg-primary`, `text-2xs`, `duration-fast` 等）が使えます。
+
+ダークモードは `<html class="dark">` で切り替え（v3: `darkMode: ['class']`、v4: 上記 `@custom-variant`）。
 
 **注意**: preset は Tailwind のデフォルト type scale（`text-sm` = 13px 等）と radius を上書きします。既存アプリに導入する場合はアプリ全体の見た目に影響するため、画面確認を伴う独立した PR で導入してください。
 
@@ -120,8 +133,9 @@ pnpm install
 pnpm ts      # 型チェック
 pnpm lint    # Biome lint
 pnpm format  # フォーマット確認（修正は format:write）
-pnpm test    # Vitest smoke test
-pnpm build   # Storybook build
+pnpm test      # Vitest smoke test
+pnpm build     # Storybook build（Cloud App デプロイが使用）
+pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 ```
 
 ## コンポーネント追加ワークフロー
