@@ -64,6 +64,13 @@ export {
 	FormMessage,
 	useFormField,
 } from './components/ui/form'
+export {
+	clampFloatingPanelSize,
+	FloatingPanel,
+	type FloatingPanelLabels,
+	type FloatingPanelProps,
+	type FloatingPanelSize,
+} from './components/ui/floating-panel'
 export { Input, type InputProps } from './components/ui/input'
 export { Kbd, type KbdProps } from './components/ui/kbd'
 export { Label } from './components/ui/label'
@@ -120,6 +127,19 @@ export {
 	SidebarSection,
 	SidebarSectionLabel,
 } from './components/ui/sidebar'
+export {
+	StatusBar,
+	type StatusBarItemDefinition,
+	statusBarItemClass,
+	type StatusBarLabels,
+	type StatusBarProps,
+} from './components/ui/status-bar'
+export {
+	parseStatusBarLayout,
+	reorderStatusBarLayout,
+	type StatusBarLayoutItem,
+	type StatusBarSide,
+} from './components/ui/status-bar-layout'
 export { Switch } from './components/ui/switch'
 export {
 	Table,
