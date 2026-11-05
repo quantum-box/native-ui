@@ -89,6 +89,13 @@ export type StatusBarProps = {
 	storageKey: string
 	labels?: Partial<StatusBarLabels>
 	className?: string
+	/**
+	 * Called with the new layout each time the viewer changes it here, after it
+	 * is written to localStorage. Lets the app keep a copy elsewhere, such as
+	 * on its server so the layout follows the viewer to other devices. Not
+	 * called for changes made in another tab.
+	 */
+	onLayoutChange?: (layout: StatusBarLayoutItem[]) => void
 }
 
 /**
@@ -105,6 +112,7 @@ function StatusBarInner({
 	storageKey,
 	labels: labelOverrides,
 	className,
+	onLayoutChange,
 }: StatusBarProps) {
 	const labels = { ...DEFAULT_LABELS, ...labelOverrides }
 	const requiredIds = definitions
@@ -145,6 +153,7 @@ function StatusBarInner({
 		} catch {
 			// Keep customization usable when browser storage is unavailable.
 		}
+		onLayoutChange?.(next)
 	}
 	const update = (id: string, patch: Partial<StatusBarLayoutItem>) =>
 		save(layout.map(item => (item.id === id ? { ...item, ...patch } : item)))
