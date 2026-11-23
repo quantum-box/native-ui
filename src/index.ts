@@ -1,4 +1,9 @@
 export {
+	type AiConfidence,
+	type AiReasoning,
+	AiReasoningDetails,
+} from './components/ui/ai-reasoning'
+export {
 	AiField,
 	type AiFieldLabels,
 	type AiFieldProps,

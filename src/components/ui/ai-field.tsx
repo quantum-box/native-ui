@@ -1,7 +1,17 @@
+'use client'
+
 import { Check, Sparkles } from 'lucide-react'
 import * as React from 'react'
 
+import { useHoverOpen } from '../../lib/use-hover-open'
 import { cn } from '../../lib/utils'
+import {
+	type AiReasoning,
+	AiReasoningDetails,
+	hasReasoning,
+	reasoningSentence,
+} from './ai-reasoning'
+import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 /*
  * AI が値を入れた入力欄を、入力欄そのものの見た目で分かるようにする包み。
@@ -71,6 +81,11 @@ interface AiFieldProps {
 	labels?: Partial<AiFieldLabels>
 	/** `edited` のときに「直した」の印を出すか。既定は出す。 */
 	showEditedMark?: boolean
+	/**
+	 * 理由や判断の材料。渡すと、右上の印に触れる・押すと中身が開き、
+	 * 読み上げでも伝える（人が直した後は出さない）。
+	 */
+	reasoning?: AiReasoning
 	className?: string
 }
 
@@ -81,9 +96,12 @@ function AiField({
 	onConfirm,
 	labels,
 	showEditedMark = true,
+	reasoning,
 	className,
 }: Readonly<AiFieldProps>) {
 	const descriptionId = React.useId()
+	const showReasoning =
+		hasReasoning(reasoning) && status !== 'edited' && status !== 'none'
 	const text = { ...DEFAULT_LABELS, ...labels }
 	const ai =
 		status === 'filled' || status === 'filling' || status === 'uncertain'
@@ -185,7 +203,13 @@ function AiField({
 			{mark ||
 			(onConfirm && (status === 'filled' || status === 'uncertain')) ? (
 				<div className='pointer-events-none absolute -top-2 right-2 flex items-center gap-1 font-medium text-[10px] leading-4'>
-					{mark ? <span aria-hidden>{mark}</span> : null}
+					{mark ? (
+						showReasoning ? (
+							<ReasoningMark reasoning={reasoning}>{mark}</ReasoningMark>
+						) : (
+							<span aria-hidden>{mark}</span>
+						)
+					) : null}
 					{onConfirm && (status === 'filled' || status === 'uncertain') ? (
 						<button
 							aria-label={text.confirm}
@@ -202,9 +226,33 @@ function AiField({
 			{described ? (
 				<span className='sr-only' id={descriptionId}>
 					{DESCRIPTIONS[status as Exclude<AiFieldStatus, 'none'>]}
+					{showReasoning ? reasoningSentence(reasoning) : null}
 				</span>
 			) : null}
 		</div>
+	)
+}
+
+/** 右上の印を、判断の中身を開く押せる物にする。 */
+function ReasoningMark({
+	reasoning,
+	children,
+}: Readonly<{ reasoning: AiReasoning; children: React.ReactNode }>) {
+	const { open, setOpen, hover } = useHoverOpen()
+	return (
+		<Popover onOpenChange={setOpen} open={open}>
+			<PopoverTrigger
+				aria-label='AI の判断の中身を見る'
+				className='pointer-events-auto cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
+				type='button'
+				{...hover}
+			>
+				{children}
+			</PopoverTrigger>
+			<PopoverContent align='end' className='w-72' {...hover}>
+				<AiReasoningDetails reasoning={reasoning} />
+			</PopoverContent>
+		</Popover>
 	)
 }
 
