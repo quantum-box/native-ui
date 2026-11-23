@@ -326,17 +326,20 @@ export function positionerCompat(
 	}: PositionProps,
 	defaults?: Pick<PositionProps, 'side' | 'align'>,
 ) {
+	// Radix は、指定が無ければ画面（viewport）の端だけを見て位置をずらす。
+	// base-ui の既定はスクロールする親の端も見るので、空の配列を渡して Radix に合わせる
 	const boundary = Array.isArray(collisionBoundary)
 		? collisionBoundary.filter((el): el is Element => el != null)
-		: (collisionBoundary ?? undefined)
+		: collisionBoundary
+			? [collisionBoundary]
+			: []
 	return {
 		side: side ?? defaults?.side,
 		sideOffset,
 		align: align ?? defaults?.align,
 		alignOffset,
 		collisionPadding,
-		collisionBoundary:
-			Array.isArray(boundary) && boundary.length === 0 ? undefined : boundary,
+		collisionBoundary: boundary,
 		sticky: sticky === 'always',
 		collisionAvoidance: avoidCollisions
 			? undefined
