@@ -17,6 +17,7 @@ import {
 	useMergedRefs,
 	useNaturalTabOrder,
 	useRadixCloseFocus,
+	useRegisterTrigger,
 	useRadixOpenFocus,
 } from '../../lib/overlay'
 import { Slot } from '../../lib/slot'
@@ -49,7 +50,7 @@ function Popover({
 	modal = false,
 	children,
 }: PopoverProps) {
-	const { handleOpenChange, DismissProvider } = useDismissCompat(
+	const { handleOpenChange, DismissProvider, actionsRef } = useDismissCompat(
 		onOpenChange,
 		undefined,
 		modal,
@@ -58,6 +59,7 @@ function Popover({
 	const anchorValue = React.useMemo(() => ({ anchor, setAnchor }), [anchor])
 	return (
 		<PopoverPrimitive.Root
+			actionsRef={actionsRef as never}
 			open={open}
 			defaultOpen={defaultOpen}
 			onOpenChange={handleOpenChange}
@@ -75,16 +77,20 @@ function Popover({
 const PopoverTrigger = React.forwardRef<
 	HTMLButtonElement,
 	React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ asChild, children, ...props }, ref) => (
-	<PopoverPrimitive.Trigger
-		ref={ref}
-		nativeButton={isNativeButtonChild(asChild, children)}
-		render={compatRender('button', asChild, children, openState)}
-		{...props}
-	>
-		{asChild ? undefined : children}
-	</PopoverPrimitive.Trigger>
-))
+>(({ asChild, children, ...props }, ref) => {
+	const registerTrigger = useRegisterTrigger()
+	const triggerRef = useMergedRefs(ref, registerTrigger)
+	return (
+		<PopoverPrimitive.Trigger
+			ref={triggerRef}
+			nativeButton={isNativeButtonChild(asChild, children)}
+			render={compatRender('button', asChild, children, openState)}
+			{...props}
+		>
+			{asChild ? undefined : children}
+		</PopoverPrimitive.Trigger>
+	)
+})
 PopoverTrigger.displayName = 'PopoverTrigger'
 
 /** 位置の基準にする要素。置くと Trigger ではなくこれの横に出る */
@@ -156,7 +162,8 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 		})
 		const anchor = React.useContext(AnchorContext)?.anchor
 		const focus = useRadixOpenFocus(onOpenAutoFocus, ref)
-		const { finalFocus, popupRef, popup } = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef, popup, insideProps } =
+			useRadixCloseFocus(onCloseAutoFocus)
 		useNaturalTabOrder(popup, !React.useContext(ModalContext))
 		const mergedRef = useMergedRefs(focus.ref, popupRef)
 		return (
@@ -182,6 +189,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 						ref={mergedRef}
 						initialFocus={focus.initialFocus}
 						finalFocus={finalFocus}
+						{...insideProps}
 						onKeyDown={event => {
 							onKeyDown?.(event)
 							if (!event.defaultPrevented) radixLoopTab(event)

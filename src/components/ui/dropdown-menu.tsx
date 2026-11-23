@@ -16,6 +16,7 @@ import {
 	useDismissHandlers,
 	useMergedRefs,
 	useRadixCloseFocus,
+	useRegisterTrigger,
 } from '../../lib/overlay'
 import { Slot } from '../../lib/slot'
 import { cn } from '../../lib/utils'
@@ -60,7 +61,7 @@ function DropdownMenu({
 		},
 		[],
 	)
-	const { handleOpenChange, DismissProvider } = useDismissCompat(
+	const { handleOpenChange, DismissProvider, actionsRef } = useDismissCompat(
 		onOpenChange,
 		beforeChange,
 		modal,
@@ -68,6 +69,7 @@ function DropdownMenu({
 	const compat = React.useMemo(() => ({ keepOpenRef, setLoop }), [])
 	return (
 		<MenuPrimitive.Root
+			actionsRef={actionsRef as never}
 			open={open}
 			defaultOpen={defaultOpen}
 			onOpenChange={handleOpenChange}
@@ -109,16 +111,20 @@ function useOnSelect(
 const DropdownMenuTrigger = React.forwardRef<
 	HTMLButtonElement,
 	React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ asChild, children, ...props }, ref) => (
-	<MenuPrimitive.Trigger
-		ref={ref}
-		nativeButton={isNativeButtonChild(asChild, children)}
-		render={compatRender('button', asChild, children, openState)}
-		{...props}
-	>
-		{asChild ? undefined : children}
-	</MenuPrimitive.Trigger>
-))
+>(({ asChild, children, ...props }, ref) => {
+	const registerTrigger = useRegisterTrigger()
+	const triggerRef = useMergedRefs(ref, registerTrigger)
+	return (
+		<MenuPrimitive.Trigger
+			ref={triggerRef}
+			nativeButton={isNativeButtonChild(asChild, children)}
+			render={compatRender('button', asChild, children, openState)}
+			{...props}
+		>
+			{asChild ? undefined : children}
+		</MenuPrimitive.Trigger>
+	)
+})
 DropdownMenuTrigger.displayName = 'DropdownMenuTrigger'
 
 const DropdownMenuGroup = React.forwardRef<
@@ -279,7 +285,8 @@ const MenuPopupCompat = React.forwardRef<HTMLDivElement, MenuPopupProps>(
 		},
 		ref,
 	) => {
-		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef, insideProps } =
+			useRadixCloseFocus(onCloseAutoFocus)
 		const mergedRef = useMergedRefs(ref, popupRef)
 		const handlers = {
 			onEscapeKeyDown,
@@ -314,6 +321,7 @@ const MenuPopupCompat = React.forwardRef<HTMLDivElement, MenuPopupProps>(
 					<MenuPrimitive.Popup
 						ref={mergedRef}
 						finalFocus={finalFocus}
+						{...insideProps}
 						onKeyDown={event => {
 							onKeyDown?.(event)
 							// Radix と同じく、メニューの中では Tab でフォーカスを動かさない

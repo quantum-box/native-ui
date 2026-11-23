@@ -488,6 +488,80 @@ describe('Popover の外でのキーボード', () => {
 	})
 })
 
+describe('Popover とフォーカスの行き先', () => {
+	it('フォーカスが外（ほかの欄）へ移ると閉じる。中に入ったことが無くても閉じる', async () => {
+		const onOpenChange = vi.fn()
+		const el = await render(
+			<>
+				<Popover defaultOpen onOpenChange={onOpenChange}>
+					<PopoverTrigger>開く</PopoverTrigger>
+					<PopoverContent onOpenAutoFocus={e => e.preventDefault()}>
+						<input aria-label='中' />
+					</PopoverContent>
+				</Popover>
+				<input aria-label='外' />
+			</>,
+		)
+		await act(async () => wait(50))
+		expect(byRole('dialog')).not.toBeNull()
+		await act(async () => {
+			;(el.querySelector('[aria-label="外"]') as HTMLInputElement).focus()
+			await wait(80)
+		})
+		expect(onOpenChange).toHaveBeenLastCalledWith(false)
+		expect(byRole('dialog')).toBeNull()
+	})
+
+	it('開くボタンへフォーカスが戻っても閉じない', async () => {
+		const el = await render(
+			<Popover defaultOpen>
+				<PopoverTrigger>開く</PopoverTrigger>
+				<PopoverContent>
+					<input aria-label='中' />
+				</PopoverContent>
+			</Popover>,
+		)
+		await act(async () => wait(50))
+		await act(async () => {
+			;(el.querySelector('button') as HTMLButtonElement).focus()
+			await wait(80)
+		})
+		expect(byRole('dialog')).not.toBeNull()
+	})
+
+	it('中から開いた入れ子の Popover へフォーカスが移っても、外の Popover は閉じない', async () => {
+		await render(
+			<Popover defaultOpen>
+				<PopoverTrigger>外の</PopoverTrigger>
+				<PopoverContent aria-label='外の中身'>
+					<Popover>
+						<PopoverTrigger>入れ子の</PopoverTrigger>
+						<PopoverContent aria-label='入れ子の中身'>
+							<input aria-label='入れ子の欄' />
+						</PopoverContent>
+					</Popover>
+				</PopoverContent>
+			</Popover>,
+		)
+		await act(async () => wait(50))
+		const innerTrigger = Array.from(document.querySelectorAll('button')).find(
+			b => b.textContent === '入れ子の',
+		) as HTMLButtonElement
+		await press(innerTrigger)
+		await act(async () => wait(80))
+		const field = document.querySelector(
+			'[aria-label="入れ子の欄"]',
+		) as HTMLInputElement
+		expect(field).not.toBeNull()
+		await act(async () => {
+			field.focus()
+			await wait(80)
+		})
+		expect(document.querySelector('[aria-label="外の中身"]')).not.toBeNull()
+		expect(document.querySelector('[aria-label="入れ子の中身"]')).not.toBeNull()
+	})
+})
+
 describe('DropdownMenu', () => {
 	function Menu(props: {
 		onSelect?: (e: Event) => void

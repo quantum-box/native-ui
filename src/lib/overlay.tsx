@@ -74,6 +74,10 @@ interface DismissState {
 	/** 外を押した・フォーカスが外へ出たことで閉じたか */
 	closedOutside: React.MutableRefObject<boolean>
 	modal: boolean
+	/** 開くボタン（ここへのフォーカスは外とみなさない。Radix と同じ） */
+	triggers: Set<Element>
+	/** フォーカスが外へ出たので閉じる（Radix の onFocusOutside） */
+	closeOnFocusOutside: (event: FocusEvent) => void
 }
 
 const DismissContext = React.createContext<DismissState | null>(null)
@@ -118,8 +122,19 @@ export function useDismissCompat(
 ) {
 	const handlers = React.useRef<DismissHandlers>({})
 	const closedOutside = React.useRef(false)
+	const actionsRef = React.useRef<{ close: () => void } | null>(null)
+	/** 自分で閉じるとき（フォーカスが外へ出た）は、base-ui からの理由をこれで読み替える */
+	const forcedReason = React.useRef<string | null>(null)
 	const handleOpenChange = React.useCallback(
-		(open: boolean, details: ChangeDetails) => {
+		(open: boolean, rawDetails: ChangeDetails) => {
+			const forced = forcedReason.current
+			forcedReason.current = null
+			if (forced && !open) {
+				closedOutside.current = true
+				onOpenChange?.(false)
+				return
+			}
+			const details = rawDetails
 			if (beforeChange && !beforeChange(open, details)) {
 				details.cancel()
 				return
@@ -163,9 +178,24 @@ export function useDismissCompat(
 		},
 		[onOpenChange, beforeChange],
 	)
+	const closeOnFocusOutside = React.useCallback((event: FocusEvent) => {
+		const h = handlers.current
+		let prevented = callAndCheckPrevented(h.onFocusOutside, event)
+		prevented = callAndCheckPrevented(h.onInteractOutside, event) || prevented
+		if (prevented) return
+		forcedReason.current = 'focus-out'
+		actionsRef.current?.close()
+		forcedReason.current = null
+	}, [])
 	const value = React.useMemo(
-		() => ({ handlers, closedOutside, modal }),
-		[modal],
+		() => ({
+			handlers,
+			closedOutside,
+			modal,
+			triggers: new Set<Element>(),
+			closeOnFocusOutside,
+		}),
+		[modal, closeOnFocusOutside],
 	)
 	const Provider = React.useCallback(
 		({ children }: { children?: React.ReactNode }) => (
@@ -175,7 +205,22 @@ export function useDismissCompat(
 		),
 		[value],
 	)
-	return { handleOpenChange, DismissProvider: Provider }
+	return { handleOpenChange, DismissProvider: Provider, actionsRef }
+}
+
+/** Trigger で使う。開くボタンを覚えておく（ここへのフォーカスは外とみなさない） */
+export function useRegisterTrigger() {
+	const context = React.useContext(DismissContext)
+	const current = React.useRef<Element | null>(null)
+	return React.useCallback(
+		(el: Element | null) => {
+			if (!context) return
+			if (current.current) context.triggers.delete(current.current)
+			current.current = el
+			if (el) context.triggers.add(el)
+		},
+		[context],
+	)
 }
 
 /** Content で使う。閉じる前の呼び出しを Root に渡す */
@@ -198,20 +243,39 @@ export function useRadixCloseFocus(
 	const context = React.useContext(DismissContext)
 	const interactedOutside = React.useRef(false)
 	const [popup, setPopup] = React.useState<HTMLElement | null>(null)
+	// React の木の上で中身の中（ポータルの先の入れ子の物も含む）で起きたイベント。
+	// Radix と同じく、入れ子の重なる物へ移っても「外」とはみなさない
+	const insideEvent = React.useRef<Event | null>(null)
+	const markInside = React.useCallback((event: React.SyntheticEvent) => {
+		insideEvent.current = event.nativeEvent
+	}, [])
 	React.useEffect(() => {
-		if (!popup) return
+		if (!popup || !context) return
 		interactedOutside.current = false
-		const onOutside = (event: Event) => {
-			const target = event.target as Node | null
-			if (target && !popup.contains(target)) interactedOutside.current = true
+		const isInside = (event: Event) =>
+			insideEvent.current === event ||
+			popup.contains(event.target as Node | null)
+		const onPointerDown = (event: Event) => {
+			if (!isInside(event)) interactedOutside.current = true
 		}
-		document.addEventListener('pointerdown', onOutside, true)
-		document.addEventListener('focusin', onOutside, true)
+		const onFocusIn = (event: FocusEvent) => {
+			if (isInside(event)) return
+			const target = event.target as Element | null
+			if (target?.hasAttribute?.('data-base-ui-focus-guard')) return
+			interactedOutside.current = true
+			if (context.modal) return
+			for (const trigger of context.triggers)
+				if (target && trigger.contains(target)) return
+			context.closeOnFocusOutside(event)
+		}
+		// React の中のイベントの後に見るため、document の泡立ちの段で受ける
+		document.addEventListener('pointerdown', onPointerDown)
+		document.addEventListener('focusin', onFocusIn)
 		return () => {
-			document.removeEventListener('pointerdown', onOutside, true)
-			document.removeEventListener('focusin', onOutside, true)
+			document.removeEventListener('pointerdown', onPointerDown)
+			document.removeEventListener('focusin', onFocusIn)
 		}
-	}, [popup])
+	}, [popup, context])
 	const finalFocus = React.useCallback(() => {
 		if (onCloseAutoFocus) {
 			const event = new Event('focusScope.autoFocusOnUnmount', {
@@ -228,7 +292,16 @@ export function useRadixCloseFocus(
 			return false
 		return true
 	}, [onCloseAutoFocus, context])
-	return { finalFocus, popupRef: setPopup, popup }
+	return {
+		finalFocus,
+		popupRef: setPopup,
+		popup,
+		/** 中身の要素に付ける（onFocusCapture・onPointerDownCapture） */
+		insideProps: {
+			onFocusCapture: markInside,
+			onPointerDownCapture: markInside,
+		},
+	}
 }
 
 /**

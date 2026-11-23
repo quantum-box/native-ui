@@ -13,6 +13,7 @@ import {
 	useDismissHandlers,
 	useMergedRefs,
 	useRadixCloseFocus,
+	useRegisterTrigger,
 	useRadixOpenFocus,
 } from '../../lib/overlay'
 import { cn } from '../../lib/utils'
@@ -36,13 +37,14 @@ function Dialog({
 	modal = true,
 	children,
 }: DialogProps) {
-	const { handleOpenChange, DismissProvider } = useDismissCompat(
+	const { handleOpenChange, DismissProvider, actionsRef } = useDismissCompat(
 		onOpenChange,
 		undefined,
 		modal,
 	)
 	return (
 		<DialogPrimitive.Root
+			actionsRef={actionsRef as never}
 			open={open}
 			defaultOpen={defaultOpen}
 			onOpenChange={handleOpenChange}
@@ -58,16 +60,20 @@ type ButtonLikeProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const DialogTrigger = React.forwardRef<HTMLButtonElement, ButtonLikeProps>(
-	({ asChild, children, ...props }, ref) => (
-		<DialogPrimitive.Trigger
-			ref={ref}
-			nativeButton={isNativeButtonChild(asChild, children)}
-			render={compatRender('button', asChild, children, openState)}
-			{...props}
-		>
-			{asChild ? undefined : children}
-		</DialogPrimitive.Trigger>
-	),
+	({ asChild, children, ...props }, ref) => {
+		const registerTrigger = useRegisterTrigger()
+		const triggerRef = useMergedRefs(ref, registerTrigger)
+		return (
+			<DialogPrimitive.Trigger
+				ref={triggerRef}
+				nativeButton={isNativeButtonChild(asChild, children)}
+				render={compatRender('button', asChild, children, openState)}
+				{...props}
+			>
+				{asChild ? undefined : children}
+			</DialogPrimitive.Trigger>
+		)
+	},
 )
 DialogTrigger.displayName = 'DialogTrigger'
 
@@ -166,13 +172,15 @@ const DialogPopupCompat = React.forwardRef<
 			onInteractOutside,
 		})
 		const focus = useRadixOpenFocus(onOpenAutoFocus, ref)
-		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef, insideProps } =
+			useRadixCloseFocus(onCloseAutoFocus)
 		const mergedRef = useMergedRefs(focus.ref, popupRef)
 		return (
 			<DialogPrimitive.Popup
 				ref={mergedRef}
 				initialFocus={focus.initialFocus}
 				finalFocus={finalFocus}
+				{...insideProps}
 				render={compatRender(
 					'div',
 					asChild,
