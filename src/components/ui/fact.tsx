@@ -100,37 +100,45 @@ function useHoverOpen() {
 }
 
 // 地は透けない色にする。入力欄の枠に重ねても、枠線が印の上に透けて見えないように。
+// 幅には上限を付け、長い出典名は「…」で省く（全部の名前は詳しい中身と読み上げで分かる）。
 const factLabelClass =
-	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-teal-200 bg-teal-50 px-1.5 align-middle font-medium text-[10px] text-teal-800 leading-4 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200'
+	'inline-flex min-w-0 max-w-[14rem] shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-teal-200 bg-teal-50 px-1.5 align-middle font-medium text-[10px] text-teal-800 leading-4 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200'
 
 interface FactLabelProps {
-	/** 印の文言。既定は「データ」。 */
+	/** 印の文言。既定は出典名。出典が無いときは「データ」。 */
 	children?: React.ReactNode
-	/** 出典。渡すと、印に触れたり押したりすると出典の詳しい中身が開く。 */
+	/** 出典。渡すと、印に出典名が出て、触れたり押したりすると詳しい中身が開く。 */
 	source?: FactSource
-	/** 印の中に出典名と時点も出す。 */
-	showSource?: boolean
+	/** 出典名のあとに時点（例「2026年10月」）も出す。 */
+	showAsOf?: boolean
+	/** 出典名のあとに付ける言葉。例「要確認」。省かずに必ず出す。 */
+	suffix?: React.ReactNode
 	className?: string
 }
 
 /**
- * 文の中や値の横に付ける小さな印。その値がデータ基盤から来た事実だと示す。
- * `AiLabel`（AI の推測）と並べて使う。
+ * 文の中や値の横に付ける小さな印。出典名を出し、その値がデータ基盤から来た事実だと
+ * 青緑の色と円柱の絵で示す。`AiLabel`（AI の推測）と並べて使う。
  */
 function FactLabel({
-	children = 'データ',
+	children,
 	source,
-	showSource = false,
+	showAsOf = false,
+	suffix,
 	className,
 }: Readonly<FactLabelProps>) {
 	const { open, setOpen, hover } = useHoverOpen()
+	const text = children ?? source?.name ?? 'データ'
 	const content = (
 		<>
-			<Database aria-hidden className='size-2.5' />
-			{children}
-			{showSource && source ? (
-				<span className='font-normal opacity-80'>・{sourceText(source)}</span>
-			) : null}
+			<Database aria-hidden className='size-2.5 shrink-0' />
+			<span className='min-w-0 truncate'>
+				{text}
+				{showAsOf && source?.asOf ? (
+					<span className='font-normal opacity-80'>・{source.asOf}</span>
+				) : null}
+			</span>
+			{suffix ? <span className='shrink-0'>・{suffix}</span> : null}
 		</>
 	)
 
@@ -141,7 +149,9 @@ function FactLabel({
 	return (
 		<Popover onOpenChange={setOpen} open={open}>
 			<PopoverTrigger
-				aria-label={`データ基盤の値。${sourceSentence(source)}詳しく見る`}
+				aria-label={`データ基盤の値。${sourceSentence(source)}${
+					typeof suffix === 'string' ? `${suffix}。` : ''
+				}詳しく見る`}
 				className={cn(
 					factLabelClass,
 					'cursor-pointer transition-colors duration-fast hover:bg-teal-100 dark:hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
@@ -250,16 +260,22 @@ function FactField({
 					<FactLabel
 						className='border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900'
 						source={source}
-					>
-						データ・要確認
-					</FactLabel>
+						suffix='要確認'
+					/>
 				)
 			case 'confirmed':
+				// 確かめた後は地を背景の色にして、静かな見た目にする。出典は残す。
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full border border-teal-600/30 bg-background px-1.5 text-teal-700 dark:text-teal-300'>
-						<Check aria-hidden className='size-2.5' />
-						確認済み
-					</span>
+					<FactLabel
+						className='bg-background text-teal-700 hover:bg-teal-50 dark:bg-background dark:text-teal-300 dark:hover:bg-teal-950'
+						source={source}
+						suffix={
+							<span className='inline-flex items-center gap-0.5'>
+								<Check aria-hidden className='size-2.5' />
+								確認済み
+							</span>
+						}
+					/>
 				)
 			case 'edited':
 				return showEditedMark ? (
@@ -294,7 +310,7 @@ function FactField({
 			{mark || canConfirm ? (
 				<div className='absolute -top-2 right-2 flex items-center gap-1 font-medium text-[10px] leading-4'>
 					{mark ? (
-						<span aria-hidden={status === 'confirmed' || status === 'edited'}>
+						<span aria-hidden={status === 'edited' ? true : undefined}>
 							{mark}
 						</span>
 					) : null}
@@ -360,7 +376,7 @@ function FactPanel({
 						<p className='text-muted-foreground text-xs'>{description}</p>
 					) : null}
 					{source ? (
-						<FactLabel className='mt-1' showSource source={source} />
+						<FactLabel className='mt-1' showAsOf source={source} />
 					) : null}
 				</div>
 			</div>

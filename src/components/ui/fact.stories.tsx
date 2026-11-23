@@ -41,6 +41,12 @@ const WHOLESALE: FactSource = {
 	url: 'https://www.shijou.metro.tokyo.lg.jp/',
 }
 
+const LONG: FactSource = {
+	name: '農林水産省 食品価格動向調査（野菜・果実・畜産物・水産物）',
+	asOf: '2026年11月第3週',
+	basis: '全国の調査店舗の平均',
+}
+
 const OLD: FactSource = {
 	name: '小売物価統計',
 	asOf: '2025年4月',
@@ -53,17 +59,23 @@ export const 印: Story = {
 			<div className='flex flex-wrap items-center gap-2'>
 				<FactLabel />
 				<FactLabel source={RETAIL} />
-				<FactLabel showSource source={RETAIL} />
+				<FactLabel showAsOf source={RETAIL} />
 				<FactLabel>相場</FactLabel>
 			</div>
+			<div className='flex flex-wrap items-center gap-2'>
+				<FactLabel source={LONG} />
+				<FactLabel source={OLD} suffix='要確認' />
+				<span className='text-muted-foreground text-xs'>
+					長い出典名は省き、触れると全部見られる
+				</span>
+			</div>
 			<p>
-				玉ねぎの単価は 1kg あたり 380 円{' '}
-				<FactLabel showSource source={RETAIL} />{' '}
+				玉ねぎの単価は 1kg あたり 380 円 <FactLabel showAsOf source={RETAIL} />{' '}
 				です。印に触れると出典を詳しく見られます。
 			</p>
 			<p className='text-muted-foreground text-xs'>
 				AI の推測と並べたとき: <AiLabel>AI の予想</AiLabel>{' '}
-				<FactLabel source={RETAIL}>データ</FactLabel>
+				<FactLabel source={RETAIL} />
 			</p>
 		</div>
 	),
@@ -127,6 +139,36 @@ export const 入力欄の状態: Story = {
 							className='text-right tabular-nums'
 							defaultValue='380'
 							inputMode='numeric'
+						/>
+					</FactField>
+				</div>
+			))}
+		</div>
+	),
+}
+
+/** 欄に重なる印。短い出典名・長い出典名・要確認・確認済みを並べる。 */
+export const 出典名の長さ: Story = {
+	render: () => (
+		<div className='grid w-[22rem] gap-5'>
+			{[
+				{ label: '短い出典名', status: 'filled' as const, source: RETAIL },
+				{ label: '長い出典名', status: 'filled' as const, source: LONG },
+				{ label: 'データが古い', status: 'stale' as const, source: OLD },
+				{
+					label: '確かめた後（長い出典名）',
+					status: 'confirmed' as const,
+					source: LONG,
+				},
+				{ label: '出典名が無い', status: 'filled' as const, source: undefined },
+			].map(({ label, status, source }) => (
+				<div className='grid gap-1.5' key={label}>
+					<Label>{label}</Label>
+					<FactField onConfirm={() => {}} source={source} status={status}>
+						<Input
+							aria-label={label}
+							className='text-right tabular-nums'
+							defaultValue='380'
 						/>
 					</FactField>
 				</div>
@@ -325,7 +367,7 @@ export const 出どころの違いを並べる: Story = {
 					{ORIGINS.map(({ origin, title, note }) => (
 						<li className='grid content-start gap-1' key={origin}>
 							<span className='flex items-center gap-1.5 font-medium text-sm'>
-								{origin === 'fact' ? <FactLabel /> : null}
+								{origin === 'fact' ? <FactLabel>出典名</FactLabel> : null}
 								{origin === 'ai' ? <AiLabel>AI の予想</AiLabel> : null}
 								{origin === 'receipt' ? (
 									<span className='inline-block h-4 w-6 rounded-full border border-border' />
@@ -402,7 +444,7 @@ export const 出どころの違いを並べる: Story = {
 					</div>
 					<div className='rounded-md border border-teal-600/40 bg-teal-500/[0.06] p-2 dark:border-teal-400/35'>
 						<dt className='flex items-center gap-1 text-muted-foreground'>
-							<FactLabel /> 相場から
+							<FactLabel>相場</FactLabel> から
 						</dt>
 						<dd className='font-semibold text-sm tabular-nums'>
 							{yen(by('fact'))}
