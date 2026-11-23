@@ -3,6 +3,7 @@
 Linear / Notion のようなネイティブアプリらしい UI を実現する共通コンポーネントライブラリ。shadcn/ui（new-york）ベース。
 
 - デザインシステム仕様: [docs/design-system.md](./docs/design-system.md)
+- 一覧の表（DataTable）の使い方: [docs/data-table.md](./docs/data-table.md)
 - Tauri macOSタブ実装ガイド: [docs/tauri-macos-tabs.md](./docs/tauri-macos-tabs.md)
 - Tauri macOS Webリンクコピーガイド: [docs/tauri-macos-web-link-copy.md](./docs/tauri-macos-web-link-copy.md)
 - トークン実装: `src/styles/tokens.css`（`--nui-*` CSS 変数）
@@ -82,7 +83,7 @@ import { Button } from '@tachyon-sdk/native-ui'
 <Button variant='ghost' size='icon'><SettingsIcon /></Button>
 ```
 
-コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / Dialog / DropdownMenu / Form / Input / Kbd / Label / MacOSWindowTabs / MacOSWebLinkCopyShortcut / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip。Tauriタブnavigation向けに`isDesktopWindowTabOpenClick`もexportする。
+コンポーネント一覧: Badge / Button / Checkbox / Combobox / Command / DataTable / Dialog / DropdownMenu / Form / Input / Kbd / Label / MacOSWindowTabs / MacOSWebLinkCopyShortcut / Popover / Select / Separator / Sidebar / Switch / Table / Tabs / Toast / Tooltip。Tauriタブnavigation向けに`isDesktopWindowTabOpenClick`もexportする。
 
 ```tsx
 // アプリのナビゲーションは Sidebar 一式で組む

@@ -37,6 +37,22 @@ export {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from './components/ui/collapsible'
+export { DataTable, type DataTableProps } from './components/ui/data-table'
+export {
+	DataTableColumnHeader,
+	type DataTableColumnHeaderProps,
+	type DataTableFilterField,
+} from './components/ui/data-table-column-header'
+export {
+	DataTableSelectCell,
+	type DataTableSelectCellProps,
+	type DataTableSelectOption,
+	DataTableValueChip,
+} from './components/ui/data-table-select-cell'
+export {
+	DataTableViewNotice,
+	type DataTableViewNoticeProps,
+} from './components/ui/data-table-view-notice'
 export {
 	Command,
 	CommandDialog,
