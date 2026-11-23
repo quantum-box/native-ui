@@ -4,7 +4,9 @@ import {
 	Building2,
 	ClipboardList,
 	FileText,
+	List,
 	Package,
+	Plus,
 	Store,
 	UserRound,
 } from 'lucide-react'
@@ -24,6 +26,7 @@ import {
 	type RecordSystemDefinition,
 	defineRecordKind,
 	recordActions,
+	useRecordKind,
 } from './record'
 import {
 	Table,
@@ -205,6 +208,10 @@ const KINDS = {
 			</>
 		),
 		getActions: shop => [recordActions.newTab(`/shops/${shop.id}`)],
+		pickerActions: [
+			{ label: '店舗管理で新しく作る', icon: Plus, href: '/shops/new' },
+			{ label: '店舗管理で一覧を開く', icon: List, href: '/shops' },
+		],
 		useCandidates: () => ({ records: SHOPS }),
 		forbiddenText: 'ほかの地域の店です',
 	}),
@@ -218,6 +225,9 @@ const KINDS = {
 		system: 'hr',
 		getHref: member => `/staff/${member.id}`,
 		openLabel: '社員名簿で開く',
+		pickerActions: [
+			{ label: '社員名簿で一覧を開く', icon: List, href: '/staff' },
+		],
 		getActions: member => [
 			{
 				label: 'この担当者の作業を見る',
@@ -627,21 +637,60 @@ function ReassignExample() {
 		],
 		[save],
 	)
+	const [current, setCurrent] = React.useState<'tasks' | 'stores'>('tasks')
+	// 外側（この例の枠）の移動の方法をそのまま使う。
+	const { navigate } = useRecordKind('shop')
 	return (
-		<DataTable
-			columns={columns}
-			items={tasks}
-			total={tasks.length}
-			page={1}
-			pageSize={tasks.length}
-			onPageChange={() => {}}
-			hidePagination
-		/>
+		<div className='space-y-3'>
+			<div
+				role='radiogroup'
+				aria-label='今の画面'
+				className='flex items-center gap-2 text-xs'
+			>
+				<span className='text-muted-foreground'>今の画面:</span>
+				{(
+					[
+						['tasks', '作業の管理（店も担当者も別のシステム）'],
+						['stores', '店舗管理（店は同じシステム）'],
+					] as const
+				).map(([value, text]) => (
+					<button
+						key={value}
+						type='button'
+						role='radio'
+						aria-checked={current === value}
+						onClick={() => setCurrent(value)}
+						className='rounded-md border border-border px-2 py-1 aria-checked:border-primary aria-checked:bg-selected'
+					>
+						{text}
+					</button>
+				))}
+			</div>
+			<RecordKindProvider
+				kinds={KINDS}
+				systems={SYSTEMS}
+				currentSystem={current}
+				navigate={navigate}
+			>
+				<DataTable
+					columns={columns}
+					items={tasks}
+					total={tasks.length}
+					page={1}
+					pageSize={tasks.length}
+					onPageChange={() => {}}
+					hidePagination
+				/>
+			</RecordKindProvider>
+		</div>
 	)
 }
 
 /**
  * その場で別の記録に付け替える。流れは `DataTableSelectCell` と同じで、候補と見た目は種類の決まりから出す。
+ * 別のシステムの記録から選ぶときは、候補の枠にも要点の枠と同じ色の帯（例「店舗管理 · 店から選ぶ」）と線が付き、
+ * 検索欄は「店舗管理の店を検索…」、候補の絵もシステムの色になる。下には「店舗管理で新しく作る」などの道筋が出る。
+ * 上の「今の画面」を店舗管理にすると、店の候補の枠はふつうの枠になる。
  * 担当者は読み仮名でも探せる（例「たかはし」）。高橋さんを選ぶと保存に失敗し、元に戻る。担当者は「未設定」に戻せる。
  */
 export const Reassign: Story = {

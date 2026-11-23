@@ -1,4 +1,5 @@
 import type { ColumnDef, ColumnMeta } from '@tanstack/react-table'
+import { ArrowUpRight } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { cn } from '../../lib/utils'
@@ -8,7 +9,15 @@ import {
 	type DataTableSelectOption,
 } from './data-table-select-cell'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
-import { RecordChip, type RecordStatus, useRecordKind } from './record'
+import {
+	RecordActionButton,
+	RecordChip,
+	type RecordStatus,
+	RecordSystemBand,
+	recordToneStyle,
+	useRecordKind,
+	useRecordSystem,
+} from './record'
 
 const PLACEHOLDER = Symbol('record-placeholder')
 
@@ -144,7 +153,17 @@ export function DataTableRecordCell<T = unknown>({
 
 export type DataTableRecordSelectCellProps<T = unknown> = Omit<
 	DataTableSelectCellProps,
-	'value' | 'options' | 'onSave' | 'label' | 'renderValue' | 'validate'
+	| 'value'
+	| 'options'
+	| 'onSave'
+	| 'label'
+	| 'renderValue'
+	| 'validate'
+	| 'searchPlaceholder'
+	| 'pickerHeader'
+	| 'pickerFooter'
+	| 'pickerClassName'
+	| 'pickerStyle'
 > & {
 	/** 登録した種類の名前。候補・見た目はその決まりから出す。 */
 	kind: string
@@ -175,7 +194,9 @@ export function DataTableRecordSelectCell<T = unknown>({
 	validate,
 	...rest
 }: DataTableRecordSelectCellProps<T>) {
-	const { definition } = useRecordKind<T>(kind)
+	const { definition, navigate } = useRecordKind<T>(kind)
+	const system = useRecordSystem(definition)
+	const external = system?.external ? system : null
 	// 種類ごとに同じフックを呼ぶ。セルの種類を途中で変えるときは key も変える。
 	const fromKind = (definition.useCandidates ?? noCandidates)()
 	const pool = candidates ?? (fromKind.records as readonly T[])
@@ -211,6 +232,48 @@ export function DataTableRecordSelectCell<T = unknown>({
 			options={options}
 			validate={validate ? id => validate(byId.get(id) ?? null) : undefined}
 			onSave={id => onSave(byId.get(id) ?? null)}
+			searchPlaceholder={
+				external
+					? `${external.name}の${definition.name}を検索…`
+					: `${definition.name}を検索…`
+			}
+			pickerStyle={external ? recordToneStyle(external.tone) : undefined}
+			pickerClassName={
+				external
+					? 'w-72 border-l-[3px] border-l-[hsl(var(--record-tone))]'
+					: undefined
+			}
+			pickerHeader={
+				external ? (
+					<RecordSystemBand
+						system={{
+							name: external.name,
+							icon: external.icon ?? definition.icon,
+						}}
+						trailing={
+							<>
+								<span className='sr-only'>別のシステムから選ぶ</span>
+								<ArrowUpRight aria-hidden className='h-3 w-3' />
+							</>
+						}
+					>
+						{definition.name}から選ぶ
+					</RecordSystemBand>
+				) : undefined
+			}
+			pickerFooter={
+				definition.pickerActions?.length ? (
+					<div className='flex flex-wrap gap-1 border-border border-t p-1.5'>
+						{definition.pickerActions.map(action => (
+							<RecordActionButton
+								key={action.label}
+								action={action}
+								navigate={navigate}
+							/>
+						))}
+					</div>
+				) : undefined
+			}
 			renderValue={(_, id) => {
 				const item = byId.get(id)
 				return item ? (
@@ -219,6 +282,7 @@ export function DataTableRecordSelectCell<T = unknown>({
 						record={item}
 						interactive={false}
 						showDescription
+						toned
 					/>
 				) : (
 					<span className='text-muted-foreground text-sm'>未設定</span>

@@ -287,6 +287,9 @@ dataTableRecordColumn<Invoice, Customer>({
 ```
 
 - 流れは `DataTableSelectCell` と同じ（保存中は止める、保存できたら印、失敗したら元に戻して理由を出す）。
+- 別のシステムの記録から選ぶときは、候補の枠にも要点の枠と同じ色の帯（例「店舗管理 · 店から選ぶ ↗」）と左の線を付け、検索欄は「店舗管理の店を検索…」、候補の絵もシステムの色にする。色と絵は要点の枠と同じ `systems` の決まりから取る。同じシステムから選ぶときはふつうの枠。
+- 種類の決まりの `pickerActions` に、候補の枠の下に出す元のシステムへの道筋を書く（例 `{ label: '店舗管理で新しく作る', icon: Plus, href: '/shops/new' }`、「店舗管理で一覧を開く」）。
+- `DataTableSelectCell` 自体にも、候補の枠に物を足す `pickerHeader`・`pickerFooter`・`searchPlaceholder`・`pickerClassName`・`pickerStyle` がある。
 - 候補は種類の決まりの `useCandidates` から出す。`candidates` を渡すとそちらを使う。今の記録が候補に無くても出す。
 - `allowEmpty` で「未設定」に戻せる。保存には記録（または `null`）が渡る。
 - `validate` に記録（または `null`）が渡る。だめなら理由の文言を返すと保存しない。

@@ -96,6 +96,8 @@ export type RecordKindDefinition<T = unknown> = {
 	renderPreview?: (record: T) => ReactNode
 	/** 要点の枠の下に足す操作（新しいタブで開く・ID をコピー・関係する一覧を見るなど）。 */
 	getActions?: (record: T) => readonly RecordAction[]
+	/** 付け替えの候補の枠の下に出す、元のシステムへ移る道筋（新しく作る・一覧を開くなど）。 */
+	pickerActions?: readonly RecordAction[]
 	/** 検索に使う言葉（読み仮名・コードなど）。 */
 	getKeywords?: (record: T) => string[]
 	/** 付け替えるときの候補を出す（アプリのデータを読むフックでもよい）。 */
@@ -248,6 +250,8 @@ export type RecordChipProps<T = unknown> = {
 	interactive?: boolean
 	/** 補足（コードなど）も出す。既定は false。 */
 	showDescription?: boolean
+	/** 別のシステムの記録なら、絵をシステムの色にする（付け替えの候補など）。 */
+	toned?: boolean
 	className?: string
 }
 
@@ -452,7 +456,8 @@ function RecordPeek({
 	)
 }
 
-function RecordActionButton({
+/** 要点の枠・候補の枠の下に出す操作のボタン。 */
+export function RecordActionButton({
 	action,
 	navigate,
 }: {
@@ -507,6 +512,57 @@ function RecordActionButton({
 	)
 }
 
+/** システムの色の印を、中の要素が `hsl(var(--record-tone))` で使えるようにする。 */
+export function recordToneStyle(tone: RecordSystemTone): CSSProperties {
+	return { '--record-tone': `var(--nui-tone-${tone})` } as CSSProperties
+}
+
+/**
+ * 別のシステムの記録だと分かる帯。システムの絵・名前・色と、何の記録かを出す。
+ * 要点の枠と付け替えの候補の枠で同じ物を使う（色の印は `recordToneStyle` を付けた親から取る）。
+ */
+export function RecordSystemBand({
+	system,
+	children,
+	trailing = (
+		<>
+			別のシステムの記録
+			<ArrowUpRight aria-hidden className='h-3 w-3' />
+		</>
+	),
+}: {
+	system: { name: string; icon?: ComponentType<{ className?: string }> }
+	/** システム名の横に出す、何の記録か（例「商品」「店から選ぶ」）。 */
+	children?: ReactNode
+	/** 右に出す物。 */
+	trailing?: ReactNode
+}) {
+	const Icon = system.icon
+	return (
+		<div className='flex items-center gap-1.5 border-border border-b bg-[hsl(var(--record-tone)/0.1)] px-3 py-2 text-xs'>
+			{Icon ? (
+				<Icon
+					aria-hidden
+					className='h-3.5 w-3.5 shrink-0 text-[hsl(var(--record-tone))]'
+				/>
+			) : null}
+			<span className='shrink-0 whitespace-nowrap font-semibold text-[hsl(var(--record-tone))]'>
+				{system.name}
+			</span>
+			{children ? (
+				<span className='min-w-0 truncate text-muted-foreground'>
+					· {children}
+				</span>
+			) : null}
+			{trailing ? (
+				<span className='ml-auto inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground'>
+					{trailing}
+				</span>
+			) : null}
+		</div>
+	)
+}
+
 /**
  * 要点の枠の中身。
  *
@@ -539,9 +595,7 @@ export function RecordCard<T = unknown>({
 			: status === 'unavailable'
 				? '読み込めなかったので開けません。'
 				: '削除されているので開けません。'
-	const tone = external
-		? ({ '--record-tone': `var(--nui-tone-${system?.tone})` } as CSSProperties)
-		: undefined
+	const tone = external && system ? recordToneStyle(system.tone) : undefined
 	return (
 		<div
 			style={tone}
@@ -552,22 +606,9 @@ export function RecordCard<T = unknown>({
 			)}
 		>
 			{external && system ? (
-				<div className='flex items-center gap-1.5 border-border border-b bg-[hsl(var(--record-tone)/0.1)] px-3 py-2 text-xs'>
-					{SystemIcon ? (
-						<SystemIcon
-							aria-hidden
-							className='h-3.5 w-3.5 text-[hsl(var(--record-tone))]'
-						/>
-					) : null}
-					<span className='font-semibold text-[hsl(var(--record-tone))]'>
-						{system.name}
-					</span>
-					<span className='text-muted-foreground'>· {definition.name}</span>
-					<span className='ml-auto inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground'>
-						別のシステムの記録
-						<ArrowUpRight aria-hidden className='h-3 w-3' />
-					</span>
-				</div>
+				<RecordSystemBand system={{ name: system.name, icon: SystemIcon }}>
+					{definition.name}
+				</RecordSystemBand>
 			) : (
 				<div className='flex items-center gap-1.5 border-border border-b px-3 py-2 text-xs'>
 					{KindIcon ? (
@@ -657,9 +698,13 @@ export function RecordChip<T = unknown>({
 	status = record ? 'ready' : 'missing',
 	interactive = true,
 	showDescription = false,
+	toned = false,
 	className,
 }: RecordChipProps<T>) {
 	const { definition, navigate } = useRecordKind<T>(kind)
+	const system = useRecordSystem(definition)
+	const toneStyle =
+		toned && system?.external ? recordToneStyle(system.tone) : undefined
 	const base = cn(
 		'inline-flex min-w-0 max-w-full items-center gap-1.5 align-middle text-sm',
 		className,
@@ -729,10 +774,16 @@ export function RecordChip<T = unknown>({
 					{definition.renderAvatar(record)}
 				</span>
 			) : Icon ? (
-				<Icon
-					aria-hidden
-					className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
-				/>
+				<span aria-hidden style={toneStyle} className='inline-flex shrink-0'>
+					<Icon
+						className={cn(
+							'h-3.5 w-3.5',
+							toneStyle
+								? 'text-[hsl(var(--record-tone))]'
+								: 'text-muted-foreground',
+						)}
+					/>
+				</span>
 			) : null}
 			<span className='truncate' title={interactive ? undefined : label}>
 				{label}

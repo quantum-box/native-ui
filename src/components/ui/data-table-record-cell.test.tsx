@@ -59,6 +59,7 @@ const customerKind = defineRecordKind<Customer>({
 		recordActions.copy(customer.id),
 	],
 	useCandidates: () => ({ records: [ACME, BETA, GAMMA] }),
+	pickerActions: [{ label: '顧客管理で新しく作る', href: '/customers/new' }],
 })
 
 async function render(
@@ -113,7 +114,7 @@ describe('記録を 1 つ出す', () => {
 		const link = document.querySelector('a')
 		expect(link?.getAttribute('href')).toBe('/customers/c1')
 		expect(link?.textContent).toBe('山田商店')
-		expect(link?.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+		expect(link?.querySelector('[aria-hidden=true] svg')).not.toBeNull()
 		await act(async () => link?.click())
 		expect(navigate).toHaveBeenCalledExactlyOnceWith('/customers/c1')
 		await act(async () =>
@@ -346,5 +347,54 @@ describe('別の記録に付け替える', () => {
 		await act(async () => empty?.click())
 		expect(save).toHaveBeenLastCalledWith(null)
 		expect(button('請求書の取引先を変更').textContent).toContain('未設定')
+	})
+})
+
+describe('付け替えの候補の枠', () => {
+	async function openPicker(currentSystem?: string) {
+		const host = document.createElement('div')
+		document.body.append(host)
+		root = createRoot(host)
+		await act(async () =>
+			root?.render(
+				<RecordKindProvider
+					kinds={{ customer: customerKind }}
+					systems={{ 顧客管理: { name: '顧客管理', tone: 'blue' } }}
+					currentSystem={currentSystem}
+				>
+					<DataTableRecordSelectCell<Customer>
+						kind='customer'
+						ariaLabel='取引先を変更'
+						record={ACME}
+						onSave={vi.fn()}
+					/>
+				</RecordKindProvider>,
+			),
+		)
+		await act(async () => button('取引先を変更').click())
+		return document.querySelector<HTMLElement>('[role=dialog]')
+	}
+	it('別のシステムから選ぶときは、帯・検索欄・下の道筋で分かるようにする', async () => {
+		const picker = await openPicker()
+		expect(picker?.textContent).toContain('顧客管理· 取引先から選ぶ')
+		expect(picker?.textContent).toContain('別のシステムから選ぶ')
+		expect(picker?.style.getPropertyValue('--record-tone')).toBe(
+			'var(--nui-tone-blue)',
+		)
+		expect(picker?.querySelector('input')?.getAttribute('placeholder')).toBe(
+			'顧客管理の取引先を検索…',
+		)
+		const create = Array.from(picker?.querySelectorAll('a') ?? []).find(
+			node => node.textContent === '顧客管理で新しく作る',
+		)
+		expect(create?.getAttribute('href')).toBe('/customers/new')
+	})
+	it('同じシステムから選ぶときは、ふつうの枠のまま', async () => {
+		const picker = await openPicker('顧客管理')
+		expect(picker?.textContent).not.toContain('別のシステムから選ぶ')
+		expect(picker?.style.getPropertyValue('--record-tone')).toBe('')
+		expect(picker?.querySelector('input')?.getAttribute('placeholder')).toBe(
+			'取引先を検索…',
+		)
 	})
 })

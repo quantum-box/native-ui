@@ -1,5 +1,7 @@
 import { Check } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type CSSProperties, type ReactNode, useState } from 'react'
+
+import { cn } from '../../lib/utils'
 
 import { Badge } from './badge'
 import {
@@ -34,6 +36,15 @@ export type DataTableSelectCellProps = Omit<
 	emptyOptionsAction?: ReactNode
 	emptySearchMessage?: string
 	renderValue?: (label: string, value: string) => ReactNode
+	/** 検索欄の文言。既定は「{label}を検索…」。 */
+	searchPlaceholder?: string
+	/** 候補の枠の上に出す物（どこから選ぶかの帯など）。 */
+	pickerHeader?: ReactNode
+	/** 候補の枠の下に出す物（元の画面へ移る道筋など）。 */
+	pickerFooter?: ReactNode
+	/** 候補の枠の見た目を足す。 */
+	pickerClassName?: string
+	pickerStyle?: CSSProperties
 }
 
 /**
@@ -51,6 +62,11 @@ export function DataTableSelectCell({
 	groupLabel,
 	emptyOptionsAction,
 	emptySearchMessage = '一致する選択肢はありません。',
+	searchPlaceholder,
+	pickerHeader,
+	pickerFooter,
+	pickerClassName,
+	pickerStyle,
 	formatError = () => '保存できませんでした。再試行してください。',
 	renderValue = text => <DataTableValueChip label={text} />,
 	...rest
@@ -102,13 +118,18 @@ export function DataTableSelectCell({
 				<PopoverContent
 					align='start'
 					sideOffset={0}
-					className='w-64 max-w-[calc(100vw-24px)] p-0'
+					className={cn(
+						'w-64 max-w-[calc(100vw-24px)] overflow-hidden p-0',
+						pickerClassName,
+					)}
+					style={pickerStyle}
 					aria-label={`${label}を選択`}
 				>
+					{pickerHeader}
 					<Command value={activeOption} onValueChange={setActiveOption}>
 						<CommandInput
 							aria-label={`${label}を検索`}
-							placeholder={`${label}を検索…`}
+							placeholder={searchPlaceholder ?? `${label}を検索…`}
 						/>
 						<CommandList aria-label={`${label}の候補`}>
 							<CommandEmpty>{emptySearchMessage}</CommandEmpty>
@@ -132,6 +153,7 @@ export function DataTableSelectCell({
 							</CommandGroup>
 						</CommandList>
 					</Command>
+					{pickerFooter}
 				</PopoverContent>
 			</Popover>
 			<DataTableInlineEditError error={edit.error} />
