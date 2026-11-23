@@ -15,6 +15,7 @@ import {
 	useDismissHandlers,
 	radixLoopTab,
 	useMergedRefs,
+	useNaturalTabOrder,
 	useRadixCloseFocus,
 	useRadixOpenFocus,
 } from '../../lib/overlay'
@@ -23,6 +24,8 @@ import { cn } from '../../lib/utils'
 
 // 中身は base-ui の Popover。使い方（props・asChild・data-state・位置の props）は
 // Radix のときと同じ。
+
+const ModalContext = React.createContext(false)
 
 const AnchorContext = React.createContext<{
 	anchor: Element | null
@@ -60,9 +63,11 @@ function Popover({
 			onOpenChange={handleOpenChange}
 			modal={modal}
 		>
-			<AnchorContext.Provider value={anchorValue}>
-				<DismissProvider>{children}</DismissProvider>
-			</AnchorContext.Provider>
+			<ModalContext.Provider value={modal}>
+				<AnchorContext.Provider value={anchorValue}>
+					<DismissProvider>{children}</DismissProvider>
+				</AnchorContext.Provider>
+			</ModalContext.Provider>
 		</PopoverPrimitive.Root>
 	)
 }
@@ -151,7 +156,8 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 		})
 		const anchor = React.useContext(AnchorContext)?.anchor
 		const focus = useRadixOpenFocus(onOpenAutoFocus, ref)
-		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef, popup } = useRadixCloseFocus(onCloseAutoFocus)
+		useNaturalTabOrder(popup, !React.useContext(ModalContext))
 		const mergedRef = useMergedRefs(focus.ref, popupRef)
 		return (
 			<PopoverPrimitive.Portal keepMounted={forceMount}>

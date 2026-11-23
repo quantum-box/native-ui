@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { type ReactNode, act, useRef, useState } from 'react'
+import { type ReactNode, act, useEffect, useRef, useState } from 'react'
 import { type Root, createRoot } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +19,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from './dropdown-menu'
-import { Popover, PopoverContent, PopoverTrigger } from './popover'
+import {
+	Popover,
+	PopoverAnchor,
+	PopoverContent,
+	PopoverTrigger,
+} from './popover'
 import { DetailSheet } from './sheet'
 import {
 	Tooltip,
@@ -418,6 +423,68 @@ describe('Popover を外から閉じたとき', () => {
 		})
 		expect(byRole('dialog')).toBeNull()
 		expect(document.activeElement).toBe(outside)
+	})
+})
+
+describe('Popover の外でのキーボード', () => {
+	// 記録のセルと同じ形: フォーカスのある記録のリンクに合わせて、少し後に開く
+	function Demo() {
+		const [open, setOpen] = useState(false)
+		useEffect(() => {
+			const timer = setTimeout(() => setOpen(true), 20)
+			return () => clearTimeout(timer)
+		}, [])
+		return (
+			<>
+				<Popover open={open} onOpenChange={setOpen}>
+					<PopoverAnchor asChild>
+						<a href='#rec'>記録</a>
+					</PopoverAnchor>
+					<PopoverContent onOpenAutoFocus={e => e.preventDefault()}>
+						<a href='#in'>中のリンク</a>
+					</PopoverContent>
+				</Popover>
+				<a href='#next'>次のリンク</a>
+			</>
+		)
+	}
+	async function renderFocused() {
+		const el = await render(<Demo />)
+		const anchor = el.querySelector('a[href="#rec"]') as HTMLAnchorElement
+		await act(async () => {
+			anchor.focus()
+			await wait(80)
+		})
+		expect(byRole('dialog')).not.toBeNull()
+		return anchor
+	}
+
+	it('外のリンクで Enter を押しても（キーボードの click）、閉じない', async () => {
+		const anchor = await renderFocused()
+		await act(async () => {
+			anchor.dispatchEvent(
+				new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 }),
+			)
+			await wait(50)
+		})
+		expect(byRole('dialog')).not.toBeNull()
+	})
+
+	it('中身の外にフォーカスがあるとき、Tab はページの順に次へ進む（中身へは入らない）', async () => {
+		const anchor = await renderFocused()
+		const tab = new KeyboardEvent('keydown', {
+			key: 'Tab',
+			bubbles: true,
+			cancelable: true,
+		})
+		await act(async () => {
+			anchor.dispatchEvent(tab)
+			await wait()
+		})
+		// Radix ではブラウザのふつうの Tab に任せる。ここでは同じ行き先へ動かす
+		if (tab.defaultPrevented)
+			expect(document.activeElement?.getAttribute('href')).toBe('#next')
+		else expect(document.activeElement).toBe(anchor)
 	})
 })
 

@@ -124,6 +124,18 @@ export function useDismissCompat(
 				details.cancel()
 				return
 			}
+			// Radix は指で押したとき（pointerdown）だけを「外を押した」とみなす。
+			// base-ui は click でも閉じるので、キーボードから出た click（Enter でリンクを
+			// 押したときなど。detail が 0）は外を押したことにしない
+			if (
+				!open &&
+				details.reason === 'outside-press' &&
+				details.event?.type === 'click' &&
+				(details.event as MouseEvent).detail === 0
+			) {
+				details.cancel()
+				return
+			}
 			closedOutside.current =
 				!open &&
 				(details.reason === 'outside-press' || details.reason === 'focus-out')
@@ -216,7 +228,39 @@ export function useRadixCloseFocus(
 			return false
 		return true
 	}, [onCloseAutoFocus, context])
-	return { finalFocus, popupRef: setPopup }
+	return { finalFocus, popupRef: setPopup, popup }
+}
+
+/**
+ * base-ui は、modal でない Popover のそばに見えないフォーカスの番人（focus guard）を置き、
+ * 開いているあいだ Trigger から Tab で中身へ入るようにしている。Radix には無い動きで、
+ * Tab はふつうのページの順に進む。ここでは、中身の外にフォーカスがあるときの Tab を、
+ * 番人を飛ばしたふつうの順に戻す。
+ */
+export function useNaturalTabOrder(
+	popup: HTMLElement | null,
+	enabled: boolean,
+) {
+	React.useEffect(() => {
+		if (!popup || !enabled) return
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey)
+				return
+			const active = document.activeElement as HTMLElement | null
+			if (!active || popup.contains(active)) return
+			const all = radixTabbables(document.body).filter(
+				el => !el.hasAttribute('data-base-ui-focus-guard'),
+			)
+			const index = all.indexOf(active)
+			if (index === -1) return
+			const next = all[index + (event.shiftKey ? -1 : 1)]
+			if (!next) return
+			event.preventDefault()
+			next.focus()
+		}
+		document.addEventListener('keydown', onKeyDown, true)
+		return () => document.removeEventListener('keydown', onKeyDown, true)
+	}, [popup, enabled])
 }
 
 /** いくつかの ref を 1 つにまとめる */
