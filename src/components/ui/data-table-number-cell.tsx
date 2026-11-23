@@ -70,7 +70,8 @@ export function parseDataTableNumber(
 	if (!normalized) {
 		return allowEmpty ? { value: null } : { error: '数を入れてください。' }
 	}
-	if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(normalized))
+	// 小数点の前後が一通りにしか読めない形にする（長い入力で遅くならないように）。
+	if (!/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized))
 		return { error: '数を入れてください。' }
 	const decimals = normalized.split('.')[1]?.length ?? 0
 	if (decimals > fractionDigits)

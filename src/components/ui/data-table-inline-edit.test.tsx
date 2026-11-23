@@ -123,6 +123,17 @@ describe('数の読み取り', () => {
 			error: '数を入れてください。',
 		})
 	})
+	it('長い入力でもすぐに確かめ終える', () => {
+		const started = Date.now()
+		expect(parseDataTableNumber(`9${'99'.repeat(50000)}x`)).toEqual({
+			error: '数を入れてください。',
+		})
+		expect(parseDataTableNumber('1.')).toEqual({ value: 1 })
+		expect(parseDataTableNumber('.5', { fractionDigits: 1 })).toEqual({
+			value: 0.5,
+		})
+		expect(Date.now() - started).toBeLessThan(1000)
+	})
 	it('桁区切りと前後の文字を付けて表示する', () => {
 		expect(formatDataTableNumber(1234567, { prefix: '¥' })).toBe('¥1,234,567')
 		expect(
