@@ -71,6 +71,42 @@ export {
 	DataTableValueChip,
 } from './components/ui/data-table-select-cell'
 export {
+	DataTableDateCell,
+	type DataTableDateCellProps,
+} from './components/ui/data-table-date-cell'
+export {
+	DataTableEditableCell,
+	type DataTableEditableCellProps,
+	type DataTableInlineEdit,
+	type DataTableInlineEditOptions,
+	type DataTableInlineEditStatus,
+	DataTableInlineEditError,
+	DataTableInlineEditStatusIcon,
+	DataTableInputEditor,
+	type DataTableInputEditorProps,
+	useDataTableInlineEdit,
+} from './components/ui/data-table-inline-edit'
+export {
+	DataTableMultiSelectCell,
+	type DataTableMultiSelectCellProps,
+} from './components/ui/data-table-multi-select-cell'
+export {
+	DataTableNumberCell,
+	type DataTableNumberCellProps,
+	type DataTableNumberFormat,
+	type DataTableNumberRule,
+	formatDataTableNumber,
+	parseDataTableNumber,
+} from './components/ui/data-table-number-cell'
+export {
+	DataTableTextCell,
+	type DataTableTextCellProps,
+} from './components/ui/data-table-text-cell'
+export {
+	DataTableToggleCell,
+	type DataTableToggleCellProps,
+} from './components/ui/data-table-toggle-cell'
+export {
 	DataTableViewNotice,
 	type DataTableViewNoticeProps,
 } from './components/ui/data-table-view-notice'

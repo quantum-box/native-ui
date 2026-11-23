@@ -9,6 +9,7 @@ API でページを送る一覧の表と、表の中で使う部品。Storybook 
 | `DataTableSelectCell` | 表の中でその場で値を選んで保存するセル |
 | `DataTableValueChip` | 表の中で値を小さな札として出す |
 | `DataTableViewNotice` | 一覧の上の案内。並び替え・絞り込みが効いているときに「すべて解除」を出す |
+| `DataTableTextCell` ほか | 表の中で文字・数・日付・オン・オフ・複数をその場で直す（下の「その場で値を直すセル」） |
 
 どの部品も、アプリの仕組み（URL・API・テナントなど）には触らない。
 今の並び替え・絞り込み・ページは使う側が渡し、変わったら関数で知らせる。
@@ -120,3 +121,72 @@ const columns: ColumnDef<Product>[] = [
 ```
 
 一覧の上に置く。どれかが効いているときだけ「並び替え・絞り込みを適用中」と「すべて解除」を出す。
+
+## その場で値を直すセル
+
+どのセルも「表示 → 編集 → 保存中 → 保存できた／失敗」の同じ流れの上にある。Storybook の `Components/DataTableInlineEdit` に、種類ごとの状態と、1 つの表でいろいろな列を直す例がある。
+
+| 部品 | 値 | 例 |
+| --- | --- | --- |
+| `DataTableTextCell` | 1 行の文字（`string`） | 品目名、メモ |
+| `DataTableNumberCell` | 数・金額（`number \| null`） | 単価、数量、与信限度 |
+| `DataTableDateCell` | 日付（`YYYY-MM-DD` の文字、空は `''`） | 納期、支払日 |
+| `DataTableToggleCell` | オン・オフ（`boolean`） | 公開、使う／使わない |
+| `DataTableSelectCell` | 1 つを選ぶ（`string`） | ステージ、状態 |
+| `DataTableMultiSelectCell` | 複数を選ぶ（`readonly string[]`） | タグ |
+
+### 共通の振る舞い
+
+- 押すか Enter で編集を始め、Enter で保存、Esc でやめる。Enter・Esc で終えたらセルにフォーカスが戻る。
+- 文字・数・日付は、Tab やクリックでほかへ移っても保存する（フォーカスは移った先のまま）。編集を始めると今の文字が選ばれ、打つと置き換わる。
+- 保存中は操作できない。保存できたら印が出る。失敗したら元の値に戻し、`formatError` の文言を出す。
+- 引数は共通で `value`・`onSave`（Promise を返す）・`validate`（保存の前に確かめ、だめなら文言を返す）・`formatError`・`disabled`・`ariaLabel`。
+- `onSave` の中で保存し、終わる前に使う側の値を新しい値にする。失敗したら例外を投げる。
+- オン・オフは編集の段階が無く、切り替えるとすぐ保存する。
+- 複数を選ぶセルは、候補の中で Enter・クリックで付け外しし、「保存」か外を押すと保存、Esc か「やめる」でやめる。
+
+```tsx
+<DataTableNumberCell
+  ariaLabel={`${line.name}の単価を変更`}
+  prefix='¥'
+  min={0}
+  value={line.price}
+  onSave={async price => {
+    const saved = await updateLine(line.id, { price })
+    replaceLine(saved)
+  }}
+  formatError={() => '単価を保存できませんでした。'}
+/>
+```
+
+### 数・金額
+
+- `prefix`（`¥`、`$`）・`suffix`（`円`、`個`、`%`）を付けて桁区切りで右に寄せて出す。
+- 全角の数字、「1,200」、「¥1,200円」も受け付ける。`fractionDigits`（小数の桁、既定 0）・`min`・`max`・`allowEmpty` で確かめる。
+- 同じ読み取り・表示を `parseDataTableNumber`・`formatDataTableNumber` として単独でも使える。
+
+### 行をまとめて後で保存する画面
+
+表の中で直した値を、行や画面の「保存」でまとめて送る画面でも使える。`onSave` で手元の下書きを書き換えて、そのまま終える（`async value => setDraft(...)`）。
+
+### 自分でセルを作る
+
+ほかの種類が要るときは、`DataTableEditableCell`（押すと編集に変わるセル）に `renderValue`・`renderEditor` を渡す。1 行の入力欄なら `DataTableInputEditor` に `parse` を渡すだけでよい。保存の流れだけが要るときは `useDataTableInlineEdit` を使う。
+
+```tsx
+<DataTableEditableCell
+  ariaLabel='時刻を変更'
+  value={time}
+  onSave={saveTime}
+  renderValue={value => value || '未設定'}
+  renderEditor={edit => (
+    <DataTableInputEditor
+      edit={edit}
+      type='time'
+      aria-label='時刻を変更'
+      initialText={edit.value}
+      parse={text => ({ value: text })}
+    />
+  )}
+/>
+```
