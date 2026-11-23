@@ -69,6 +69,15 @@ describe('public API', () => {
 		'DataTableSelectCell',
 		'DataTableValueChip',
 		'DataTableViewNotice',
+		'DataTableEditableCell',
+		'useDataTableInlineEdit',
+		'DataTableTextCell',
+		'DataTableNumberCell',
+		'DataTableDateCell',
+		'DataTableToggleCell',
+		'DataTableMultiSelectCell',
+		'parseDataTableNumber',
+		'formatDataTableNumber',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})
