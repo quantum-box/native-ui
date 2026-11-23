@@ -341,8 +341,10 @@ export function positionerCompat(
 		collisionPadding,
 		collisionBoundary: boundary,
 		sticky: sticky === 'always',
+		// Radix と同じく、はみ出すときは上下（左右）を反対へ返し、揃え方は変えずに
+		// はみ出さない所まで滑らせる（base-ui の既定は揃え方も反対へ返す）
 		collisionAvoidance: avoidCollisions
-			? undefined
+			? ({ side: 'flip', align: 'shift', fallbackAxisSide: 'none' } as const)
 			: ({ side: 'none', align: 'none' } as const),
 	}
 }
