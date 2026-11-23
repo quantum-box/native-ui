@@ -39,6 +39,7 @@ describe('public API', () => {
 		'AiSuggestion',
 		'AiBestMatchBadge',
 		'AiLabel',
+		'AiField',
 		'Message',
 		'MessageGroup',
 		'MessageContent',

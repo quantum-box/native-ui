@@ -1,4 +1,10 @@
 export {
+	AiField,
+	type AiFieldLabels,
+	type AiFieldProps,
+	type AiFieldStatus,
+} from './components/ui/ai-field'
+export {
 	AiBestMatchBadge,
 	type AiBestMatchBadgeProps,
 	AiLabel,
