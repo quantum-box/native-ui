@@ -99,8 +99,9 @@ function useHoverOpen() {
 	return { open, setOpen, hover }
 }
 
+// 地は透けない色にする。入力欄の枠に重ねても、枠線が印の上に透けて見えないように。
 const factLabelClass =
-	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-teal-600/30 bg-teal-500/10 px-1.5 align-middle font-medium text-[10px] text-teal-800 leading-4 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-200'
+	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-teal-200 bg-teal-50 px-1.5 align-middle font-medium text-[10px] text-teal-800 leading-4 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200'
 
 interface FactLabelProps {
 	/** 印の文言。既定は「データ」。 */
@@ -143,7 +144,7 @@ function FactLabel({
 				aria-label={`データ基盤の値。${sourceSentence(source)}詳しく見る`}
 				className={cn(
 					factLabelClass,
-					'cursor-pointer transition-colors duration-fast hover:bg-teal-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+					'cursor-pointer transition-colors duration-fast hover:bg-teal-100 dark:hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
 					className,
 				)}
 				type='button'
@@ -247,7 +248,7 @@ function FactField({
 			case 'stale':
 				return (
 					<FactLabel
-						className='border-amber-600/40 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-200'
+						className='border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900'
 						source={source}
 					>
 						データ・要確認
