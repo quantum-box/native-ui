@@ -52,6 +52,66 @@ export {
 	type ComboboxOption,
 	type ComboboxProps,
 } from './components/ui/combobox'
+export {
+	type ApprovalChange,
+	ApprovalRequest,
+	type ApprovalRequestProps,
+	type ApprovalStatus,
+} from './components/ui/chat-approval'
+export {
+	type ChatSource,
+	CitationMark,
+	type CitationMarkProps,
+	SourceList,
+	type SourceListProps,
+} from './components/ui/chat-citations'
+export {
+	CodeBlock,
+	type CodeBlockProps,
+	TableBlock,
+	type TableBlockProps,
+} from './components/ui/chat-code-block'
+export {
+	CopyButton,
+	type CopyButtonProps,
+	useCopy,
+} from './components/ui/chat-copy'
+export {
+	ChatEmptyState,
+	type ChatEmptyStateProps,
+	type PromptSuggestion,
+	PromptSuggestions,
+	type PromptSuggestionsProps,
+} from './components/ui/chat-empty-state'
+export { ChatError, type ChatErrorProps } from './components/ui/chat-error'
+export {
+	MessageActions,
+	type MessageActionsProps,
+	type MessageFeedback,
+} from './components/ui/chat-message-actions'
+export {
+	AttachmentChip,
+	type AttachmentChipProps,
+	AttachmentList,
+	type ChatAttachment,
+	PromptInput,
+	type PromptInputProps,
+} from './components/ui/chat-prompt-input'
+export {
+	StreamingText,
+	type StreamingTextProps,
+	ThinkingBlock,
+	type ThinkingBlockProps,
+	ThinkingIndicator,
+	type ThinkingIndicatorProps,
+} from './components/ui/chat-streaming'
+export {
+	ToolCall,
+	ToolCallGroup,
+	type ToolCallGroupProps,
+	type ToolCallProps,
+	type ToolCallStatus,
+} from './components/ui/chat-tool-call'
 export { Checkbox } from './components/ui/checkbox'
 export {
 	Collapsible,
