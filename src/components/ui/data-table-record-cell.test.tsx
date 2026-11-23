@@ -41,6 +41,7 @@ afterEach(async () => {
 type Customer = { id: string; name: string; code: string }
 const ACME: Customer = { id: 'c1', name: '山田商店', code: 'C-001' }
 const BETA: Customer = { id: 'c2', name: '鈴木食品', code: 'C-002' }
+const GAMMA: Customer = { id: 'c3', name: 'みどり青果', code: 'C-003' }
 
 const customerKind = defineRecordKind<Customer>({
 	name: '取引先',
@@ -49,7 +50,7 @@ const customerKind = defineRecordKind<Customer>({
 	getLabel: customer => customer.name,
 	getDescription: customer => customer.code,
 	getHref: customer => `/customers/${customer.id}`,
-	useCandidates: () => ({ records: [ACME, BETA] }),
+	useCandidates: () => ({ records: [ACME, BETA, GAMMA] }),
 })
 
 async function render(
@@ -204,6 +205,9 @@ describe('別の記録に付け替える', () => {
 					ariaLabel='請求書の取引先を変更'
 					record={customer}
 					allowEmpty
+					validate={next =>
+						next?.id === 'c3' ? '取引を止めている取引先です。' : null
+					}
 					onSave={async next => {
 						await save(next)
 						setCustomer(next)
@@ -224,7 +228,16 @@ describe('別の記録に付け替える', () => {
 		await pick('鈴木食品')
 		expect(save).toHaveBeenLastCalledWith(BETA)
 		expect(button('請求書の取引先を変更').textContent).toContain('鈴木食品')
-		await pick('未設定')
+		await pick('みどり青果')
+		expect(save).toHaveBeenCalledOnce()
+		expect(document.querySelector('[role=alert]')?.textContent).toBe(
+			'取引を止めている取引先です。',
+		)
+		// 確かめで止まったら候補は開いたままなので、そのまま選び直せる。
+		const empty = Array.from(
+			document.querySelectorAll<HTMLElement>('[role=option]'),
+		).find(node => node.textContent?.includes('未設定'))
+		await act(async () => empty?.click())
 		expect(save).toHaveBeenLastCalledWith(null)
 		expect(button('請求書の取引先を変更').textContent).toContain('未設定')
 	})

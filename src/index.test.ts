@@ -80,6 +80,15 @@ describe('public API', () => {
 		'DataTableRecordSelectCell',
 		'dataTableRecordColumn',
 		'recordPlaceholder',
+		'DataTableEditableCell',
+		'useDataTableInlineEdit',
+		'DataTableTextCell',
+		'DataTableNumberCell',
+		'DataTableDateCell',
+		'DataTableToggleCell',
+		'DataTableMultiSelectCell',
+		'parseDataTableNumber',
+		'formatDataTableNumber',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})

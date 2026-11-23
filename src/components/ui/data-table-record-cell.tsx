@@ -144,7 +144,7 @@ export function DataTableRecordCell<T = unknown>({
 
 export type DataTableRecordSelectCellProps<T = unknown> = Omit<
 	DataTableSelectCellProps,
-	'value' | 'options' | 'onSave' | 'label' | 'renderValue'
+	'value' | 'options' | 'onSave' | 'label' | 'renderValue' | 'validate'
 > & {
 	/** 登録した種類の名前。候補・見た目はその決まりから出す。 */
 	kind: string
@@ -156,6 +156,8 @@ export type DataTableRecordSelectCellProps<T = unknown> = Omit<
 	candidates?: readonly T[]
 	/** 「未設定」に戻せるようにする。 */
 	allowEmpty?: boolean
+	/** 保存の前に確かめる。だめなら理由の文言を返す（保存しない）。 */
+	validate?: (record: T | null) => string | null
 }
 
 const noCandidates = () => ({ records: [] as const })
@@ -170,6 +172,7 @@ export function DataTableRecordSelectCell<T = unknown>({
 	onSave,
 	candidates,
 	allowEmpty = false,
+	validate,
 	...rest
 }: DataTableRecordSelectCellProps<T>) {
 	const { definition } = useRecordKind<T>(kind)
@@ -206,6 +209,7 @@ export function DataTableRecordSelectCell<T = unknown>({
 			label={definition.name}
 			value={record ? definition.getId(record) : ''}
 			options={options}
+			validate={validate ? id => validate(byId.get(id) ?? null) : undefined}
 			onSave={id => onSave(byId.get(id) ?? null)}
 			renderValue={(_, id) => {
 				const item = byId.get(id)
