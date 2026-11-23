@@ -16,12 +16,12 @@ import { Input } from './input'
 import { Label } from './label'
 
 /**
- * データ基盤から来た事実（統計・市場価格などの実測データ）の部品（試作）。
+ * データ基盤から来た事実（統計・市場価格などの実測データ）の部品。
  * AI の推測（グラデーション）と見分けられるよう、青緑の単色とデータの印で出す。
  * どの値にも出典（名前・時点・基にした値・元の資料）を付けられる。
  */
 const meta = {
-	title: 'Components/データ基盤の値（試作）',
+	title: 'Components/データ基盤の値',
 	component: FactLabel,
 } satisfies Meta<typeof FactLabel>
 
