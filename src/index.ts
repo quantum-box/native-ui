@@ -11,7 +11,22 @@ export {
 	type AiLabelProps,
 	AiSuggestion,
 	type AiSuggestionProps,
+	AiValue,
+	type AiValueProps,
 } from './components/ui/ai-suggestion'
+export {
+	FactField,
+	type FactFieldProps,
+	type FactFieldStatus,
+	FactLabel,
+	type FactLabelProps,
+	FactPanel,
+	type FactPanelProps,
+	type FactSource,
+	FactSourceDetails,
+	FactValue,
+	type FactValueProps,
+} from './components/ui/fact'
 export {
 	Badge,
 	type BadgeProps,

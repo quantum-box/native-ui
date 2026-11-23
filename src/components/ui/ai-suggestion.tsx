@@ -101,6 +101,41 @@ function AiLabel({ children = 'AI', className, ...props }: AiLabelProps) {
 	)
 }
 
+interface AiValueProps {
+	/** 値そのもの。例「渋谷店」。 */
+	children: React.ReactNode
+	/** 読み上げで伝える種類。既定は「AI の推測」。例「AI の判定」。 */
+	kind?: string
+	className?: string
+}
+
+/**
+ * 文の中に置く控えめな形。札は出さず、値そのものを紫の文字と点線の下線にし、
+ * 後ろに小さなきらめきの絵を付ける。文の高さや行の間は変えない。
+ */
+function AiValue({
+	children,
+	kind = 'AI の推測',
+	className,
+}: Readonly<AiValueProps>) {
+	return (
+		<span
+			className={cn(
+				'text-violet-700 underline decoration-dotted decoration-1 decoration-fuchsia-500/70 underline-offset-[3px] dark:text-violet-300 dark:decoration-fuchsia-400/70',
+				className,
+			)}
+			title={kind}
+		>
+			{children}
+			<Sparkles
+				aria-hidden
+				className='ml-0.5 inline size-[0.75em] align-baseline opacity-70'
+			/>
+			<span className='sr-only'>（{kind}）</span>
+		</span>
+	)
+}
+
 export {
 	AiBestMatchBadge,
 	type AiBestMatchBadgeProps,
@@ -108,4 +143,6 @@ export {
 	type AiLabelProps,
 	AiSuggestion,
 	type AiSuggestionProps,
+	AiValue,
+	type AiValueProps,
 }
