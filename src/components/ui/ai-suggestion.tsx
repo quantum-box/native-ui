@@ -1,7 +1,18 @@
+'use client'
+
 import { Sparkles } from 'lucide-react'
 import type * as React from 'react'
 
+import { useHoverOpen } from '../../lib/use-hover-open'
 import { cn } from '../../lib/utils'
+import {
+	type AiReasoning,
+	AiReasoningDetails,
+	hasReasoning,
+	isLowConfidence,
+	reasoningSentence,
+} from './ai-reasoning'
+import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 /*
  * AI が出した物は、どの画面でも同じ見た目（紫〜青のグラデーションと
@@ -77,27 +88,61 @@ function AiBestMatchBadge({
 	)
 }
 
+const aiLabelClass =
+	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-fuchsia-500/30 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-sky-500/10 px-1.5 align-middle font-medium text-[10px] text-fuchsia-700 leading-4 dark:border-fuchsia-400/30 dark:text-fuchsia-300'
+
 interface AiLabelProps extends React.HTMLAttributes<HTMLSpanElement> {
 	/** 印の文言。既定は「AI」。例: 「AI の判定」「AI の推測」。 */
 	children?: React.ReactNode
+	/** 理由や判断の材料。渡すと、触れる・押すと中身が開く。 */
+	reasoning?: AiReasoning
 }
 
 /**
  * 文の中や表のセルに置く小さな印。その値を AI が決めたこと・推し量ったことを
  * 示す。「AI の判定」「AI の推測」などを、どの画面でも同じ見た目で出す。
  */
-function AiLabel({ children = 'AI', className, ...props }: AiLabelProps) {
-	return (
-		<span
-			className={cn(
-				'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-fuchsia-500/30 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-sky-500/10 px-1.5 align-middle font-medium text-[10px] text-fuchsia-700 leading-4 dark:border-fuchsia-400/30 dark:text-fuchsia-300',
-				className,
-			)}
-			{...props}
-		>
+function AiLabel({
+	children = 'AI',
+	reasoning,
+	className,
+	...props
+}: AiLabelProps) {
+	const { open, setOpen, hover } = useHoverOpen()
+	const content = (
+		<>
 			<Sparkles aria-hidden className='size-2.5' />
 			{children}
-		</span>
+		</>
+	)
+	if (!hasReasoning(reasoning)) {
+		return (
+			<span className={cn(aiLabelClass, className)} {...props}>
+				{content}
+			</span>
+		)
+	}
+	const title = typeof children === 'string' ? children : 'AI の推測'
+	return (
+		<Popover onOpenChange={setOpen} open={open}>
+			<PopoverTrigger
+				className={cn(
+					aiLabelClass,
+					'cursor-pointer transition-colors duration-fast hover:border-fuchsia-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+					className,
+				)}
+				type='button'
+				{...hover}
+			>
+				{content}
+				<span className='sr-only'>
+					（{reasoningSentence(reasoning)}詳しく見る）
+				</span>
+			</PopoverTrigger>
+			<PopoverContent align='start' className='w-72' {...hover}>
+				<AiReasoningDetails reasoning={reasoning} title={title} />
+			</PopoverContent>
+		</Popover>
 	)
 }
 
@@ -106,33 +151,72 @@ interface AiValueProps {
 	children: React.ReactNode
 	/** 読み上げで伝える種類。既定は「AI の推測」。例「AI の判定」。 */
 	kind?: string
+	/** 理由や判断の材料。渡すと、触れる・押す・キーボードで中身が開く。 */
+	reasoning?: AiReasoning
 	className?: string
 }
 
 /**
  * 文の中に置く控えめな形。札は出さず、値そのものを紫の文字と点線の下線にし、
  * 後ろに小さなきらめきの絵を付ける。文の高さや行の間は変えない。
+ * `reasoning` を渡すと、触れると理由や判断の材料が開く。確からしさが低いときは
+ * 点線と絵が橙になる。
  */
 function AiValue({
 	children,
 	kind = 'AI の推測',
+	reasoning,
 	className,
 }: Readonly<AiValueProps>) {
-	return (
-		<span
+	const { open, setOpen, hover } = useHoverOpen()
+	const low = isLowConfidence(reasoning)
+	const classes = cn(
+		'text-violet-700 underline decoration-dotted decoration-1 underline-offset-[3px] dark:text-violet-300',
+		low
+			? 'decoration-amber-500 dark:decoration-amber-400'
+			: 'decoration-fuchsia-500/70 dark:decoration-fuchsia-400/70',
+		className,
+	)
+	const icon = (
+		<Sparkles
+			aria-hidden
 			className={cn(
-				'text-violet-700 underline decoration-dotted decoration-1 decoration-fuchsia-500/70 underline-offset-[3px] dark:text-violet-300 dark:decoration-fuchsia-400/70',
-				className,
+				'ml-0.5 inline size-[0.75em] align-baseline',
+				low ? 'text-amber-600 dark:text-amber-400' : 'opacity-70',
 			)}
-			title={kind}
-		>
-			{children}
-			<Sparkles
-				aria-hidden
-				className='ml-0.5 inline size-[0.75em] align-baseline opacity-70'
-			/>
-			<span className='sr-only'>（{kind}）</span>
-		</span>
+		/>
+	)
+
+	if (!hasReasoning(reasoning)) {
+		return (
+			<span className={classes} title={kind}>
+				{children}
+				{icon}
+				<span className='sr-only'>（{kind}）</span>
+			</span>
+		)
+	}
+
+	return (
+		<Popover onOpenChange={setOpen} open={open}>
+			<PopoverTrigger
+				className={cn(
+					classes,
+					'inline cursor-pointer rounded-sm bg-transparent p-0 text-left leading-[inherit] hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+				)}
+				type='button'
+				{...hover}
+			>
+				{children}
+				{icon}
+				<span className='sr-only'>
+					（{kind}。{reasoningSentence(reasoning)}）
+				</span>
+			</PopoverTrigger>
+			<PopoverContent align='start' className='w-72' {...hover}>
+				<AiReasoningDetails reasoning={reasoning} title={kind} />
+			</PopoverContent>
+		</Popover>
 	)
 }
 
