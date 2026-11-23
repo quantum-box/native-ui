@@ -15,7 +15,18 @@ const meta = {
 export default meta
 type Story = StoryObj
 
+/** 見本の画像（小さな四角）。 */
+const SAMPLE_IMAGE =
+	'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="%23a78bfa"/><rect x="4" y="12" width="16" height="8" fill="%23fbbf24"/></svg>'
+
 const SAMPLE: ChatAttachment[] = [
+	{
+		id: '0',
+		name: '店の写真.png',
+		size: 84_000,
+		type: 'image/png',
+		previewUrl: SAMPLE_IMAGE,
+	},
 	{ id: '1', name: '領収書_11月.pdf', size: 248_000, type: 'application/pdf' },
 	{
 		id: '2',
@@ -112,9 +123,6 @@ export const 触って試す: Story = {
 									name: file.name,
 									size: file.size,
 									type: file.type,
-									previewUrl: file.type.startsWith('image/')
-										? URL.createObjectURL(file)
-										: undefined,
 								})),
 							])
 						}
