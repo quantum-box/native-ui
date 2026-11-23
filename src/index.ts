@@ -1,8 +1,26 @@
 export {
+	AiBestMatchBadge,
+	type AiBestMatchBadgeProps,
+	AiLabel,
+	type AiLabelProps,
+	AiSuggestion,
+	type AiSuggestionProps,
+} from './components/ui/ai-suggestion'
+export {
 	Badge,
 	type BadgeProps,
 	badgeVariants,
 } from './components/ui/badge'
+export {
+	Bubble,
+	BubbleContent,
+	type BubbleContentProps,
+	BubbleGroup,
+	type BubbleProps,
+	BubbleReactions,
+	type BubbleReactionsProps,
+	bubbleVariants,
+} from './components/ui/bubble'
 export {
 	Button,
 	type ButtonProps,
@@ -14,6 +32,11 @@ export {
 	type ComboboxProps,
 } from './components/ui/combobox'
 export { Checkbox } from './components/ui/checkbox'
+export {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from './components/ui/collapsible'
 export {
 	Command,
 	CommandDialog,
@@ -90,6 +113,27 @@ export {
 	type MacOSWebLinkCopyShortcutProps,
 } from './components/ui/macos-web-link-copy-shortcut'
 export {
+	Message,
+	MessageAvatar,
+	MessageContent,
+	MessageFooter,
+	MessageGroup,
+	MessageHeader,
+	type MessageProps,
+} from './components/ui/message'
+export {
+	MessageScroller,
+	MessageScrollerButton,
+	type MessageScrollerButtonProps,
+	MessageScrollerContent,
+	MessageScrollerItem,
+	type MessageScrollerItemProps,
+	MessageScrollerProvider,
+	type MessageScrollerProviderProps,
+	MessageScrollerViewport,
+	useMessageScroller,
+} from './components/ui/message-scroller'
+export {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,
@@ -108,6 +152,23 @@ export {
 	SelectValue,
 } from './components/ui/select'
 export { Separator } from './components/ui/separator'
+export {
+	DetailSheet,
+	type DetailSheetProps,
+	Sheet,
+	SheetBody,
+	SheetClose,
+	SheetContent,
+	type SheetContentProps,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetOverlay,
+	SheetPortal,
+	SheetTitle,
+	SheetTrigger,
+	type SheetWidth,
+} from './components/ui/sheet'
 export {
 	Sidebar,
 	SidebarAccount,
@@ -151,6 +212,17 @@ export {
 	TableRow,
 } from './components/ui/table'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+export {
+	Trace,
+	TraceCollapsible,
+	TraceCollapsibleContent,
+	TraceCollapsibleTrigger,
+	TraceDescription,
+	TraceIcon,
+	TraceLine,
+	type TraceLineProps,
+	TraceTitle,
+} from './components/ui/trace'
 export {
 	Toaster,
 	type ToasterProps,
