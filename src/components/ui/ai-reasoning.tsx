@@ -75,7 +75,11 @@ function inputList(inputs?: string | string[]) {
 }
 
 /** 文の終わりの「。」を除く（つなげたときに「。。」にならないように）。 */
-const trimPeriod = (text: string) => text.replace(/。+$/, '')
+function trimPeriod(text: string) {
+	let end = text.length
+	while (end > 0 && text[end - 1] === '。') end -= 1
+	return text.slice(0, end)
+}
 
 /** 画面を読む道具に伝える文。 */
 function reasoningSentence(reasoning: AiReasoning) {
