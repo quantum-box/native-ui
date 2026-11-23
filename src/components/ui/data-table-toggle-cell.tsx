@@ -56,7 +56,8 @@ export function DataTableToggleCell({
 			<ToggleBody
 				edit={edit}
 				ariaLabel={ariaLabel}
-				label={edit.value ? onLabel : offLabel}
+				onLabel={onLabel}
+				offLabel={offLabel}
 			/>
 		</DataTableInlineEditShell>
 	)
@@ -65,11 +66,13 @@ export function DataTableToggleCell({
 function ToggleBody({
 	edit,
 	ariaLabel,
-	label,
+	onLabel,
+	offLabel,
 }: {
 	edit: DataTableInlineEdit<boolean>
 	ariaLabel: string
-	label: string
+	onLabel: string
+	offLabel: string
 }) {
 	const id = useId()
 	const errorId = useDataTableInlineEditErrorId()
@@ -94,12 +97,25 @@ function ToggleBody({
 				<label
 					htmlFor={id}
 					className={cn(
-						'select-none whitespace-nowrap text-sm',
+						'grid select-none whitespace-nowrap text-sm',
 						edit.value ? 'text-foreground' : 'text-muted-foreground',
 						edit.disabled ? 'opacity-50' : 'cursor-pointer',
 					)}
 				>
-					{label}
+					{/* オンとオフの文言を同じ場所に重ね、長い方の幅を取っておく（切り替えても列の幅が動かない）。 */}
+					<span
+						className={cn(
+							'col-start-1 row-start-1',
+							!edit.value && 'invisible',
+						)}
+					>
+						{onLabel}
+					</span>
+					<span
+						className={cn('col-start-1 row-start-1', edit.value && 'invisible')}
+					>
+						{offLabel}
+					</span>
 				</label>
 			</span>
 			<DataTableInlineEditStatusIcon status={edit.status} error={edit.error} />

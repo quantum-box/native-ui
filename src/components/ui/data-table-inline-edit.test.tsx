@@ -392,6 +392,41 @@ describe('文字をその場で直すセル', () => {
 		await act(async () => links[1].click())
 		expect(document.activeElement?.getAttribute('role')).toBe('switch')
 	})
+	it('編集中も表示と同じ文字を見えないまま置き、入力欄は重ねる（列の幅が動かない形）', async () => {
+		await render(
+			<DataTableNumberCell
+				ariaLabel='単価を変更'
+				prefix='¥'
+				value={1280}
+				onSave={vi.fn()}
+			/>,
+		)
+		const display = button('単価を変更').querySelector('span')
+		await click('単価を変更')
+		const sizer = document.querySelector('.invisible')
+		expect(sizer?.textContent).toBe(display?.textContent)
+		expect(sizer?.parentElement?.className).toContain('min-w-0 flex-1 truncate')
+		// 入力欄は文字の上に重ねる（列の幅の計算に入らない）。
+		expect(input().parentElement?.className).toContain('absolute inset-y-0')
+	})
+	it('オン・オフは、両方の文言を重ねて長い方の幅を取っておく', async () => {
+		await render(
+			<DataTableToggleCell
+				ariaLabel='使う'
+				onLabel='使う'
+				offLabel='使わない'
+				value
+				onSave={vi.fn()}
+			/>,
+		)
+		const label = document.querySelector('label')
+		const spans = Array.from(label?.querySelectorAll('span') ?? [])
+		expect(spans.map(span => span.textContent)).toEqual(['使う', '使わない'])
+		expect(spans.map(span => span.classList.contains('invisible'))).toEqual([
+			false,
+			true,
+		])
+	})
 	it('使えないときは編集を始めない', async () => {
 		await render(
 			<DataTableTextCell

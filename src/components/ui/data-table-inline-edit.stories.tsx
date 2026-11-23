@@ -698,3 +698,125 @@ export const FailingTable: Story = {
 	name: '失敗が複数ある表',
 	render: () => <FailingTableExample />,
 }
+
+// ---- 列の幅が動かないことの確かめ ----------------------------------------------
+
+type WidthCheck = { name: string; ok: boolean }
+
+function columnEdges(root: HTMLElement) {
+	return Array.from(root.querySelectorAll('thead th'))
+		.map(th => {
+			const rect = th.getBoundingClientRect()
+			return `${rect.left.toFixed(2)}/${rect.width.toFixed(2)}`
+		})
+		.join(' ')
+}
+
+function WidthCheckExample() {
+	const root = React.useRef<HTMLDivElement>(null)
+	const [results, setResults] = React.useState<WidthCheck[] | null>(null)
+	React.useEffect(() => {
+		let stopped = false
+		void (async () => {
+			await wait(500)
+			const table = root.current
+			if (!table) return
+			const checks: WidthCheck[] = []
+			const press = (key: string) =>
+				(document.activeElement ?? document).dispatchEvent(
+					new KeyboardEvent('keydown', { key, bubbles: true }),
+				)
+			for (const row of ['L-1', 'L-2', 'L-3', 'L-4'])
+				for (const field of [
+					'品目名',
+					'単価',
+					'数量',
+					'納期',
+					'状態',
+					'タグ',
+				]) {
+					const cell = table.querySelector<HTMLElement>(
+						`[aria-label="${row}の${field}を変更"]`,
+					)
+					if (!cell || stopped) continue
+					const before = columnEdges(table)
+					cell.click()
+					await wait(120)
+					const during = columnEdges(table)
+					press('Escape')
+					await wait(120)
+					if (document.querySelector('[role=dialog]')) {
+						press('Escape')
+						await wait(120)
+					}
+					checks.push({
+						name: `${row} ${field}: 編集に入る・出る`,
+						ok: before === during && before === columnEdges(table),
+					})
+				}
+			const toggle = table.querySelectorAll<HTMLElement>('[role=switch]')[2]
+			if (toggle && !stopped) {
+				const before = columnEdges(table)
+				toggle.click()
+				await wait(100)
+				const saving = columnEdges(table)
+				await wait(700)
+				checks.push({
+					name: 'L-3 使う: 切り替え（保存中・保存できた）',
+					ok: before === saving && before === columnEdges(table),
+				})
+			}
+			if (!stopped) setResults(checks)
+		})()
+		return () => {
+			stopped = true
+		}
+	}, [])
+	const failed = results?.filter(check => !check.ok) ?? []
+	return (
+		<div className='space-y-3'>
+			<div ref={root}>
+				<EditableTableExample />
+			</div>
+			<div role='status' className='text-sm'>
+				{results === null ? (
+					<p className='text-muted-foreground'>確かめています…</p>
+				) : (
+					<>
+						<p
+							className={
+								failed.length ? 'text-destructive' : 'text-success font-medium'
+							}
+						>
+							{failed.length
+								? `${failed.length} 件で列の幅か位置が動きました`
+								: `${results.length} 件すべてで、列の幅と位置は 1 ピクセルも動きませんでした`}
+						</p>
+						<ul className='mt-1 grid grid-cols-2 gap-x-6 text-xs'>
+							{results.map(check => (
+								<li
+									key={check.name}
+									className={
+										check.ok ? 'text-muted-foreground' : 'text-destructive'
+									}
+								>
+									{check.ok ? '✓' : '✗'} {check.name}
+								</li>
+							))}
+						</ul>
+					</>
+				)}
+			</div>
+		</div>
+	)
+}
+
+/**
+ * 列の幅が動かないことを、その場で測って確かめる。表示されると、各行の 品目名・単価・数量・納期・状態・タグ を
+ * 順に編集に入れて出し、オン・オフも切り替えて、そのたびに全部の列の左端と幅を測る。
+ * 編集の前・中・後で 1 ピクセルでも違えば ✗ を出す。
+ */
+export const WidthCheck: Story = {
+	name: '列の幅が動かないことの確かめ',
+	render: () => <WidthCheckExample />,
+}

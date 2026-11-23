@@ -643,31 +643,64 @@ export function DataTableInlineEditError({ error }: { error: string | null }) {
 export function DataTableEditingCell({
 	error = null,
 	align = 'start',
+	sizer,
 	children,
 	className,
 	...props
 }: HTMLAttributes<HTMLDivElement> & {
 	error?: string | null
 	align?: 'start' | 'end'
+	/**
+	 * 表示のときの中身。見えないまま同じ場所に置き、列の幅を表示のときと同じに保つ。
+	 * 入力欄そのものは列の幅に効かないので、編集に入っても出ても、列の幅とほかの列の位置が動かない。
+	 */
+	sizer?: ReactNode
 }) {
 	return (
 		<div
 			{...props}
 			className={cn(
 				dataTableInlineEditCellClassName,
-				'bg-background ring-2 ring-inset',
+				'relative bg-background ring-2 ring-inset',
 				error ? 'ring-destructive' : 'ring-ring',
 				className,
 			)}
 		>
-			<span
-				className={cn(
-					'flex min-w-0 flex-1',
-					align === 'end' && 'justify-end text-right tabular-nums',
-				)}
-			>
-				{children}
-			</span>
+			{sizer !== undefined ? (
+				// 表示のときと同じ形（同じ文字を見えないまま置く）にして、表の列の幅の決まり方を変えない。
+				// 入力欄はその上に重ねるので、列の幅には効かない。
+				<span
+					className={cn(
+						'min-w-0 flex-1 truncate',
+						align === 'end' && 'text-right tabular-nums',
+					)}
+				>
+					<span aria-hidden className='invisible'>
+						{sizer}
+					</span>
+					<span
+						className={cn(
+							// セルの文字の場所に重ねる（左は余白の内側。右揃えは表示の文字の右端にそろえる）。
+							// 左揃えの入力欄は、編集中は空いている右端の印の場所まで使う（文字の左端は動かない）。
+							'absolute inset-y-0 left-5 flex items-center',
+							align === 'end'
+								? 'right-[2.75rem] justify-end text-right tabular-nums'
+								: 'right-5',
+						)}
+					>
+						{children}
+					</span>
+				</span>
+			) : (
+				<span
+					className={cn(
+						'flex min-w-0 flex-1',
+						align === 'end' && 'justify-end text-right tabular-nums',
+					)}
+				>
+					{children}
+				</span>
+			)}
 			<DataTableInlineEditStatusIcon status='idle' />
 		</div>
 	)
@@ -727,6 +760,7 @@ export function DataTableEditableCell<T>({
 				<DataTableEditingCell
 					error={edit.error}
 					align={align}
+					sizer={renderValue(edit.value)}
 					onKeyDownCapture={event => {
 						if (event.key === 'Enter' || event.key === 'Escape')
 							restoreFocus.current = true

@@ -63,7 +63,7 @@ export function DataTableDateCell({
 					aria-label={ariaLabel}
 					min={min}
 					max={max}
-					className='tabular-nums'
+					className='tabular-nums [&::-webkit-calendar-picker-indicator]:m-0 [&::-webkit-calendar-picker-indicator]:p-0'
 					initialText={edit.editValue}
 					parse={text => {
 						if (!text)
