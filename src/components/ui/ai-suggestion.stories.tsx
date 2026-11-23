@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import { AiBestMatchBadge, AiLabel, AiSuggestion } from './ai-suggestion'
+import {
+	AiBestMatchBadge,
+	AiLabel,
+	AiSuggestion,
+	AiValue,
+} from './ai-suggestion'
 
 /**
  * AI が出した物の見た目。候補の囲み・いちばん近い印・文の中の小さな印を、
@@ -83,8 +88,8 @@ export const 印: Story = {
 				<AiLabel>AI の推測</AiLabel>
 			</div>
 			<p>
-				店舗は「渋谷店」<AiLabel className='ml-1'>AI の判定</AiLabel>{' '}
-				として登録します。違っていれば選び直してください。
+				店舗は「<AiValue kind='AI の判定'>渋谷店</AiValue>」として登録します。
+				違っていれば選び直してください。
 			</p>
 			<table className='w-full text-left'>
 				<thead className='text-muted-foreground text-xs'>
@@ -96,7 +101,7 @@ export const 印: Story = {
 				<tbody>
 					<tr className='border-border border-t'>
 						<td className='py-1.5'>
-							消耗品費 <AiLabel>AI の推測</AiLabel>
+							<AiValue>消耗品費</AiValue>
 						</td>
 						<td className='py-1.5 tabular-nums'>¥3,200</td>
 					</tr>

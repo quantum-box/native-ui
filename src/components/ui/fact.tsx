@@ -169,6 +169,84 @@ function FactLabel({
 	)
 }
 
+interface FactValueProps {
+	/** 値そのもの。例「380 円」。 */
+	children: React.ReactNode
+	/** 出典。渡すと、触れる・押すと出典の詳しい中身が開く。 */
+	source?: FactSource
+	/** データが古いとき。点線と絵が橙になり、読み上げで「要確認」と伝える。 */
+	stale?: boolean
+	className?: string
+}
+
+/**
+ * 文の中に置く控えめな形。札は出さず、値そのものを青緑の文字と点線の下線にし、
+ * 後ろに小さな円柱の絵を付ける。文の高さや行の間は変えない。
+ * 触れる・押す・キーボードで選んで Enter で、出典の詳しい中身が開く。
+ */
+function FactValue({
+	children,
+	source,
+	stale = false,
+	className,
+}: Readonly<FactValueProps>) {
+	const { open, setOpen, hover } = useHoverOpen()
+	const classes = cn(
+		'inline text-teal-700 underline decoration-dotted decoration-1 underline-offset-[3px] dark:text-teal-300',
+		stale
+			? 'decoration-amber-500 dark:decoration-amber-400'
+			: 'decoration-teal-500/70 dark:decoration-teal-400/70',
+		className,
+	)
+	const icon = (
+		<Database
+			aria-hidden
+			className={cn(
+				'ml-0.5 inline size-[0.75em] align-baseline',
+				stale ? 'text-amber-600 dark:text-amber-400' : 'opacity-70',
+			)}
+		/>
+	)
+	const spoken = `（データ基盤の値。${source ? sourceSentence(source) : ''}${
+		stale ? 'データが古い可能性があります。要確認。' : ''
+	}）`
+
+	if (!source) {
+		return (
+			<span className={classes}>
+				{children}
+				{icon}
+				<span className='sr-only'>{spoken}</span>
+			</span>
+		)
+	}
+
+	return (
+		<Popover onOpenChange={setOpen} open={open}>
+			<PopoverTrigger
+				className={cn(
+					classes,
+					'cursor-pointer rounded-sm bg-transparent p-0 text-left leading-[inherit] hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+				)}
+				type='button'
+				{...hover}
+			>
+				{children}
+				{icon}
+				<span className='sr-only'>{spoken}</span>
+			</PopoverTrigger>
+			<PopoverContent align='start' className='w-64' {...hover}>
+				<FactSourceDetails source={source} />
+				{stale ? (
+					<p className='mt-2 text-amber-700 text-xs dark:text-amber-300'>
+						データが古い可能性があります。確かめてから使ってください。
+					</p>
+				) : null}
+			</PopoverContent>
+		</Popover>
+	)
+}
+
 type FactFieldStatus =
 	/** データ基盤の値が入ったまま。 */
 	| 'filled'
@@ -395,4 +473,6 @@ export {
 	type FactPanelProps,
 	type FactSource,
 	FactSourceDetails,
+	FactValue,
+	type FactValueProps,
 }

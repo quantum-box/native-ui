@@ -44,6 +44,8 @@ describe('public API', () => {
 		'FactField',
 		'FactPanel',
 		'FactSourceDetails',
+		'FactValue',
+		'AiValue',
 		'Message',
 		'MessageGroup',
 		'MessageContent',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
 
 import { AiField } from './ai-field'
-import { AiLabel, AiSuggestion } from './ai-suggestion'
+import { AiLabel, AiSuggestion, AiValue } from './ai-suggestion'
 import {
 	FactField,
 	type FactFieldStatus,
@@ -10,6 +10,7 @@ import {
 	FactPanel,
 	type FactSource,
 	FactSourceDetails,
+	FactValue,
 } from './fact'
 import { Input } from './input'
 import { Label } from './label'
@@ -69,13 +70,22 @@ export const 印: Story = {
 					長い出典名は省き、触れると全部見られる
 				</span>
 			</div>
-			<p>
-				玉ねぎの単価は 1kg あたり 380 円 <FactLabel showAsOf source={RETAIL} />{' '}
-				です。印に触れると出典を詳しく見られます。
-			</p>
 			<p className='text-muted-foreground text-xs'>
-				AI の推測と並べたとき: <AiLabel>AI の予想</AiLabel>{' '}
-				<FactLabel source={RETAIL} />
+				文の中では札ではなく、値そのものに印を付ける（FactValue・AiValue）。
+			</p>
+			<p className='leading-relaxed'>
+				玉ねぎの単価は 1kg あたり <FactValue source={RETAIL}>380 円</FactValue>{' '}
+				です。値に触れるか、選んで Enter を押すと出典を詳しく見られます。
+				去年の春の値は{' '}
+				<FactValue source={OLD} stale>
+					350 円
+				</FactValue>{' '}
+				で、古いので確かめが要ります。
+			</p>
+			<p className='leading-relaxed'>
+				AI の予想は <AiValue kind='AI の予想'>400 円</AiValue>
+				、データ基盤の相場は <FactValue source={RETAIL}>380 円</FactValue>{' '}
+				です。
 			</p>
 		</div>
 	),
@@ -338,6 +348,14 @@ function OriginMark({ line }: Readonly<{ line: Line }>) {
 	return <span className='text-muted-foreground text-xs'>{line.receipt}</span>
 }
 
+/** 表の中の値。出どころに合わせて、値そのものに控えめな印を付ける。 */
+function PriceValue({ line, text }: Readonly<{ line: Line; text: string }>) {
+	if (line.origin === 'fact')
+		return <FactValue source={line.source}>{text}</FactValue>
+	if (line.origin === 'ai') return <AiValue kind='AI の予想'>約{text}</AiValue>
+	return <>{text}</>
+}
+
 const yen = (value: number) => `¥${value.toLocaleString('ja-JP')}`
 
 /**
@@ -394,27 +412,11 @@ export const 出どころの違いを並べる: Story = {
 							<tr className='border-border border-b' key={line.name}>
 								<td className='py-2'>{line.name}</td>
 								<td className='py-2 tabular-nums'>{line.amount}</td>
-								<td
-									className={
-										line.origin === 'ai'
-											? 'py-2 text-right text-muted-foreground tabular-nums'
-											: 'py-2 text-right tabular-nums'
-									}
-								>
-									{line.origin === 'ai'
-										? `約${line.unitPrice}`
-										: line.unitPrice}
+								<td className={'py-2 text-right tabular-nums'}>
+									<PriceValue line={line} text={line.unitPrice} />
 								</td>
-								<td
-									className={
-										line.origin === 'ai'
-											? 'py-2 text-right text-muted-foreground tabular-nums'
-											: 'py-2 text-right tabular-nums'
-									}
-								>
-									{line.origin === 'ai'
-										? `約${yen(line.cost)}`
-										: yen(line.cost)}
+								<td className={'py-2 text-right tabular-nums'}>
+									<PriceValue line={line} text={yen(line.cost)} />
 								</td>
 								<td className='py-2 pl-4'>
 									<OriginMark line={line} />
@@ -444,7 +446,7 @@ export const 出どころの違いを並べる: Story = {
 					</div>
 					<div className='rounded-md border border-teal-600/40 bg-teal-500/[0.06] p-2 dark:border-teal-400/35'>
 						<dt className='flex items-center gap-1 text-muted-foreground'>
-							<FactLabel>相場</FactLabel> から
+							<FactValue>相場</FactValue>から
 						</dt>
 						<dd className='font-semibold text-sm tabular-nums'>
 							{yen(by('fact'))}
@@ -452,7 +454,7 @@ export const 出どころの違いを並べる: Story = {
 					</div>
 					<div className='rounded-md border border-transparent p-2 [background:linear-gradient(hsl(var(--nui-background)),hsl(var(--nui-background)))_padding-box,linear-gradient(to_right,#8b5cf6,#d946ef,#0ea5e9)_border-box]'>
 						<dt className='flex items-center gap-1 text-muted-foreground'>
-							<AiLabel>AI の予想</AiLabel> から
+							<AiValue kind='AI の予想'>AI の予想</AiValue>から
 						</dt>
 						<dd className='font-semibold text-sm tabular-nums'>
 							約{yen(by('ai'))}
