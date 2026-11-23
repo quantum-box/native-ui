@@ -108,7 +108,7 @@ function AiReasoningDetails({
 	const low = isLowConfidence(reasoning)
 	return (
 		<div className={cn('grid gap-2 text-xs', className)}>
-			<p className='flex items-center gap-1.5 font-medium text-sm text-violet-700 dark:text-violet-300'>
+			<p className='flex items-center gap-1.5 font-medium text-sm text-ai-foreground'>
 				<Sparkles aria-hidden className='size-3.5' />
 				{title}
 			</p>
@@ -140,10 +140,9 @@ function AiReasoningDetails({
 								aria-hidden
 								className={cn(
 									'size-1.5 rounded-full',
-									confidenceLevel(reasoning.confidence) === 'high' &&
-										'bg-violet-500',
+									confidenceLevel(reasoning.confidence) === 'high' && 'bg-ai-1',
 									confidenceLevel(reasoning.confidence) === 'medium' &&
-										'bg-fuchsia-400',
+										'bg-ai-2',
 									low && 'bg-amber-500',
 								)}
 							/>

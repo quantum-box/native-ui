@@ -42,7 +42,7 @@ function FactSourceDetails({
 }: Readonly<{ source: FactSource; className?: string }>) {
 	return (
 		<div className={cn('grid gap-2 text-xs', className)}>
-			<p className='flex items-center gap-1.5 font-medium text-sm text-teal-700 dark:text-teal-300'>
+			<p className='flex items-center gap-1.5 font-medium text-sm text-fact-foreground'>
 				<Database aria-hidden className='size-3.5' />
 				データ基盤の値
 			</p>
@@ -64,7 +64,7 @@ function FactSourceDetails({
 			</dl>
 			{source.url ? (
 				<a
-					className='inline-flex w-fit items-center gap-1 text-teal-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:text-teal-300'
+					className='inline-flex w-fit items-center gap-1 text-fact-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50'
 					href={source.url}
 					rel='noreferrer noopener'
 					target='_blank'
@@ -80,7 +80,7 @@ function FactSourceDetails({
 // 地は透けない色にする。入力欄の枠に重ねても、枠線が印の上に透けて見えないように。
 // 幅には上限を付け、長い出典名は「…」で省く（全部の名前は詳しい中身と読み上げで分かる）。
 const factLabelClass =
-	'inline-flex min-w-0 max-w-[14rem] shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-teal-200 bg-teal-50 px-1.5 align-middle font-medium text-[10px] text-teal-800 leading-4 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200'
+	'inline-flex min-w-0 max-w-[14rem] shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-fact-border bg-fact-subtle px-1.5 align-middle font-medium text-[10px] text-fact-foreground leading-4'
 
 interface FactLabelProps {
 	/** 印の文言。既定は出典名。出典が無いときは「データ」。 */
@@ -132,7 +132,7 @@ function FactLabel({
 				}詳しく見る`}
 				className={cn(
 					factLabelClass,
-					'cursor-pointer transition-colors duration-fast hover:bg-teal-100 dark:hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+					'cursor-pointer transition-colors duration-fast hover:border-fact focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
 					className,
 				)}
 				type='button'
@@ -170,10 +170,10 @@ function FactValue({
 }: Readonly<FactValueProps>) {
 	const { open, setOpen, hover } = useHoverOpen()
 	const classes = cn(
-		'inline text-teal-700 underline decoration-dotted decoration-1 underline-offset-[3px] dark:text-teal-300',
+		'inline text-fact-foreground underline decoration-dotted decoration-1 underline-offset-[3px]',
 		stale
 			? 'decoration-amber-500 dark:decoration-amber-400'
-			: 'decoration-teal-500/70 dark:decoration-teal-400/70',
+			: 'decoration-fact/70',
 		className,
 	)
 	const icon = (
@@ -323,7 +323,7 @@ function FactField({
 				// 確かめた後は地を背景の色にして、静かな見た目にする。出典は残す。
 				return (
 					<FactLabel
-						className='bg-background text-teal-700 hover:bg-teal-50 dark:bg-background dark:text-teal-300 dark:hover:bg-teal-950'
+						className='bg-background text-fact-foreground hover:bg-fact-subtle dark:bg-background'
 						source={source}
 						suffix={
 							<span className='inline-flex items-center gap-0.5'>
@@ -353,12 +353,10 @@ function FactField({
 			<div
 				className={cn(
 					'rounded-md border border-transparent',
-					status === 'filled' &&
-						'border-teal-600/70 bg-teal-500/[0.06] dark:border-teal-400/60 dark:bg-teal-400/[0.07]',
+					status === 'filled' && 'border-fact/70 bg-fact/[0.06]',
 					status === 'stale' &&
 						'border-amber-500/80 border-dashed bg-amber-500/[0.06] dark:border-amber-400/70',
-					status === 'confirmed' &&
-						'border-teal-600/30 dark:border-teal-400/30',
+					status === 'confirmed' && 'border-fact/30',
 				)}
 			>
 				{field}
@@ -373,7 +371,7 @@ function FactField({
 					{canConfirm ? (
 						<button
 							aria-label='データ基盤の値を確かめた'
-							className='grid size-4 place-items-center rounded-full border border-teal-600/50 bg-background text-teal-700 transition-colors duration-fast hover:bg-teal-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-teal-400/50 dark:text-teal-300 dark:hover:bg-teal-500 dark:hover:text-white'
+							className='grid size-4 place-items-center rounded-full border border-fact/50 bg-background text-fact-foreground transition-colors duration-fast hover:bg-fact hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:text-white'
 							onClick={onConfirm}
 							title='データ基盤の値を確かめた'
 							type='button'
@@ -416,18 +414,16 @@ function FactPanel({
 		<section
 			aria-label={source ? `${title}。${sourceSentence(source)}` : title}
 			className={cn(
-				'overflow-hidden rounded-lg border border-teal-600/40 bg-background shadow-sm dark:border-teal-400/35',
+				'overflow-hidden rounded-lg border border-fact/40 bg-background shadow-sm',
 				className,
 			)}
 		>
-			<div className='flex items-start gap-2 border-teal-600/20 border-b bg-teal-500/[0.07] px-3 py-2 dark:border-teal-400/20 dark:bg-teal-400/[0.08]'>
-				<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-teal-600 text-white dark:bg-teal-500'>
+			<div className='flex items-start gap-2 border-fact/20 border-b bg-fact/[0.07] px-3 py-2'>
+				<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-fact text-white'>
 					<Database aria-hidden className='size-3' />
 				</span>
 				<div className='min-w-0 flex-1'>
-					<p className='font-semibold text-sm text-teal-800 dark:text-teal-200'>
-						{title}
-					</p>
+					<p className='font-semibold text-sm text-fact-foreground'>{title}</p>
 					{description ? (
 						<p className='text-muted-foreground text-xs'>{description}</p>
 					) : null}

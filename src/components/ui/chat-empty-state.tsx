@@ -93,7 +93,7 @@ function ChatEmptyState({
 				className,
 			)}
 		>
-			<span className='grid size-10 place-items-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-sky-500 text-white [&_svg]:size-5'>
+			<span className='grid size-10 place-items-center rounded-full bg-gradient-to-br from-ai-1 via-ai-2 to-ai-3 text-white [&_svg]:size-5'>
 				{icon ?? <Sparkles aria-hidden />}
 			</span>
 			<div className='grid gap-1'>

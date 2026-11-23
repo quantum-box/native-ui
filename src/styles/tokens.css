@@ -46,6 +46,21 @@
   --nui-tone-teal: 184 64% 34%;
   --nui-tone-slate: 222 12% 46%;
 
+  /* AI と、データ基盤の値（事実）の色。
+   * AI は 3 色のグラデーション（ai-1 → ai-2 → ai-3）、事実は青緑の単色。
+   * foreground は文字、subtle は不透明の薄い地、border は枠。
+   * ダークでは彩度と明るさを下げ、光りすぎないようにする。 */
+  --nui-ai-1: 258 90% 66%;
+  --nui-ai-2: 292 84% 61%;
+  --nui-ai-3: 199 89% 48%;
+  --nui-ai-foreground: 263 70% 50%;
+  --nui-ai-subtle: 270 100% 98%;
+  --nui-ai-border: 276 70% 86%;
+  --nui-fact: 175 84% 32%;
+  --nui-fact-foreground: 176 70% 22%;
+  --nui-fact-subtle: 166 76% 97%;
+  --nui-fact-border: 168 64% 80%;
+
   /* Radius */
   --nui-radius-sm: 4px;
   --nui-radius-md: 6px;
@@ -94,6 +109,17 @@
   --nui-tone-rose: 346 76% 68%;
   --nui-tone-teal: 184 56% 52%;
   --nui-tone-slate: 222 12% 64%;
+
+  --nui-ai-1: 255 42% 52%;
+  --nui-ai-2: 292 32% 48%;
+  --nui-ai-3: 199 42% 44%;
+  --nui-ai-foreground: 258 60% 80%;
+  --nui-ai-subtle: 262 22% 15%;
+  --nui-ai-border: 262 18% 30%;
+  --nui-fact: 174 38% 44%;
+  --nui-fact-foreground: 172 42% 76%;
+  --nui-fact-subtle: 178 24% 13%;
+  --nui-fact-border: 176 22% 28%;
 
   --nui-shadow-overlay: 0 4px 16px -2px rgb(0 0 0 / 0.4),
     0 1px 3px rgb(0 0 0 / 0.3);

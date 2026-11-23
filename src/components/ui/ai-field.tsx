@@ -132,7 +132,7 @@ function AiField({
 			case 'filled':
 			case 'filling':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 to-ai-2 px-1.5 text-white'>
 						<Sparkles
 							aria-hidden
 							className={cn(
@@ -145,14 +145,14 @@ function AiField({
 				)
 			case 'uncertain':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-500 to-fuchsia-500 px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-700 to-ai-2 px-1.5 text-white'>
 						<Sparkles aria-hidden className='size-2.5' />
 						{text.uncertain}
 					</span>
 				)
 			case 'confirmed':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full border border-violet-500/30 bg-background px-1.5 text-violet-700 dark:text-violet-300'>
+					<span className='inline-flex items-center gap-0.5 rounded-full border border-ai-border bg-background px-1.5 text-ai-foreground'>
 						<Check aria-hidden className='size-2.5' />
 						{text.confirmed}
 					</span>
@@ -178,12 +178,12 @@ function AiField({
 				className={cn(
 					'rounded-[7px] p-px',
 					(status === 'filled' || status === 'filling') &&
-						'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 shadow-fuchsia-500/15 shadow-sm',
+						'bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 shadow-ai-2/15 dark:shadow-none shadow-sm',
 					status === 'filling' &&
 						'motion-safe:animate-trace-shimmer motion-safe:bg-[length:200%_100%]',
 					status === 'uncertain' &&
-						'bg-gradient-to-r from-amber-500 via-fuchsia-500 to-violet-500 shadow-amber-500/15 shadow-sm',
-					status === 'confirmed' && 'bg-violet-500/35 dark:bg-violet-400/35',
+						'bg-gradient-to-r from-amber-500 via-ai-2 to-ai-1 shadow-amber-500/15 shadow-sm dark:from-amber-600/80 dark:shadow-none',
+					status === 'confirmed' && 'bg-ai-1/35',
 				)}
 			>
 				<div className={cn('rounded-md', framed && 'bg-background')}>
@@ -191,9 +191,9 @@ function AiField({
 						className={cn(
 							'rounded-md',
 							(status === 'filled' || status === 'filling') &&
-								'bg-gradient-to-r from-violet-500/[0.07] via-fuchsia-500/[0.07] to-sky-500/[0.07]',
+								'bg-gradient-to-r from-ai-1/[0.07] via-ai-2/[0.07] to-ai-3/[0.07]',
 							status === 'uncertain' &&
-								'bg-gradient-to-r from-amber-500/[0.09] via-fuchsia-500/[0.06] to-violet-500/[0.06]',
+								'bg-gradient-to-r from-amber-500/[0.09] via-ai-2/[0.06] to-ai-1/[0.06]',
 						)}
 					>
 						{field}
@@ -213,7 +213,7 @@ function AiField({
 					{onConfirm && (status === 'filled' || status === 'uncertain') ? (
 						<button
 							aria-label={text.confirm}
-							className='pointer-events-auto grid size-4 place-items-center rounded-full border border-violet-500/50 bg-background text-violet-600 transition-colors duration-fast hover:bg-violet-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:border-violet-400/50 dark:text-violet-300 dark:hover:bg-violet-500 dark:hover:text-white'
+							className='pointer-events-auto grid size-4 place-items-center rounded-full border border-ai-1/50 bg-background text-ai-foreground transition-colors duration-fast hover:bg-ai-1 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:text-white'
 							onClick={onConfirm}
 							title={text.confirm}
 							type='button'

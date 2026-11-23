@@ -40,19 +40,17 @@ function AiSuggestion({
 		<section
 			aria-label={title}
 			className={cn(
-				'rounded-lg bg-gradient-to-r from-violet-500 via-fuchsia-500 to-sky-500 p-px shadow-fuchsia-500/20 shadow-sm',
+				'rounded-lg bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 p-px shadow-ai-2/20 dark:shadow-none shadow-sm',
 				className,
 			)}
 		>
 			<div className='overflow-hidden rounded-[7px] bg-background'>
-				<div className='flex items-start gap-2 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-sky-500/10 px-3 py-2'>
-					<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-sky-500 text-white'>
+				<div className='flex items-start gap-2 bg-gradient-to-r from-ai-1/10 via-ai-2/10 to-ai-3/10 px-3 py-2'>
+					<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gradient-to-br from-ai-1 via-ai-2 to-ai-3 text-white'>
 						<Sparkles aria-hidden className='size-3' />
 					</span>
 					<div className='min-w-0'>
-						<p className='bg-gradient-to-r from-violet-600 via-fuchsia-600 to-sky-600 bg-clip-text font-semibold text-sm text-transparent dark:from-violet-300 dark:via-fuchsia-300 dark:to-sky-300'>
-							{title}
-						</p>
+						<p className='font-semibold text-ai-foreground text-sm'>{title}</p>
 						{description ? (
 							<p className='text-muted-foreground text-xs'>{description}</p>
 						) : null}
@@ -78,7 +76,7 @@ function AiBestMatchBadge({
 	return (
 		<span
 			className={cn(
-				'inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-1.5 py-px font-medium text-[10px] text-white',
+				'inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 to-ai-2 px-1.5 py-px font-medium text-[10px] text-white',
 				className,
 			)}
 		>
@@ -89,7 +87,7 @@ function AiBestMatchBadge({
 }
 
 const aiLabelClass =
-	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-fuchsia-500/30 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-sky-500/10 px-1.5 align-middle font-medium text-[10px] text-fuchsia-700 leading-4 dark:border-fuchsia-400/30 dark:text-fuchsia-300'
+	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-ai-border bg-gradient-to-r from-ai-1/10 via-ai-2/10 to-ai-3/10 px-1.5 align-middle font-medium text-[10px] text-ai-foreground leading-4'
 
 interface AiLabelProps extends React.HTMLAttributes<HTMLSpanElement> {
 	/** 印の文言。既定は「AI」。例: 「AI の判定」「AI の推測」。 */
@@ -128,7 +126,7 @@ function AiLabel({
 			<PopoverTrigger
 				className={cn(
 					aiLabelClass,
-					'cursor-pointer transition-colors duration-fast hover:border-fuchsia-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+					'cursor-pointer transition-colors duration-fast hover:border-ai-2/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
 					className,
 				)}
 				type='button'
@@ -171,10 +169,10 @@ function AiValue({
 	const { open, setOpen, hover } = useHoverOpen()
 	const low = isLowConfidence(reasoning)
 	const classes = cn(
-		'text-violet-700 underline decoration-dotted decoration-1 underline-offset-[3px] dark:text-violet-300',
+		'text-ai-foreground underline decoration-dotted decoration-1 underline-offset-[3px]',
 		low
 			? 'decoration-amber-500 dark:decoration-amber-400'
-			: 'decoration-fuchsia-500/70 dark:decoration-fuchsia-400/70',
+			: 'decoration-ai-2/70',
 		className,
 	)
 	const icon = (
