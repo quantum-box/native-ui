@@ -8,12 +8,12 @@ import { Input } from './input'
 import { Label } from './label'
 
 /**
- * AI が値を出した理由と判断の材料（試作）。データ基盤の値の出典と同じく、
+ * AI が値を出した理由と判断の材料。データ基盤の値の出典と同じく、
  * AI の値に触れる・押す・キーボードで選んで Enter を押すと小さな枠で開く。
  * 何も渡さないときは、今どおり控えめな印だけになる。
  */
 const meta = {
-	title: 'Components/AI の判断の中身（試作）',
+	title: 'Components/AI の判断の中身',
 	component: AiReasoningDetails,
 	args: { reasoning: {} },
 } satisfies Meta<typeof AiReasoningDetails>
