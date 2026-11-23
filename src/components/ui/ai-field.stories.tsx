@@ -14,12 +14,12 @@ import {
 } from './select'
 
 /**
- * AI が値を入れた入力欄を、入力欄そのものの見た目で分かるようにする包み（試作）。
+ * AI が値を入れた入力欄を、入力欄そのものの見た目で分かるようにする包み。
  * `AiSuggestion` と同じグラデーションの枠と薄い地を使う。
  * 人が直すと AI の見た目は消え、「直した」の印に変わる。
  */
 const meta = {
-	title: 'Components/AI が入れた入力欄（試作）',
+	title: 'Components/AI が入れた入力欄',
 	component: AiField,
 } satisfies Meta<typeof AiField>
 
@@ -146,8 +146,8 @@ export const 入力欄の種類: Story = {
 	),
 }
 
-/** 動かして試す。打つと「直した」に、✓ を押すと「確認済み」に変わる。 */
-export const 触って試す: Story = {
+/** 状態の移り変わり。文字を打つと「直した」に、✓ を押すと「確認済み」に変わる。 */
+export const 状態の移り変わり: Story = {
 	args: { status: 'filled', children: <Input /> },
 	render: function Render() {
 		const [status, setStatus] = React.useState<AiFieldStatus>('filled')
