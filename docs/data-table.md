@@ -209,7 +209,7 @@ const columns: ColumnDef<Product>[] = [
 ```tsx
 const customerKind = defineRecordKind<Customer>({
   name: '取引先',
-  system: '顧客管理',
+  system: 'crm', // systems のキー
   icon: Building2,
   getId: customer => customer.id,
   getLabel: customer => customer.name,
@@ -227,6 +227,11 @@ const customerKind = defineRecordKind<Customer>({
 
 <RecordKindProvider
   kinds={{ customer: customerKind, product: productKind, member: memberKind }}
+  systems={{
+    crm: { name: '顧客管理', icon: Building2, tone: 'blue' },
+    catalog: { name: '商品管理', icon: Package, tone: 'amber' },
+  }}
+  currentSystem='catalog' // 今の画面のシステム
   navigate={href => navigate(href)} // アプリの画面の移動の仕組み
 >
   <App />
@@ -234,7 +239,9 @@ const customerKind = defineRecordKind<Customer>({
 ```
 
 - `getHref` があれば押すと詳細へ移る。`navigate` を渡すとアプリの方法で移り、⌘・Ctrl を押しながらだとふつうのリンクとして新しいタブで開く。行を押したときの動きとは重ならない。
-- 記録に触れる・キーボードでフォーカスすると、要点の枠が出る。枠の上に種類の名前と `system`（どのシステムの記録か。例「商品 · 商品管理」）、真ん中に `renderPreview`、下に「{システム}で開く」（`getHref` の場所へ移る。文言は `openLabel` で変えられる）と `getActions` の操作が並ぶ。
+- システム（商品管理・顧客管理・会計など）の名前・絵・色の印は、`RecordKindProvider` の `systems` に 1 か所で決め、種類の `system` にそのキーを書く。色の印は `blue`・`green`・`amber`・`violet`・`rose`・`teal`・`slate`（トークン `--nui-tone-*`、ライトとダークで別の値）。
+- `currentSystem` に今の画面のシステムを渡す。別のシステムの記録の枠は、上にシステムの色の帯（絵・名前・「別のシステムの記録 ↗」）、左に同じ色の線、読むだけの地、同じ色の「{システム}で開く」で出し、別のシステムをのぞいていると分かるようにする。同じシステムの記録はふつうの枠で、開く操作は「{名前}を開く」になる。
+- 記録に触れる・キーボードでフォーカスすると、要点の枠が出る。枠の上に種類とシステム、真ん中に `renderPreview`、下に「{システム}で開く」（`getHref` の場所へ移る。文言は `openLabel` で変えられる）と `getActions` の操作が並ぶ。
 - キーボードでは記録で ↓ を押すと枠の中の最初の操作（「{システム}で開く」）へ移る。Tab で操作を順に移り、Esc か枠の端で Tab を押すと記録へ戻る。読み上げには「下矢印キーで、要点と開く操作へ移ります」と伝える。
 - 消えた・見る権限が無い・読み込めない記録でも枠は出る。「{システム}で開く」は押せない形で出し、横に理由（「見る権限が無いので開けません。」など）を出す。
 - `getActions` には `recordActions.newTab(href)`（新しいタブで開く）・`recordActions.copy(text, label)`（コピー。押すと「コピーしました」）や、`{ label, icon, href }`（例「この商品の受注を見る」）、`{ label, onSelect }` を並べる。

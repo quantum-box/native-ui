@@ -7,6 +7,7 @@ import {
 	Lock,
 } from 'lucide-react'
 import {
+	type CSSProperties,
 	type ComponentType,
 	type MouseEvent,
 	type KeyboardEvent,
@@ -82,7 +83,10 @@ export type RecordKindDefinition<T = unknown> = {
 	icon?: ComponentType<{ className?: string }>
 	/** 記録ごとの絵（担当者の顔など）。あれば `icon` の代わりに出す。 */
 	renderAvatar?: (record: T) => ReactNode
-	/** どのシステムの記録か（例「商品管理」「顧客管理」「会計」）。要点の枠の上に出す。 */
+	/**
+	 * どのシステムの記録か。`RecordKindProvider` の `systems` のキー（登録が無ければそのまま名前として出す）。
+	 * 例「商品管理」「顧客管理」「会計」。要点の枠の上に、システムの絵・名前・色の印で出す。
+	 */
 	system?: string
 	/** 詳細の画面の場所。あれば押すとそこへ移り、要点の枠に「{システム}で開く」が出る。 */
 	getHref?: (record: T) => string | undefined
@@ -118,16 +122,48 @@ export function defineRecordKind<T>(definition: RecordKindDefinition<T>) {
 // biome-ignore lint/suspicious/noExplicitAny: 型の違う決まりを 1 つの登録にまとめるため
 export type AnyRecordKindDefinition = RecordKindDefinition<any>
 
+/** システムの色の印。どのシステムの記録かを、帯・線・開くボタンの色で見分ける。 */
+export type RecordSystemTone =
+	| 'blue'
+	| 'green'
+	| 'amber'
+	| 'violet'
+	| 'rose'
+	| 'teal'
+	| 'slate'
+
+/** システムごとの決まり（商品管理・顧客管理・会計など）。 */
+export type RecordSystemDefinition = {
+	/** システムの名前（例「商品管理」）。 */
+	name: string
+	/** システムの絵。 */
+	icon?: ComponentType<{ className?: string }>
+	/** 色の印。既定は `slate`。 */
+	tone?: RecordSystemTone
+}
+
 type RecordKindRegistry = {
 	kinds: Readonly<Record<string, AnyRecordKindDefinition>>
+	systems: Readonly<Record<string, RecordSystemDefinition>>
+	currentSystem?: string
 	navigate?: (href: string) => void
 }
 
-const RecordKindContext = createContext<RecordKindRegistry>({ kinds: {} })
+const RecordKindContext = createContext<RecordKindRegistry>({
+	kinds: {},
+	systems: {},
+})
 
 export type RecordKindProviderProps = {
 	/** 種類の名前ごとの決まり。例 `{ customer: customerKind, product: productKind }`。 */
 	kinds: Readonly<Record<string, AnyRecordKindDefinition>>
+	/** システムごとの決まり。種類の `system` にこのキーを書く。例 `{ catalog: { name: '商品管理', icon: Package, tone: 'amber' } }`。 */
+	systems?: Readonly<Record<string, RecordSystemDefinition>>
+	/**
+	 * 今の画面がどのシステムか（`systems` のキー）。同じシステムの記録は、ふつうの枠で出す。
+	 * 違うシステムの記録は、別のシステムをのぞいていると分かる枠で出す。
+	 */
+	currentSystem?: string
 	/**
 	 * 詳細へ移る方法（アプリの画面の移動の仕組み）。
 	 * 渡さなければふつうのリンクとして移る。新しいタブで開く操作はいつもリンクのまま。
@@ -136,18 +172,42 @@ export type RecordKindProviderProps = {
 	children: ReactNode
 }
 
-/** 記録の種類の決まりを登録する。アプリの外側に 1 つ置く。 */
+const NO_SYSTEMS = {}
+
+/** 記録の種類とシステムの決まりを登録する。アプリの外側に 1 つ置く。 */
 export function RecordKindProvider({
 	kinds,
+	systems = NO_SYSTEMS,
+	currentSystem,
 	navigate,
 	children,
 }: RecordKindProviderProps) {
-	const value = useMemo(() => ({ kinds, navigate }), [kinds, navigate])
+	const value = useMemo(
+		() => ({ kinds, systems, currentSystem, navigate }),
+		[kinds, systems, currentSystem, navigate],
+	)
 	return (
 		<RecordKindContext.Provider value={value}>
 			{children}
 		</RecordKindContext.Provider>
 	)
+}
+
+/** 種類が属するシステムの決まりと、今の画面から見て別のシステムかを読む。 */
+export function useRecordSystem(
+	definition: Pick<RecordKindDefinition, 'system'>,
+) {
+	const { systems, currentSystem } = useContext(RecordKindContext)
+	if (!definition.system) return null
+	const system = systems[definition.system]
+	return {
+		key: definition.system,
+		name: system?.name ?? definition.system,
+		icon: system?.icon,
+		tone: system?.tone ?? ('slate' as RecordSystemTone),
+		/** 今の画面と違うシステムの記録か。 */
+		external: definition.system !== currentSystem,
+	}
 }
 
 /** 登録した種類の決まりを読む。登録が無ければ知らせる。 */
@@ -216,15 +276,14 @@ function linkProps(href: string, navigate?: (href: string) => void) {
 	}
 }
 
-/** 開く操作の文言。既定は「{システム}で開く」（システムが無ければ「{名前}を開く」）。 */
+/** 開く操作の文言。既定は、別のシステムなら「{システム}で開く」、同じなら「{名前}を開く」。 */
 export function recordOpenLabel(
-	definition: Pick<RecordKindDefinition, 'name' | 'system' | 'openLabel'>,
+	definition: Pick<RecordKindDefinition, 'name' | 'openLabel'>,
+	system?: { name: string; external: boolean } | null,
 ) {
 	return (
 		definition.openLabel ??
-		(definition.system
-			? `${definition.system}で開く`
-			: `${definition.name}を開く`)
+		(system?.external ? `${system.name}で開く` : `${definition.name}を開く`)
 	)
 }
 
@@ -351,7 +410,7 @@ function RecordPeek({
 				ref={content}
 				tabIndex={-1}
 				align='start'
-				className='w-80 p-0'
+				className='w-80 overflow-hidden p-0'
 				aria-label={label}
 				onOpenAutoFocus={event => {
 					// 触れて出たときはフォーカスを動かさない。キーボードで入ったときだけ最初の操作へ。
@@ -449,7 +508,10 @@ function RecordActionButton({
 }
 
 /**
- * 要点の枠の中身。上に種類とシステム、真ん中に要点、下に開く操作とほかの操作を出す。
+ * 要点の枠の中身。
+ *
+ * 別のシステムの記録では、上にシステムの色の帯（絵・名前・「別のシステムの記録 ↗」）、左に同じ色の線を付け、
+ * 中身は読むだけの地に、下の「{システム}で開く」も同じ色にする。今の画面と同じシステムの記録は、ふつうの枠で出す。
  * 消えた・見る権限が無い・読み込めない記録では、開けないことと理由を出す。
  */
 export function RecordCard<T = unknown>({
@@ -462,30 +524,62 @@ export function RecordCard<T = unknown>({
 	status?: Exclude<RecordStatus, 'loading'>
 }) {
 	const { definition, navigate } = useRecordKind<T>(kind)
+	const system = useRecordSystem(definition)
+	const external = !!system?.external
 	const reasonId = useId()
-	const Icon = definition.icon
+	const KindIcon = definition.icon
+	const SystemIcon = system?.icon ?? KindIcon
 	const ready = status === 'ready' && record
 	const href = ready ? definition.getHref?.(record) : undefined
 	const actions = ready ? (definition.getActions?.(record) ?? []) : []
-	const openLabel = recordOpenLabel(definition)
+	const openLabel = recordOpenLabel(definition, system)
 	const reason =
 		status === 'forbidden'
 			? '見る権限が無いので開けません。'
 			: status === 'unavailable'
 				? '読み込めなかったので開けません。'
 				: '削除されているので開けません。'
+	const tone = external
+		? ({ '--record-tone': `var(--nui-tone-${system?.tone})` } as CSSProperties)
+		: undefined
 	return (
-		<div className='text-sm'>
-			<div className='flex items-center gap-1.5 border-border border-b px-3 py-2 text-xs'>
-				{Icon ? (
-					<Icon aria-hidden className='h-3.5 w-3.5 text-muted-foreground' />
-				) : null}
-				<span className='font-medium text-foreground'>{definition.name}</span>
-				{definition.system ? (
-					<span className='text-muted-foreground'>· {definition.system}</span>
-				) : null}
-			</div>
-			<div className='px-3 py-2.5'>
+		<div
+			style={tone}
+			data-external={external || undefined}
+			className={cn(
+				'text-sm',
+				external && 'border-l-[3px] border-l-[hsl(var(--record-tone))]',
+			)}
+		>
+			{external && system ? (
+				<div className='flex items-center gap-1.5 border-border border-b bg-[hsl(var(--record-tone)/0.1)] px-3 py-2 text-xs'>
+					{SystemIcon ? (
+						<SystemIcon
+							aria-hidden
+							className='h-3.5 w-3.5 text-[hsl(var(--record-tone))]'
+						/>
+					) : null}
+					<span className='font-semibold text-[hsl(var(--record-tone))]'>
+						{system.name}
+					</span>
+					<span className='text-muted-foreground'>· {definition.name}</span>
+					<span className='ml-auto inline-flex shrink-0 items-center gap-0.5 text-[11px] text-muted-foreground'>
+						別のシステムの記録
+						<ArrowUpRight aria-hidden className='h-3 w-3' />
+					</span>
+				</div>
+			) : (
+				<div className='flex items-center gap-1.5 border-border border-b px-3 py-2 text-xs'>
+					{KindIcon ? (
+						<KindIcon
+							aria-hidden
+							className='h-3.5 w-3.5 text-muted-foreground'
+						/>
+					) : null}
+					<span className='font-medium text-foreground'>{definition.name}</span>
+				</div>
+			)}
+			<div className={cn('px-3 py-2.5', external && 'bg-surface')}>
 				{ready ? (
 					definition.renderPreview ? (
 						definition.renderPreview(record)
@@ -506,8 +600,17 @@ export function RecordCard<T = unknown>({
 			{ready && !href && !actions.length ? null : (
 				<div className='flex flex-wrap items-center gap-1 border-border border-t p-2'>
 					{href ? (
-						<Button asChild size='sm' variant='primary'>
+						<Button
+							asChild
+							size='sm'
+							variant='primary'
+							className={cn(
+								external &&
+									'bg-[hsl(var(--record-tone))] text-white hover:bg-[hsl(var(--record-tone)/0.9)] active:bg-[hsl(var(--record-tone)/0.8)] dark:text-[hsl(var(--nui-background))]',
+							)}
+						>
 							<a {...linkProps(href, navigate)}>
+								{external && SystemIcon ? <SystemIcon aria-hidden /> : null}
 								{openLabel}
 								<ArrowUpRight aria-hidden />
 							</a>

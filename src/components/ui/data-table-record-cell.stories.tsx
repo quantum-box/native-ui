@@ -21,6 +21,7 @@ import {
 import {
 	RecordCard,
 	RecordKindProvider,
+	type RecordSystemDefinition,
 	defineRecordKind,
 	recordActions,
 } from './record'
@@ -116,6 +117,14 @@ const MEMBERS: Member[] = [
 	{ id: 'm3', name: '伊藤 美咲', kana: 'いとう みさき', team: '店舗運営' },
 ]
 
+/** システムごとの決まり（名前・絵・色の印）。アプリが 1 か所で決める。 */
+const SYSTEMS = {
+	catalog: { name: '商品管理', icon: Package, tone: 'amber' },
+	crm: { name: '顧客管理', icon: Building2, tone: 'blue' },
+	stores: { name: '店舗管理', icon: Store, tone: 'teal' },
+	hr: { name: '人事', icon: UserRound, tone: 'violet' },
+} satisfies Record<string, RecordSystemDefinition>
+
 const KINDS = {
 	customer: defineRecordKind<Customer>({
 		name: '取引先',
@@ -123,7 +132,7 @@ const KINDS = {
 		getId: customer => customer.id,
 		getLabel: customer => customer.name,
 		getDescription: customer => customer.code,
-		system: '顧客管理',
+		system: 'crm',
 		getHref: customer => `/customers/${customer.id}`,
 		getActions: customer => [
 			recordActions.newTab(`/customers/${customer.id}`),
@@ -155,7 +164,7 @@ const KINDS = {
 		getId: product => product.id,
 		getLabel: product => product.name,
 		getDescription: product => product.sku,
-		system: '商品管理',
+		system: 'catalog',
 		getHref: product => `/products/${product.id}`,
 		getActions: product => [
 			recordActions.newTab(`/products/${product.id}`),
@@ -187,7 +196,7 @@ const KINDS = {
 		getId: shop => shop.id,
 		getLabel: shop => shop.name,
 		getDescription: shop => shop.area,
-		system: '店舗管理',
+		system: 'stores',
 		getHref: shop => `/shops/${shop.id}`,
 		renderPreview: shop => (
 			<>
@@ -206,7 +215,7 @@ const KINDS = {
 		getLabel: member => member.name,
 		getDescription: member => member.team,
 		getKeywords: member => [member.kana],
-		system: '人事',
+		system: 'hr',
 		getHref: member => `/staff/${member.id}`,
 		openLabel: '社員名簿で開く',
 		getActions: member => [
@@ -245,8 +254,9 @@ const KINDS = {
  * 付け替えの候補）は、アプリが `RecordKindProvider` に 1 か所で登録する。
  * どの表に出しても同じ見た目と動きになる。native-ui は種類の名前を知らない。
  *
- * 記録に触れる（キーボードではフォーカスして ↓）と、上に種類とシステム（例「商品 · 商品管理」）、
- * 真ん中に要点、下に「{システム}で開く」とほかの操作が出る枠が開く。
+ * 記録に触れる（キーボードではフォーカスして ↓）と、要点の枠が開く。別のシステムの記録は、
+ * システムの色の帯（例「商品管理 · 商品  別のシステムの記録 ↗」）と左の線で、別のシステムをのぞいていると分かる。
+ * 下の「{システム}で開く」も同じ色。システムの名前・絵・色は `systems` に 1 か所で決める。
  * 消えた・見る権限が無い記録では、開けないことと理由を出す。
  *
  * この例では、記録を押したときの移動先を下に出している（実際のアプリでは画面が移る）。
@@ -259,7 +269,7 @@ const meta = {
 		Story => {
 			const [moved, setMoved] = React.useState<string | null>(null)
 			return (
-				<RecordKindProvider kinds={KINDS} navigate={setMoved}>
+				<RecordKindProvider kinds={KINDS} systems={SYSTEMS} navigate={setMoved}>
 					<Story />
 					<p className='mt-3 text-muted-foreground text-xs' role='status'>
 						{moved
@@ -393,7 +403,7 @@ export const Table_: Story = {
 
 function CardFrame({ children }: { children: React.ReactNode }) {
 	return (
-		<div className='w-80 rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay'>
+		<div className='w-80 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay'>
 			{children}
 		</div>
 	)
@@ -427,6 +437,46 @@ export const Cards: Story = {
 				<RecordCard kind='customer' status='forbidden' />
 			</CardFrame>
 		</div>
+	),
+}
+
+// ---- 同じシステムと別のシステム ------------------------------------------------
+
+/**
+ * 今の画面が「商品管理」のとき。同じ商品管理の記録（商品）はふつうの枠、
+ * 別のシステムの記録（取引先・担当者）は、色の帯と線のある枠で出る。
+ * `RecordKindProvider` の `currentSystem` で今の画面のシステムを決める。
+ */
+export const SameAndOtherSystem: Story = {
+	name: '同じシステムと別のシステム',
+	render: () => (
+		<RecordKindProvider kinds={KINDS} systems={SYSTEMS} currentSystem='catalog'>
+			<p className='mb-3 text-muted-foreground text-xs'>今の画面: 商品管理</p>
+			<div className='flex flex-wrap items-start gap-4'>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>同じシステム（商品）</p>
+					<CardFrame>
+						<RecordCard kind='product' record={PRODUCTS[1]} />
+					</CardFrame>
+				</div>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>
+						別のシステム（取引先）
+					</p>
+					<CardFrame>
+						<RecordCard kind='customer' record={CUSTOMERS[2]} />
+					</CardFrame>
+				</div>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>
+						別のシステム（担当者）
+					</p>
+					<CardFrame>
+						<RecordCard kind='member' record={MEMBERS[1]} />
+					</CardFrame>
+				</div>
+			</div>
+		</RecordKindProvider>
 	),
 }
 

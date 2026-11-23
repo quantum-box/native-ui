@@ -13,6 +13,7 @@ import {
 	recordPlaceholder,
 } from './data-table-record-cell'
 import {
+	RecordCard,
 	RecordChip,
 	type RecordKindDefinition,
 	RecordKindProvider,
@@ -175,7 +176,8 @@ describe('要点の枠', () => {
 		await key(link, 'ArrowDown')
 		const dialog = document.querySelector('[role=dialog]')
 		expect(dialog?.getAttribute('aria-label')).toBe('取引先「山田商店」の要点')
-		expect(dialog?.textContent).toContain('取引先· 顧客管理')
+		expect(dialog?.textContent).toContain('顧客管理· 取引先別のシステムの記録')
+		expect(dialog?.querySelector('[data-external]')).not.toBeNull()
 		expect(dialog?.textContent).toContain('コード C-001')
 		const open = document.activeElement as HTMLAnchorElement
 		expect(open.textContent).toBe('顧客管理で開く')
@@ -188,6 +190,25 @@ describe('要点の枠', () => {
 		await key(link, 'ArrowDown')
 		await act(async () => (document.activeElement as HTMLElement).click())
 		expect(navigate).toHaveBeenCalledExactlyOnceWith('/customers/c1')
+	})
+	it('今の画面と同じシステムの記録は、ふつうの枠で出す', async () => {
+		const host = document.createElement('div')
+		document.body.append(host)
+		root = createRoot(host)
+		await act(async () =>
+			root?.render(
+				<RecordKindProvider
+					kinds={{ customer: customerKind }}
+					systems={{ 顧客管理: { name: '顧客管理', tone: 'blue' } }}
+					currentSystem='顧客管理'
+				>
+					<RecordCard kind='customer' record={ACME} />
+				</RecordKindProvider>,
+			),
+		)
+		expect(document.querySelector('[data-external]')).toBeNull()
+		expect(document.body.textContent).not.toContain('別のシステムの記録')
+		expect(document.querySelector('a')?.textContent).toBe('取引先を開く')
 	})
 	it('種類の決まりの操作を出す（新しいタブで開く・ID をコピー）', async () => {
 		const writeText = vi.fn().mockResolvedValue(undefined)

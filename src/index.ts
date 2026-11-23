@@ -241,9 +241,12 @@ export {
 	RecordKindProvider,
 	type RecordKindProviderProps,
 	type RecordStatus,
+	type RecordSystemDefinition,
+	type RecordSystemTone,
 	recordKindText,
 	recordOpenLabel,
 	useRecordKind,
+	useRecordSystem,
 } from './components/ui/record'
 export {
 	Form,
