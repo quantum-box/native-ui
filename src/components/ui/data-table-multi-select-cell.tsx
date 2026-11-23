@@ -13,8 +13,8 @@ import {
 } from './command'
 import {
 	type DataTableInlineEditOptions,
-	DataTableInlineEditError,
-	DataTableInlineEditStatusIcon,
+	DataTableInlineEditShell,
+	DataTableInlineEditTrigger,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
 import {
@@ -76,7 +76,10 @@ export function DataTableMultiSelectCell({
 	}
 
 	return (
-		<div className={cn('min-w-0', className)}>
+		<DataTableInlineEditShell
+			error={edit.editing ? null : edit.error}
+			className={className}
+		>
 			<Popover
 				open={edit.editing}
 				onOpenChange={open => {
@@ -93,15 +96,14 @@ export function DataTableMultiSelectCell({
 				}}
 			>
 				<PopoverTrigger asChild>
-					<button
-						type='button'
+					<DataTableInlineEditTrigger
 						aria-label={ariaLabel}
-						aria-busy={edit.saving}
-						aria-disabled={edit.disabled || edit.saving}
+						status={edit.status}
+						error={edit.editing ? null : edit.error}
+						saving={edit.saving}
 						disabled={edit.disabled}
-						className='flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent data-[state=open]:bg-selected data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring'
 					>
-						<span className='flex min-w-0 flex-1 flex-wrap gap-1'>
+						<span className='flex min-w-0 flex-wrap gap-1 whitespace-normal'>
 							{edit.value.length ? (
 								edit.value.map(value => (
 									<span key={value} className='min-w-0'>
@@ -112,8 +114,7 @@ export function DataTableMultiSelectCell({
 								<span className='text-muted-foreground'>{emptyLabel}</span>
 							)}
 						</span>
-						<DataTableInlineEditStatusIcon status={edit.status} />
-					</button>
+					</DataTableInlineEditTrigger>
 				</PopoverTrigger>
 				<PopoverContent
 					align='start'
@@ -192,7 +193,6 @@ export function DataTableMultiSelectCell({
 					) : null}
 				</PopoverContent>
 			</Popover>
-			{edit.editing ? null : <DataTableInlineEditError error={edit.error} />}
-		</div>
+		</DataTableInlineEditShell>
 	)
 }

@@ -14,8 +14,9 @@ import {
 } from './command'
 import {
 	type DataTableInlineEditOptions,
-	DataTableInlineEditError,
-	DataTableInlineEditStatusIcon,
+	DataTableInlineEditShell,
+	DataTableInlineEditTrigger,
+	dataTableInlineEditCellClassName,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
@@ -85,14 +86,16 @@ export function DataTableSelectCell({
 	}
 	if (!options.length)
 		return (
-			<div className='flex min-h-[52px] items-center gap-2 whitespace-nowrap px-5 py-2'>
+			<div
+				className={cn(dataTableInlineEditCellClassName, 'whitespace-nowrap')}
+			>
 				{renderValue(valueLabel, value)}
 				{!disabled ? emptyOptionsAction : null}
 			</div>
 		)
 
 	return (
-		<div className='min-w-0'>
+		<DataTableInlineEditShell error={edit.error}>
 			<Popover
 				open={edit.editing}
 				onOpenChange={nextOpen => {
@@ -101,19 +104,15 @@ export function DataTableSelectCell({
 				}}
 			>
 				<PopoverTrigger asChild>
-					<button
-						type='button'
+					<DataTableInlineEditTrigger
 						aria-label={ariaLabel}
-						aria-busy={edit.saving}
-						aria-disabled={disabled || edit.saving}
+						status={edit.status}
+						error={edit.error}
+						saving={edit.saving}
 						disabled={disabled}
-						className='flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50 data-[state=open]:bg-selected data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring'
 					>
 						{renderValue(valueLabel, value)}
-						<span className='ml-auto'>
-							<DataTableInlineEditStatusIcon status={edit.status} />
-						</span>
-					</button>
+					</DataTableInlineEditTrigger>
 				</PopoverTrigger>
 				<PopoverContent
 					align='start'
@@ -156,8 +155,7 @@ export function DataTableSelectCell({
 					{pickerFooter}
 				</PopoverContent>
 			</Popover>
-			<DataTableInlineEditError error={edit.error} />
-		</div>
+		</DataTableInlineEditShell>
 	)
 }
 

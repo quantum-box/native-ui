@@ -141,7 +141,8 @@ export function DataTableNumberCell({
 					aria-label={ariaLabel}
 					inputMode={fractionDigits ? 'decimal' : 'numeric'}
 					className='text-right tabular-nums'
-					initialText={edit.value === null ? '' : String(edit.value)}
+					// 表示と同じ文字で始める（直し始めても文字が変わらない）。前後の記号と桁区切りは読み取りで外す。
+					initialText={formatDataTableNumber(edit.value, rule)}
 					parse={text => parseDataTableNumber(text, rule)}
 				/>
 			)}

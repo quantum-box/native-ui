@@ -1,7 +1,13 @@
-import { Check, Loader2 } from 'lucide-react'
+import { Check, CircleAlert, Loader2 } from 'lucide-react'
 import {
+	type ButtonHTMLAttributes,
+	type HTMLAttributes,
+	type InputHTMLAttributes,
 	type ReactNode,
+	createContext,
+	useContext,
 	useCallback,
+	forwardRef,
 	useEffect,
 	useId,
 	useRef,
@@ -9,7 +15,12 @@ import {
 } from 'react'
 
 import { cn } from '../../lib/utils'
-import { Input, type InputProps } from './input'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from './tooltip'
 
 /** その場で直すセルの今の様子。 */
 export type DataTableInlineEditStatus = 'idle' | 'saving' | 'saved'
@@ -128,14 +139,36 @@ export type DataTableInlineEdit<T> = ReturnType<
 	typeof useDataTableInlineEdit<T>
 >
 
-/** 保存中・保存できたの印。読み上げにも伝える。 */
+/**
+ * その場で直すセルの箱。表示・編集中・保存中・保存できた・失敗のどれでも、
+ * 高さ・余白・文字の位置が同じになるように、どのセルもこの形を使う。
+ */
+export const dataTableInlineEditCellClassName =
+	'flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left text-sm outline-none'
+
+/** 押せるセル（表示のとき）の見た目。フォーカスの線はセルの内側に 1 本。 */
+export const dataTableInlineEditTriggerClassName = `${dataTableInlineEditCellClassName} hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent`
+
+/** 失敗したセルの印（赤い線を内側に 1 本）。 */
+export const dataTableInlineEditErrorClassName =
+	'ring-1 ring-inset ring-destructive'
+
+/**
+ * 保存中・保存できた・失敗の印。どの種類のセルでも、いつも右端の同じ場所に出す
+ * （右揃えの金額の列でも、印は文字の右に出す）。印が無いときも場所は空けておく。
+ */
 export function DataTableInlineEditStatusIcon({
 	status,
+	error = null,
 }: {
 	status: DataTableInlineEditStatus
+	error?: string | null
 }) {
 	return (
-		<span className='w-4 shrink-0 text-muted-foreground' role='status'>
+		<span
+			className='flex w-4 shrink-0 justify-end text-muted-foreground'
+			role='status'
+		>
 			{status === 'saving' ? (
 				<>
 					<Loader2 aria-hidden className='h-3.5 w-3.5 animate-spin' />
@@ -146,18 +179,123 @@ export function DataTableInlineEditStatusIcon({
 					<Check aria-hidden className='h-3.5 w-3.5' />
 					<span className='sr-only'>保存済み</span>
 				</>
+			) : error ? (
+				<CircleAlert aria-hidden className='h-3.5 w-3.5 text-destructive' />
 			) : null}
 		</span>
 	)
 }
 
-/** 失敗や確かめの文言。 */
+const ErrorIdContext = createContext<string | undefined>(undefined)
+
+/** セルの中から、理由の文言の ID を読む（`aria-describedby` に使う）。 */
+export function useDataTableInlineEditErrorId() {
+	return useContext(ErrorIdContext)
+}
+
+/**
+ * セルの外側。失敗や確かめの理由を、セルの大きさを変えずに出す。
+ * 理由はセルの下に小さな吹き出しで出す（触れる・フォーカスする・編集中のとき）。読み上げにはすぐ伝える。
+ */
+export function DataTableInlineEditShell({
+	error,
+	editing = false,
+	className,
+	children,
+}: {
+	error: string | null
+	editing?: boolean
+	className?: string
+	children: ReactNode
+}) {
+	const errorId = useId()
+	const [hovered, setHovered] = useState(false)
+	const [focused, setFocused] = useState(false)
+	const open = !!error && (hovered || focused || editing)
+	return (
+		<ErrorIdContext.Provider value={error ? errorId : undefined}>
+			<TooltipProvider delayDuration={0}>
+				<Tooltip open={open}>
+					<TooltipTrigger asChild>
+						<div
+							className={cn('relative min-w-0', className)}
+							onPointerEnter={() => setHovered(true)}
+							onPointerLeave={() => setHovered(false)}
+							onFocus={() => setFocused(true)}
+							onBlur={event => {
+								if (!event.currentTarget.contains(event.relatedTarget as Node))
+									setFocused(false)
+							}}
+						>
+							{children}
+							{error ? (
+								<span id={errorId} role='alert' className='sr-only'>
+									{error}
+								</span>
+							) : null}
+						</div>
+					</TooltipTrigger>
+					{error ? (
+						<TooltipContent
+							side='bottom'
+							align='start'
+							sideOffset={2}
+							aria-hidden
+							className='max-w-72 bg-destructive text-destructive-foreground'
+						>
+							{error}
+						</TooltipContent>
+					) : null}
+				</Tooltip>
+			</TooltipProvider>
+		</ErrorIdContext.Provider>
+	)
+}
+
+/** 失敗や確かめの文言（セルの下に行を足して出す。セルの外で使うとき向け）。 */
 export function DataTableInlineEditError({ error }: { error: string | null }) {
 	return error ? (
 		<p className='px-5 pb-2 text-destructive text-xs' role='alert'>
 			{error}
 		</p>
 	) : null
+}
+
+/**
+ * 編集中のセル。セルそのものが入力欄になる（表計算のように、枠や余白は足さず、外周の内側に線を 1 本）。
+ * 文字の位置と大きさは表示のときと同じ。右端に印の場所を空けておくので、直し始めても文字が動かない。
+ */
+export function DataTableEditingCell({
+	error = null,
+	align = 'start',
+	children,
+	className,
+	...props
+}: HTMLAttributes<HTMLDivElement> & {
+	error?: string | null
+	align?: 'start' | 'end'
+}) {
+	return (
+		<div
+			{...props}
+			className={cn(
+				dataTableInlineEditCellClassName,
+				'bg-background ring-2 ring-inset',
+				error ? 'ring-destructive' : 'ring-ring',
+				className,
+			)}
+		>
+			<span
+				className={cn(
+					'flex min-w-0 flex-1',
+					align === 'end' && 'justify-end text-right tabular-nums',
+				)}
+			>
+				{children}
+			</span>
+			<DataTableInlineEditStatusIcon status='idle' />
+		</div>
+	)
 }
 
 export type DataTableEditableCellProps<T> = DataTableInlineEditOptions<T> & {
@@ -174,6 +312,7 @@ export type DataTableEditableCellProps<T> = DataTableInlineEditOptions<T> & {
 
 /**
  * 押すと編集に変わるセルの土台。保存の流れは `useDataTableInlineEdit` が持つ。
+ * 編集中はセルそのものが入力欄になり、高さ・文字の位置は表示のときと変わらない。
  * 編集を Enter・Esc で終えたら、セルにフォーカスを戻す（キーボードだけで続けて直せる）。
  */
 export function DataTableEditableCell<T>({
@@ -197,10 +336,15 @@ export function DataTableEditableCell<T>({
 	}, [edit.editing])
 
 	return (
-		<div className={cn('min-w-0', className)}>
+		<DataTableInlineEditShell
+			error={edit.error}
+			editing={edit.editing}
+			className={className}
+		>
 			{edit.editing ? (
-				<div
-					className='flex min-h-[52px] items-center px-3 py-2'
+				<DataTableEditingCell
+					error={edit.error}
+					align={align}
 					onKeyDownCapture={event => {
 						if (event.key === 'Enter' || event.key === 'Escape')
 							restoreFocus.current = true
@@ -210,39 +354,82 @@ export function DataTableEditableCell<T>({
 					}}
 				>
 					{renderEditor(edit)}
-				</div>
+				</DataTableEditingCell>
 			) : (
-				<button
+				<DataTableInlineEditTrigger
 					ref={trigger}
-					type='button'
 					aria-label={ariaLabel}
-					aria-busy={edit.saving}
-					aria-disabled={edit.disabled || edit.saving}
+					status={edit.status}
+					error={edit.error}
+					saving={edit.saving}
 					disabled={edit.disabled}
+					align={align}
 					onClick={edit.startEditing}
-					className={cn(
-						'flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
-						align === 'end' && 'flex-row-reverse text-right',
-					)}
 				>
-					<span
-						className={cn(
-							'min-w-0 flex-1 truncate',
-							align === 'end' && 'tabular-nums',
-						)}
-					>
-						{renderValue(edit.value)}
-					</span>
-					<DataTableInlineEditStatusIcon status={edit.status} />
-				</button>
+					{renderValue(edit.value)}
+				</DataTableInlineEditTrigger>
 			)}
-			{edit.editing ? null : <DataTableInlineEditError error={edit.error} />}
-		</div>
+		</DataTableInlineEditShell>
 	)
 }
 
+/**
+ * 表示のときのセル（押すと編集・候補が開く）。中身は左、印はいつも右端。
+ * 候補が開いている間（`data-state=open`）も、外周の内側に線を 1 本出す。
+ */
+export const DataTableInlineEditTrigger = forwardRef<
+	HTMLButtonElement,
+	ButtonHTMLAttributes<HTMLButtonElement> & {
+		status: DataTableInlineEditStatus
+		error?: string | null
+		saving?: boolean
+		align?: 'start' | 'end'
+	}
+>(function DataTableInlineEditTrigger(
+	{
+		status,
+		error = null,
+		saving = false,
+		align = 'start',
+		disabled,
+		className,
+		children,
+		...props
+	},
+	ref,
+) {
+	const errorId = useDataTableInlineEditErrorId()
+	return (
+		<button
+			ref={ref}
+			type='button'
+			aria-busy={saving}
+			aria-disabled={disabled || saving}
+			aria-describedby={errorId}
+			disabled={disabled}
+			{...props}
+			className={cn(
+				dataTableInlineEditTriggerClassName,
+				'data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring',
+				error && dataTableInlineEditErrorClassName,
+				className,
+			)}
+		>
+			<span
+				className={cn(
+					'min-w-0 flex-1 truncate',
+					align === 'end' && 'text-right tabular-nums',
+				)}
+			>
+				{children}
+			</span>
+			<DataTableInlineEditStatusIcon status={status} error={error} />
+		</button>
+	)
+})
+
 export type DataTableInputEditorProps<T> = Omit<
-	InputProps,
+	InputHTMLAttributes<HTMLInputElement>,
 	'value' | 'defaultValue' | 'onChange' | 'onBlur' | 'onKeyDown'
 > & {
 	edit: DataTableInlineEdit<T>
@@ -253,8 +440,8 @@ export type DataTableInputEditorProps<T> = Omit<
 }
 
 /**
- * 1 行の入力欄で編集する。Enter で保存、Esc でやめる。
- * ほかへ移ったとき（Tab など）も保存する。確かめで止まったら元の値のまま理由を出す。
+ * 1 行の入力欄で編集する。枠や余白の無い入力欄で、セルそのものに打ち込む見た目になる。
+ * Enter で保存、Esc でやめる。ほかへ移ったとき（Tab など）も保存する。確かめで止まったら元の値のまま理由を出す。
  */
 export function DataTableInputEditor<T>({
 	edit,
@@ -265,7 +452,7 @@ export function DataTableInputEditor<T>({
 }: DataTableInputEditorProps<T>) {
 	const [text, setText] = useState(initialText)
 	const done = useRef(false)
-	const errorId = useId()
+	const errorId = useDataTableInlineEditErrorId()
 	async function commit(leaving: boolean) {
 		const parsed = parse(text)
 		if ('error' in parsed) {
@@ -281,36 +468,33 @@ export function DataTableInputEditor<T>({
 		}
 	}
 	return (
-		<div className='w-full'>
-			<Input
-				autoFocus
-				{...props}
-				value={text}
-				aria-invalid={edit.error ? true : undefined}
-				aria-describedby={edit.error ? errorId : undefined}
-				className={cn('h-8', className)}
-				onFocus={event => event.currentTarget.select()}
-				onChange={event => setText(event.target.value)}
-				onKeyDown={event => {
-					if (event.key === 'Enter') {
-						event.preventDefault()
-						void commit(false)
-					} else if (event.key === 'Escape') {
-						event.preventDefault()
-						event.stopPropagation()
-						done.current = true
-						edit.cancel()
-					}
-				}}
-				onBlur={() => {
-					if (!done.current) void commit(true)
-				}}
-			/>
-			{edit.error ? (
-				<p id={errorId} className='mt-1 text-destructive text-xs' role='alert'>
-					{edit.error}
-				</p>
-			) : null}
-		</div>
+		<input
+			// biome-ignore lint/a11y/noAutofocus: セルを押して編集を始めたら、すぐ打ち込めるようにするため
+			autoFocus
+			{...props}
+			value={text}
+			aria-invalid={edit.error ? true : undefined}
+			aria-describedby={edit.error ? errorId : undefined}
+			className={cn(
+				'h-5 w-full min-w-0 border-0 bg-transparent p-0 text-foreground text-sm leading-5 outline-none placeholder:text-subtle-foreground',
+				className,
+			)}
+			onFocus={event => event.currentTarget.select()}
+			onChange={event => setText(event.target.value)}
+			onKeyDown={event => {
+				if (event.key === 'Enter') {
+					event.preventDefault()
+					void commit(false)
+				} else if (event.key === 'Escape') {
+					event.preventDefault()
+					event.stopPropagation()
+					done.current = true
+					edit.cancel()
+				}
+			}}
+			onBlur={() => {
+				if (!done.current) void commit(true)
+			}}
+		/>
 	)
 }

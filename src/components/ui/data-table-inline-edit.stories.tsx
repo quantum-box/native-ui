@@ -5,7 +5,9 @@ import * as React from 'react'
 import { DataTable } from './data-table'
 import { DataTableDateCell } from './data-table-date-cell'
 import {
+	DataTableEditingCell,
 	type DataTableInlineEdit,
+	DataTableInlineEditTrigger,
 	DataTableInputEditor,
 } from './data-table-inline-edit'
 import { DataTableMultiSelectCell } from './data-table-multi-select-cell'
@@ -13,7 +15,10 @@ import {
 	DataTableNumberCell,
 	formatDataTableNumber,
 } from './data-table-number-cell'
-import { DataTableSelectCell } from './data-table-select-cell'
+import {
+	DataTableSelectCell,
+	DataTableValueChip,
+} from './data-table-select-cell'
 import { DataTableTextCell } from './data-table-text-cell'
 import { DataTableToggleCell } from './data-table-toggle-cell'
 import {
@@ -157,24 +162,37 @@ function previewEdit<T>(value: T): DataTableInlineEdit<T> {
 		save: async () => true,
 	}
 }
+/** 編集中のセル（入力欄）。実際のセルと同じ部品で、フォーカスだけは動かさない。 */
 function EditingPreview({
 	text,
 	align,
+	type,
 }: {
 	text: string
 	align?: 'end'
+	type?: string
 }) {
 	return (
-		<div className='flex min-h-[52px] items-center px-3 py-2'>
+		<DataTableEditingCell align={align}>
 			<DataTableInputEditor
 				edit={previewEdit(text)}
 				autoFocus={false}
+				type={type}
 				aria-label='編集中の例'
 				className={align === 'end' ? 'text-right tabular-nums' : undefined}
 				initialText={text}
 				parse={value => ({ value })}
 			/>
-		</div>
+		</DataTableEditingCell>
+	)
+}
+
+/** 候補が開いているときのセル。セルの中は枠なしで、外周に線（候補はポップオーバーで出る）。 */
+function OpenPreview({ children }: { children: React.ReactNode }) {
+	return (
+		<DataTableInlineEditTrigger status='idle' data-state='open' tabIndex={-1}>
+			{children}
+		</DataTableInlineEditTrigger>
 	)
 }
 
@@ -226,7 +244,7 @@ const KINDS: Kind[] = [
 				)}
 			</Owned>
 		),
-		editing: <EditingPreview text='1200' align='end' />,
+		editing: <EditingPreview text='¥1,200' align='end' />,
 		change: cell => typeAndEnter(cell, '１，５８０'),
 	},
 	{
@@ -244,7 +262,7 @@ const KINDS: Kind[] = [
 				)}
 			</Owned>
 		),
-		editing: <EditingPreview text='2026/11/24' />,
+		editing: <EditingPreview text='2026-11-24' type='date' />,
 		change: cell => typeAndEnter(cell, '2026-12-01'),
 	},
 	{
@@ -265,7 +283,7 @@ const KINDS: Kind[] = [
 			</Owned>
 		),
 		editing: (
-			<p className='px-5 text-muted-foreground text-xs'>
+			<p className='flex min-h-[52px] items-center px-5 text-muted-foreground text-xs'>
 				編集の段階は無い（切り替えるとすぐ保存）
 			</p>
 		),
@@ -289,9 +307,9 @@ const KINDS: Kind[] = [
 			</Owned>
 		),
 		editing: (
-			<p className='px-5 text-muted-foreground text-xs'>
-				候補が開く（「1 つの表で直す」で確認）
-			</p>
+			<OpenPreview>
+				<DataTableValueChip label='下書き' />
+			</OpenPreview>
 		),
 		change: cell => pick(cell, ['発注済み'], false),
 	},
@@ -317,9 +335,9 @@ const KINDS: Kind[] = [
 			</Owned>
 		),
 		editing: (
-			<p className='px-5 text-muted-foreground text-xs'>
-				候補が開く（「1 つの表で直す」で確認）
-			</p>
+			<OpenPreview>
+				<DataTableValueChip label='セール' />
+			</OpenPreview>
 		),
 		change: cell => pick(cell, ['新商品'], true),
 	},

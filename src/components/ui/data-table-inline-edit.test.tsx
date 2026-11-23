@@ -248,6 +248,51 @@ describe('文字をその場で直すセル', () => {
 		expect(save).toHaveBeenCalledWith('新')
 		expect(document.activeElement).toBe(button('次のセル'))
 	})
+	it('編集中はセルそのものが入力欄になり、箱の大きさと文字の位置が変わらない', async () => {
+		await render(
+			<DataTableTextCell
+				ariaLabel='品目名を変更'
+				value='りんご'
+				onSave={vi.fn()}
+			/>,
+		)
+		const box = (node: Element | null) =>
+			(node?.className.match(/min-h-\[52px\]|px-5|py-2/g) ?? []).join(' ')
+		const display = button('品目名を変更')
+		expect(box(display)).toBe('min-h-[52px] px-5 py-2')
+		await click('品目名を変更')
+		const field = input()
+		const cell = field.closest('div')
+		expect(box(cell)).toBe('min-h-[52px] px-5 py-2')
+		expect(cell?.className).toContain('ring-inset')
+		// 入力欄に枠と余白は無い。
+		expect(field.className).toContain('border-0')
+		expect(field.className).toContain('p-0')
+		// 右端の印の場所は、編集中も空けておく。
+		expect(cell?.querySelector('[role=status]')).not.toBeNull()
+	})
+	it('失敗の理由は、セルの下に行を足さずに出す（赤い線・印・読み上げ）', async () => {
+		await render(
+			<DataTableTextCell
+				ariaLabel='メモを変更'
+				value='元'
+				onSave={() => Promise.reject(new Error('failed'))}
+				formatError={() => 'メモを保存できませんでした。'}
+			/>,
+		)
+		await click('メモを変更')
+		await type('新')
+		await press('Enter')
+		const cell = button('メモを変更')
+		expect(cell.className).toContain('ring-destructive')
+		expect(cell.querySelector('.text-destructive')).not.toBeNull()
+		const reason = document.getElementById(
+			cell.getAttribute('aria-describedby') ?? '',
+		)
+		expect(reason?.textContent).toBe('メモを保存できませんでした。')
+		expect(reason?.className).toContain('sr-only')
+		expect(document.querySelector('p')).toBeNull()
+	})
 	it('使えないときは編集を始めない', async () => {
 		await render(
 			<DataTableTextCell
@@ -281,7 +326,8 @@ describe('数・金額をその場で直すセル', () => {
 		)
 		expect(button('単価を変更').textContent).toContain('¥980')
 		await click('単価を変更')
-		expect(input().value).toBe('980')
+		// 表示と同じ文字で始まる（直し始めても文字が変わらない）。
+		expect(input().value).toBe('¥980')
 		await type('－５')
 		await press('Enter')
 		expect(alertText()).toBe('¥0 以上で入れてください。')

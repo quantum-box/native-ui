@@ -3,8 +3,12 @@ import { useId } from 'react'
 import { cn } from '../../lib/utils'
 import {
 	type DataTableInlineEditOptions,
-	DataTableInlineEditError,
+	type DataTableInlineEdit,
+	DataTableInlineEditShell,
 	DataTableInlineEditStatusIcon,
+	dataTableInlineEditCellClassName,
+	dataTableInlineEditErrorClassName,
+	useDataTableInlineEditErrorId,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
 import { Switch } from './switch'
@@ -34,15 +38,42 @@ export function DataTableToggleCell({
 	...options
 }: DataTableToggleCellProps) {
 	const edit = useDataTableInlineEdit(options)
-	const id = useId()
 	return (
-		<div className={cn('min-w-0', className)}>
-			<div className='flex min-h-[52px] items-center gap-2 px-5 py-2'>
+		<DataTableInlineEditShell error={edit.error} className={className}>
+			<ToggleBody
+				edit={edit}
+				ariaLabel={ariaLabel}
+				label={edit.value ? onLabel : offLabel}
+			/>
+		</DataTableInlineEditShell>
+	)
+}
+
+function ToggleBody({
+	edit,
+	ariaLabel,
+	label,
+}: {
+	edit: DataTableInlineEdit<boolean>
+	ariaLabel: string
+	label: string
+}) {
+	const id = useId()
+	const errorId = useDataTableInlineEditErrorId()
+	return (
+		<div
+			className={cn(
+				dataTableInlineEditCellClassName,
+				edit.error && dataTableInlineEditErrorClassName,
+			)}
+		>
+			<span className='flex min-w-0 flex-1 items-center gap-2'>
 				<Switch
 					id={id}
 					aria-label={ariaLabel}
 					aria-busy={edit.saving}
 					aria-disabled={edit.saving || undefined}
+					aria-describedby={errorId}
 					checked={edit.value}
 					disabled={edit.disabled}
 					onCheckedChange={checked => void edit.save(checked)}
@@ -55,13 +86,10 @@ export function DataTableToggleCell({
 						edit.disabled ? 'opacity-50' : 'cursor-pointer',
 					)}
 				>
-					{edit.value ? onLabel : offLabel}
+					{label}
 				</label>
-				<span className='ml-auto'>
-					<DataTableInlineEditStatusIcon status={edit.status} />
-				</span>
-			</div>
-			<DataTableInlineEditError error={edit.error} />
+			</span>
+			<DataTableInlineEditStatusIcon status={edit.status} error={edit.error} />
 		</div>
 	)
 }
