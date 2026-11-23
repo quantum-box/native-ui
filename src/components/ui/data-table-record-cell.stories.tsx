@@ -1,6 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Building2, Package, Store } from 'lucide-react'
+import {
+	Building2,
+	ClipboardList,
+	FileText,
+	List,
+	Package,
+	Plus,
+	Store,
+	UserRound,
+} from 'lucide-react'
 import * as React from 'react'
 
 import { DataTable } from './data-table'
@@ -11,7 +20,14 @@ import {
 	dataTableRecordColumn,
 	recordPlaceholder,
 } from './data-table-record-cell'
-import { RecordKindProvider, defineRecordKind } from './record'
+import {
+	RecordCard,
+	RecordKindProvider,
+	type RecordSystemDefinition,
+	defineRecordKind,
+	recordActions,
+	useRecordKind,
+} from './record'
 import {
 	Table,
 	TableBody,
@@ -104,6 +120,14 @@ const MEMBERS: Member[] = [
 	{ id: 'm3', name: '伊藤 美咲', kana: 'いとう みさき', team: '店舗運営' },
 ]
 
+/** システムごとの決まり（名前・絵・色の印）。アプリが 1 か所で決める。 */
+const SYSTEMS = {
+	catalog: { name: '商品管理', icon: Package, tone: 'amber' },
+	crm: { name: '顧客管理', icon: Building2, tone: 'blue' },
+	stores: { name: '店舗管理', icon: Store, tone: 'teal' },
+	hr: { name: '人事', icon: UserRound, tone: 'violet' },
+} satisfies Record<string, RecordSystemDefinition>
+
 const KINDS = {
 	customer: defineRecordKind<Customer>({
 		name: '取引先',
@@ -111,7 +135,17 @@ const KINDS = {
 		getId: customer => customer.id,
 		getLabel: customer => customer.name,
 		getDescription: customer => customer.code,
+		system: 'crm',
 		getHref: customer => `/customers/${customer.id}`,
+		getActions: customer => [
+			recordActions.newTab(`/customers/${customer.id}`),
+			{
+				label: 'この取引先の請求書を見る',
+				icon: FileText,
+				href: `/invoices?customer=${customer.id}`,
+			},
+			recordActions.copy(customer.code, 'コードをコピー'),
+		],
 		renderPreview: customer => (
 			<>
 				<PreviewTitle>{customer.name}</PreviewTitle>
@@ -133,7 +167,17 @@ const KINDS = {
 		getId: product => product.id,
 		getLabel: product => product.name,
 		getDescription: product => product.sku,
+		system: 'catalog',
 		getHref: product => `/products/${product.id}`,
+		getActions: product => [
+			recordActions.newTab(`/products/${product.id}`),
+			{
+				label: 'この商品の受注を見る',
+				icon: ClipboardList,
+				href: `/orders?product=${product.id}`,
+			},
+			recordActions.copy(product.sku, '品番をコピー'),
+		],
 		renderPreview: product => (
 			<>
 				<PreviewTitle>{product.name}</PreviewTitle>
@@ -155,16 +199,43 @@ const KINDS = {
 		getId: shop => shop.id,
 		getLabel: shop => shop.name,
 		getDescription: shop => shop.area,
+		system: 'stores',
 		getHref: shop => `/shops/${shop.id}`,
+		renderPreview: shop => (
+			<>
+				<PreviewTitle>{shop.name}</PreviewTitle>
+				<Facts rows={[['地域', shop.area]]} />
+			</>
+		),
+		getActions: shop => [recordActions.newTab(`/shops/${shop.id}`)],
+		pickerActions: [
+			{ label: '店舗管理で新しく作る', icon: Plus, href: '/shops/new' },
+			{ label: '店舗管理で一覧を開く', icon: List, href: '/shops' },
+		],
 		useCandidates: () => ({ records: SHOPS }),
 		forbiddenText: 'ほかの地域の店です',
 	}),
 	member: defineRecordKind<Member>({
 		name: '担当者',
+		icon: UserRound,
 		getId: member => member.id,
 		getLabel: member => member.name,
 		getDescription: member => member.team,
 		getKeywords: member => [member.kana],
+		system: 'hr',
+		getHref: member => `/staff/${member.id}`,
+		openLabel: '社員名簿で開く',
+		pickerActions: [
+			{ label: '社員名簿で一覧を開く', icon: List, href: '/staff' },
+		],
+		getActions: member => [
+			{
+				label: 'この担当者の作業を見る',
+				icon: ClipboardList,
+				href: `/tasks?member=${member.id}`,
+			},
+			recordActions.copy(member.id),
+		],
 		renderAvatar: member => (
 			<span className='flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 font-medium text-[10px] text-primary'>
 				{member.name.slice(0, 1)}
@@ -193,6 +264,11 @@ const KINDS = {
  * 付け替えの候補）は、アプリが `RecordKindProvider` に 1 か所で登録する。
  * どの表に出しても同じ見た目と動きになる。native-ui は種類の名前を知らない。
  *
+ * 記録に触れる（キーボードではフォーカスして ↓）と、要点の枠が開く。別のシステムの記録は、
+ * システムの色の帯（例「商品管理 · 商品  別のシステムの記録 ↗」）と左の線で、別のシステムをのぞいていると分かる。
+ * 下の「{システム}で開く」も同じ色。システムの名前・絵・色は `systems` に 1 か所で決める。
+ * 消えた・見る権限が無い記録では、開けないことと理由を出す。
+ *
  * この例では、記録を押したときの移動先を下に出している（実際のアプリでは画面が移る）。
  * 使い方は `docs/data-table.md`。
  */
@@ -203,12 +279,12 @@ const meta = {
 		Story => {
 			const [moved, setMoved] = React.useState<string | null>(null)
 			return (
-				<RecordKindProvider kinds={KINDS} navigate={setMoved}>
+				<RecordKindProvider kinds={KINDS} systems={SYSTEMS} navigate={setMoved}>
 					<Story />
 					<p className='mt-3 text-muted-foreground text-xs' role='status'>
 						{moved
 							? `移動先: ${moved}（実際のアプリでは詳細の画面へ移る）`
-							: '記録を押すと、ここに移動先が出る。触れると要点が出る。'}
+							: '記録を押すと、ここに移動先が出る。触れる（またはフォーカスして ↓）と要点と操作が出る。'}
 					</p>
 				</RecordKindProvider>
 			)
@@ -330,6 +406,87 @@ export const Table_: Story = {
 			onPageChange={() => {}}
 			hidePagination
 		/>
+	),
+}
+
+// ---- 要点の枠 -----------------------------------------------------------------
+
+function CardFrame({ children }: { children: React.ReactNode }) {
+	return (
+		<div className='w-80 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay'>
+			{children}
+		</div>
+	)
+}
+
+/**
+ * 触れたときに出る枠を、4 種類並べて開いたまま見せる。
+ * 上に種類とシステム、下に「{システム}で開く」と種類ごとの操作が出る。
+ * 最後の 2 つは消えた記録と見る権限が無い記録で、開けないことと理由を出す。
+ */
+export const Cards: Story = {
+	name: '要点の枠',
+	render: () => (
+		<div className='flex flex-wrap items-start gap-4'>
+			<CardFrame>
+				<RecordCard kind='product' record={PRODUCTS[0]} />
+			</CardFrame>
+			<CardFrame>
+				<RecordCard kind='customer' record={CUSTOMERS[0]} />
+			</CardFrame>
+			<CardFrame>
+				<RecordCard kind='shop' record={SHOPS[0]} />
+			</CardFrame>
+			<CardFrame>
+				<RecordCard kind='member' record={MEMBERS[0]} />
+			</CardFrame>
+			<CardFrame>
+				<RecordCard kind='product' status='missing' />
+			</CardFrame>
+			<CardFrame>
+				<RecordCard kind='customer' status='forbidden' />
+			</CardFrame>
+		</div>
+	),
+}
+
+// ---- 同じシステムと別のシステム ------------------------------------------------
+
+/**
+ * 今の画面が「商品管理」のとき。同じ商品管理の記録（商品）はふつうの枠、
+ * 別のシステムの記録（取引先・担当者）は、色の帯と線のある枠で出る。
+ * `RecordKindProvider` の `currentSystem` で今の画面のシステムを決める。
+ */
+export const SameAndOtherSystem: Story = {
+	name: '同じシステムと別のシステム',
+	render: () => (
+		<RecordKindProvider kinds={KINDS} systems={SYSTEMS} currentSystem='catalog'>
+			<p className='mb-3 text-muted-foreground text-xs'>今の画面: 商品管理</p>
+			<div className='flex flex-wrap items-start gap-4'>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>同じシステム（商品）</p>
+					<CardFrame>
+						<RecordCard kind='product' record={PRODUCTS[1]} />
+					</CardFrame>
+				</div>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>
+						別のシステム（取引先）
+					</p>
+					<CardFrame>
+						<RecordCard kind='customer' record={CUSTOMERS[2]} />
+					</CardFrame>
+				</div>
+				<div className='space-y-1'>
+					<p className='text-muted-foreground text-xs'>
+						別のシステム（担当者）
+					</p>
+					<CardFrame>
+						<RecordCard kind='member' record={MEMBERS[1]} />
+					</CardFrame>
+				</div>
+			</div>
+		</RecordKindProvider>
 	),
 }
 
@@ -480,21 +637,60 @@ function ReassignExample() {
 		],
 		[save],
 	)
+	const [current, setCurrent] = React.useState<'tasks' | 'stores'>('tasks')
+	// 外側（この例の枠）の移動の方法をそのまま使う。
+	const { navigate } = useRecordKind('shop')
 	return (
-		<DataTable
-			columns={columns}
-			items={tasks}
-			total={tasks.length}
-			page={1}
-			pageSize={tasks.length}
-			onPageChange={() => {}}
-			hidePagination
-		/>
+		<div className='space-y-3'>
+			<div
+				role='radiogroup'
+				aria-label='今の画面'
+				className='flex items-center gap-2 text-xs'
+			>
+				<span className='text-muted-foreground'>今の画面:</span>
+				{(
+					[
+						['tasks', '作業の管理（店も担当者も別のシステム）'],
+						['stores', '店舗管理（店は同じシステム）'],
+					] as const
+				).map(([value, text]) => (
+					<button
+						key={value}
+						type='button'
+						role='radio'
+						aria-checked={current === value}
+						onClick={() => setCurrent(value)}
+						className='rounded-md border border-border px-2 py-1 aria-checked:border-primary aria-checked:bg-selected'
+					>
+						{text}
+					</button>
+				))}
+			</div>
+			<RecordKindProvider
+				kinds={KINDS}
+				systems={SYSTEMS}
+				currentSystem={current}
+				navigate={navigate}
+			>
+				<DataTable
+					columns={columns}
+					items={tasks}
+					total={tasks.length}
+					page={1}
+					pageSize={tasks.length}
+					onPageChange={() => {}}
+					hidePagination
+				/>
+			</RecordKindProvider>
+		</div>
 	)
 }
 
 /**
  * その場で別の記録に付け替える。流れは `DataTableSelectCell` と同じで、候補と見た目は種類の決まりから出す。
+ * 別のシステムの記録から選ぶときは、候補の枠にも要点の枠と同じ色の帯（例「店舗管理 · 店から選ぶ」）と線が付き、
+ * 検索欄は「店舗管理の店を検索…」、候補の絵もシステムの色になる。下には「店舗管理で新しく作る」などの道筋が出る。
+ * 上の「今の画面」を店舗管理にすると、店の候補の枠はふつうの枠になる。
  * 担当者は読み仮名でも探せる（例「たかはし」）。高橋さんを選ぶと保存に失敗し、元に戻る。担当者は「未設定」に戻せる。
  */
 export const Reassign: Story = {

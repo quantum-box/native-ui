@@ -37,6 +37,15 @@
   --nui-ring: 234 59% 60%;
   --nui-overlay: 0 0% 0% / 0.4;
 
+  /* System tone — 別のシステムの記録の印（帯・線・開くボタン）に使う */
+  --nui-tone-blue: 214 72% 50%;
+  --nui-tone-green: 152 52% 36%;
+  --nui-tone-amber: 32 88% 44%;
+  --nui-tone-violet: 262 52% 56%;
+  --nui-tone-rose: 346 66% 52%;
+  --nui-tone-teal: 184 64% 34%;
+  --nui-tone-slate: 222 12% 46%;
+
   /* Radius */
   --nui-radius-sm: 4px;
   --nui-radius-md: 6px;
@@ -77,6 +86,14 @@
   --nui-warning: 36 90% 60%;
   --nui-ring: 235 70% 70%;
   --nui-overlay: 0 0% 0% / 0.6;
+
+  --nui-tone-blue: 214 80% 66%;
+  --nui-tone-green: 152 46% 54%;
+  --nui-tone-amber: 36 88% 60%;
+  --nui-tone-violet: 262 70% 74%;
+  --nui-tone-rose: 346 76% 68%;
+  --nui-tone-teal: 184 56% 52%;
+  --nui-tone-slate: 222 12% 64%;
 
   --nui-shadow-overlay: 0 4px 16px -2px rgb(0 0 0 / 0.4),
     0 1px 3px rgb(0 0 0 / 0.3);

@@ -209,18 +209,29 @@ const columns: ColumnDef<Product>[] = [
 ```tsx
 const customerKind = defineRecordKind<Customer>({
   name: '取引先',
+  system: 'crm', // systems のキー
   icon: Building2,
   getId: customer => customer.id,
   getLabel: customer => customer.name,
   getDescription: customer => customer.code,
   getHref: customer => `/customers/${customer.id}`,
   renderPreview: customer => <CustomerSummary customer={customer} />,
+  getActions: customer => [
+    recordActions.newTab(`/customers/${customer.id}`),
+    { label: 'この取引先の請求書を見る', icon: FileText, href: `/invoices?customer=${customer.id}` },
+    recordActions.copy(customer.code, 'コードをコピー'),
+  ],
   useCandidates: useCustomerOptions, // 付け替えの候補（アプリのフック）
   missingText: '削除された取引先',
 })
 
 <RecordKindProvider
   kinds={{ customer: customerKind, product: productKind, member: memberKind }}
+  systems={{
+    crm: { name: '顧客管理', icon: Building2, tone: 'blue' },
+    catalog: { name: '商品管理', icon: Package, tone: 'amber' },
+  }}
+  currentSystem='catalog' // 今の画面のシステム
   navigate={href => navigate(href)} // アプリの画面の移動の仕組み
 >
   <App />
@@ -228,7 +239,13 @@ const customerKind = defineRecordKind<Customer>({
 ```
 
 - `getHref` があれば押すと詳細へ移る。`navigate` を渡すとアプリの方法で移り、⌘・Ctrl を押しながらだとふつうのリンクとして新しいタブで開く。行を押したときの動きとは重ならない。
-- `renderPreview` があれば、触れるかフォーカスすると要点が出る。
+- システム（商品管理・顧客管理・会計など）の名前・絵・色の印は、`RecordKindProvider` の `systems` に 1 か所で決め、種類の `system` にそのキーを書く。色の印は `blue`・`green`・`amber`・`violet`・`rose`・`teal`・`slate`（トークン `--nui-tone-*`、ライトとダークで別の値）。
+- `currentSystem` に今の画面のシステムを渡す。別のシステムの記録の枠は、上にシステムの色の帯（絵・名前・「別のシステムの記録 ↗」）、左に同じ色の線、読むだけの地、同じ色の「{システム}で開く」で出し、別のシステムをのぞいていると分かるようにする。同じシステムの記録はふつうの枠で、開く操作は「{名前}を開く」になる。
+- 記録に触れる・キーボードでフォーカスすると、要点の枠が出る。枠の上に種類とシステム、真ん中に `renderPreview`、下に「{システム}で開く」（`getHref` の場所へ移る。文言は `openLabel` で変えられる）と `getActions` の操作が並ぶ。
+- キーボードでは記録で ↓ を押すと枠の中の最初の操作（「{システム}で開く」）へ移る。Tab で操作を順に移り、Esc か枠の端で Tab を押すと記録へ戻る。読み上げには「下矢印キーで、要点と開く操作へ移ります」と伝える。
+- 消えた・見る権限が無い・読み込めない記録でも枠は出る。「{システム}で開く」は押せない形で出し、横に理由（「見る権限が無いので開けません。」など）を出す。
+- `getActions` には `recordActions.newTab(href)`（新しいタブで開く）・`recordActions.copy(text, label)`（コピー。押すと「コピーしました」）や、`{ label, icon, href }`（例「この商品の受注を見る」）、`{ label, onSelect }` を並べる。
+- 枠の中身だけを出したいときは `RecordCard` を使う。
 - `renderAvatar` があれば、`icon` の代わりに記録ごとの絵（担当者の頭文字など）を出す。
 - 文言は種類ごとに変えられる: `missingText`（既定「削除された{名前}」）・`forbiddenText`（既定「見る権限がありません」。前に種類の名前が付く）・`unavailableText`（既定「{名前}を読み込めませんでした」）・`loadingText`（読み上げ）。
 - `getKeywords` は付け替えの検索に使う言葉（読み仮名・コードなど）。
@@ -270,6 +287,9 @@ dataTableRecordColumn<Invoice, Customer>({
 ```
 
 - 流れは `DataTableSelectCell` と同じ（保存中は止める、保存できたら印、失敗したら元に戻して理由を出す）。
+- 別のシステムの記録から選ぶときは、候補の枠にも要点の枠と同じ色の帯（例「店舗管理 · 店から選ぶ ↗」）と左の線を付け、検索欄は「店舗管理の店を検索…」、候補の絵もシステムの色にする。色と絵は要点の枠と同じ `systems` の決まりから取る。同じシステムから選ぶときはふつうの枠。
+- 種類の決まりの `pickerActions` に、候補の枠の下に出す元のシステムへの道筋を書く（例 `{ label: '店舗管理で新しく作る', icon: Plus, href: '/shops/new' }`、「店舗管理で一覧を開く」）。
+- `DataTableSelectCell` 自体にも、候補の枠に物を足す `pickerHeader`・`pickerFooter`・`searchPlaceholder`・`pickerClassName`・`pickerStyle` がある。
 - 候補は種類の決まりの `useCandidates` から出す。`candidates` を渡すとそちらを使う。今の記録が候補に無くても出す。
 - `allowEmpty` で「未設定」に戻せる。保存には記録（または `null`）が渡る。
 - `validate` に記録（または `null`）が渡る。だめなら理由の文言を返すと保存しない。
