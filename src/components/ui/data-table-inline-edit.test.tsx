@@ -4,6 +4,10 @@ import { type Root, createRoot } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { DataTableDateCell } from './data-table-date-cell'
+import {
+	DataTableInlineEditFailureSummary,
+	DataTableInlineEditFailuresProvider,
+} from './data-table-inline-edit'
 import { DataTableMultiSelectCell } from './data-table-multi-select-cell'
 import {
 	DataTableNumberCell,
@@ -232,7 +236,9 @@ describe('文字をその場で直すセル', () => {
 		expect(document.querySelector('input')).toBeNull()
 		await act(async () => reject(new Error('failed')))
 		expect(button('メモを変更').textContent).toContain('元')
-		expect(alertText()).toBe('メモを保存できませんでした。')
+		expect(alertText()).toBe(
+			'「新しいメモ」を保存できませんでした。 メモを保存できませんでした。 「元」のままです。',
+		)
 	})
 	it('Tab などでほかへ移ったときは、フォーカスを元のセルに戻さない', async () => {
 		const save = vi.fn().mockResolvedValue(undefined)
@@ -289,9 +295,102 @@ describe('文字をその場で直すセル', () => {
 		const reason = document.getElementById(
 			cell.getAttribute('aria-describedby') ?? '',
 		)
-		expect(reason?.textContent).toBe('メモを保存できませんでした。')
+		expect(reason?.textContent).toContain('メモを保存できませんでした。')
+		expect(reason?.textContent).toContain('「元」のままです。')
 		expect(reason?.className).toContain('sr-only')
-		expect(document.querySelector('p')).toBeNull()
+		// セルの中には行を足さない（理由は吹き出しに出る）。
+		expect(cell.parentElement?.querySelector('p')).toBeNull()
+	})
+	it('失敗した直後は吹き出しが開き、何が失敗したか・理由・元の値と、もう一度・直すを出す', async () => {
+		const save = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('conflict'))
+			.mockResolvedValueOnce(undefined)
+		await render(
+			<Owned initial='りんご' save={save}>
+				{(value, onSave) => (
+					<DataTableTextCell
+						ariaLabel='品目名を変更'
+						label='品目名'
+						value={value}
+						onSave={onSave}
+						formatError={() => 'ほかの人が先に変えました。'}
+					/>
+				)}
+			</Owned>,
+		)
+		await click('品目名を変更')
+		await type('みかん')
+		await press('Enter')
+		const dialog = document.querySelector('[role=dialog]')
+		expect(dialog?.textContent).toContain(
+			'品目名を「みかん」にできませんでした',
+		)
+		expect(dialog?.textContent).toContain('ほかの人が先に変えました。')
+		expect(dialog?.textContent).toContain('「りんご」のままです。')
+		// キーボードでは ↓ で「もう一度」へ移れる。
+		await act(async () => {
+			button('品目名を変更').dispatchEvent(
+				new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+			)
+		})
+		expect(document.activeElement?.textContent).toBe('もう一度')
+		await click('もう一度')
+		expect(save).toHaveBeenLastCalledWith('みかん')
+		expect(button('品目名を変更').textContent).toContain('みかん')
+		expect(document.querySelector('[role=dialog]')).toBeNull()
+	})
+	it('「直す」で、失敗した値を入れたまま編集に戻る', async () => {
+		await render(
+			<DataTableTextCell
+				ariaLabel='品目名を変更'
+				label='品目名'
+				value='りんご'
+				onSave={() => Promise.reject(new Error('failed'))}
+			/>,
+		)
+		await click('品目名を変更')
+		await type('みかん')
+		await press('Enter')
+		await click('直す')
+		expect(input().value).toBe('みかん')
+		expect(document.activeElement).toBe(input())
+	})
+	it('表の側で、失敗したセルの数を出し、押すとそのセルへ移る', async () => {
+		const fail = () => Promise.reject(new Error('failed'))
+		await render(
+			<DataTableInlineEditFailuresProvider>
+				<DataTableInlineEditFailureSummary />
+				<DataTableTextCell
+					ariaLabel='1行目を変更'
+					label='品目名'
+					value='a'
+					onSave={fail}
+				/>
+				<DataTableToggleCell
+					ariaLabel='2行目を公開する'
+					label='公開'
+					value={false}
+					onSave={fail}
+				/>
+			</DataTableInlineEditFailuresProvider>,
+		)
+		expect(document.querySelector('[role=region]')).toBeNull()
+		await click('1行目を変更')
+		await type('b')
+		await press('Enter')
+		await act(async () =>
+			document.querySelector<HTMLButtonElement>('[role=switch]')?.click(),
+		)
+		const summary = document.querySelector('[role=region]')
+		expect(summary?.textContent).toContain('2件を保存できませんでした')
+		const links = Array.from(summary?.querySelectorAll('button') ?? [])
+		expect(links.map(link => link.textContent)).toEqual([
+			'1. 品目名を「b」にできませんでした',
+			'2. 公開を「オン」に切り替えられませんでした',
+		])
+		await act(async () => links[1].click())
+		expect(document.activeElement?.getAttribute('role')).toBe('switch')
 	})
 	it('使えないときは編集を始めない', async () => {
 		await render(
@@ -390,7 +489,9 @@ describe('オン・オフを切り替えるセル', () => {
 		await act(async () => toggle()?.click())
 		expect(save).toHaveBeenCalledWith(true)
 		expect(toggle()?.getAttribute('aria-checked')).toBe('false')
-		expect(alertText()).toBe('公開を切り替えられませんでした。')
+		expect(alertText()).toBe(
+			'「公開」に切り替えられませんでした。 公開を切り替えられませんでした。 「非公開」のままです。',
+		)
 		await act(async () => toggle()?.click())
 		expect(toggle()?.getAttribute('aria-checked')).toBe('true')
 		expect(document.body.textContent).toContain('公開')

@@ -103,6 +103,8 @@ describe('public API', () => {
 		'dataTableRecordColumn',
 		'recordPlaceholder',
 		'DataTableEditableCell',
+		'DataTableInlineEditFailuresProvider',
+		'DataTableInlineEditFailureSummary',
 		'useDataTableInlineEdit',
 		'DataTableTextCell',
 		'DataTableNumberCell',

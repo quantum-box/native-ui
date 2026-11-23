@@ -100,6 +100,8 @@ export type DataTableNumberCellProps = Omit<
 	DataTableNumberRule & {
 		/** セルを押す所の読み上げ名（例「商品Aの単価を変更」）。 */
 		ariaLabel: string
+		/** 何の値か（例「単価」）。失敗の知らせに使う。 */
+		label?: string
 		/** 空のときの表示。 */
 		emptyLabel?: string
 		className?: string
@@ -111,6 +113,7 @@ export type DataTableNumberCellProps = Omit<
  */
 export function DataTableNumberCell({
 	ariaLabel,
+	label,
 	prefix,
 	suffix,
 	fractionDigits,
@@ -128,6 +131,8 @@ export function DataTableNumberCell({
 			ariaLabel={ariaLabel}
 			className={className}
 			align='end'
+			label={label}
+			formatValue={value => formatDataTableNumber(value, rule)}
 			renderValue={value =>
 				value === null ? (
 					<span className='text-muted-foreground'>{emptyLabel}</span>
@@ -142,7 +147,7 @@ export function DataTableNumberCell({
 					inputMode={fractionDigits ? 'decimal' : 'numeric'}
 					className='text-right tabular-nums'
 					// 表示と同じ文字で始める（直し始めても文字が変わらない）。前後の記号と桁区切りは読み取りで外す。
-					initialText={formatDataTableNumber(edit.value, rule)}
+					initialText={formatDataTableNumber(edit.editValue, rule)}
 					parse={text => parseDataTableNumber(text, rule)}
 				/>
 			)}

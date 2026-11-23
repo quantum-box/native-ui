@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Loader2 } from 'lucide-react'
+import { Check, CircleAlert, Loader2, Pencil, RotateCcw } from 'lucide-react'
 import {
 	type ButtonHTMLAttributes,
 	type HTMLAttributes,
@@ -10,17 +10,14 @@ import {
 	forwardRef,
 	useEffect,
 	useId,
+	useMemo,
 	useRef,
 	useState,
 } from 'react'
 
 import { cn } from '../../lib/utils'
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from './tooltip'
+import { Button } from './button'
+import { Popover, PopoverAnchor, PopoverContent } from './popover'
 
 /** その場で直すセルの今の様子。 */
 export type DataTableInlineEditStatus = 'idle' | 'saving' | 'saved'
@@ -63,12 +60,18 @@ export function useDataTableInlineEdit<T>({
 	const [pending, setPending] = useState<{ value: T } | null>(null)
 	const [status, setStatus] = useState<DataTableInlineEditStatus>('idle')
 	const [error, setError] = useState<string | null>(null)
+	const [failure, setFailure] = useState<DataTableInlineEditFailure<T> | null>(
+		null,
+	)
+	const [resumeValue, setResumeValue] = useState<{ value: T } | null>(null)
+	const failures = useRef(0)
 	const saving = useRef(false)
 
 	/** 編集を始める。直せないときや保存中は何もしない。 */
 	const startEditing = useCallback(() => {
 		if (disabled || saving.current) return false
 		setError(null)
+		setFailure(null)
 		setEditing(true)
 		return true
 	}, [disabled])
@@ -76,6 +79,7 @@ export function useDataTableInlineEdit<T>({
 	/** 編集をやめる（保存しない）。 */
 	const cancel = useCallback(() => {
 		setEditing(false)
+		setResumeValue(null)
 	}, [])
 
 	/** 確かめの文言を出す（編集は続ける）。 */
@@ -102,15 +106,19 @@ export function useDataTableInlineEdit<T>({
 			}
 			saving.current = true
 			setEditing(false)
+			setResumeValue(null)
 			setPending({ value: next })
 			setStatus('saving')
 			setError(null)
+			setFailure(null)
 			try {
 				await onSave(next)
 				setStatus('saved')
 			} catch (cause) {
 				setStatus('idle')
 				setError(formatError(cause))
+				failures.current += 1
+				setFailure({ attempted: next, kept: value, count: failures.current })
 			} finally {
 				setPending(null)
 				saving.current = false
@@ -120,19 +128,51 @@ export function useDataTableInlineEdit<T>({
 		[disabled, equals, formatError, onSave, validate, value],
 	)
 
+	/** 失敗した値で、もう一度保存する。 */
+	const retry = useCallback(async () => {
+		if (!failure) return false
+		return save(failure.attempted)
+	}, [failure, save])
+
+	/** 失敗した値を入れたまま、編集に戻る（直してから保存し直す）。 */
+	const resume = useCallback(() => {
+		if (!failure) return false
+		const attempted = failure.attempted
+		if (!startEditing()) return false
+		setResumeValue({ value: attempted })
+		return true
+	}, [failure, startEditing])
+
 	return {
 		/** 表示する値。保存中は新しい値を先に見せる。 */
 		value: pending ? pending.value : value,
+		/** 編集を始めるときの値。「直す」で戻ったときは、失敗した値。 */
+		editValue: resumeValue ? resumeValue.value : value,
 		editing,
 		status,
+		/** 失敗や確かめの理由。 */
 		error,
+		/** 保存に失敗したときの様子（何を保存しようとして、何のままか）。確かめで止まったときは null。 */
+		failure,
 		saving: status === 'saving',
 		disabled,
 		startEditing,
 		cancel,
 		reject,
 		save,
+		retry,
+		resume,
 	}
+}
+
+/** 保存に失敗したときの様子。 */
+export type DataTableInlineEditFailure<T> = {
+	/** 保存しようとした値。 */
+	attempted: T
+	/** 元に戻した値（今の値）。 */
+	kept: T
+	/** 何度目の失敗か（同じ失敗の知らせを 1 度だけ出すのに使う）。 */
+	count: number
 }
 
 export type DataTableInlineEdit<T> = ReturnType<
@@ -193,61 +233,396 @@ export function useDataTableInlineEditErrorId() {
 	return useContext(ErrorIdContext)
 }
 
+// ---- 失敗の一覧（表の側で任意に付ける） ---------------------------------------
+
+type FailedCell = {
+	id: string
+	title: string
+	focus: () => void
+	element: () => HTMLElement | null
+}
+
+type FailuresRegistry = {
+	cells: readonly FailedCell[]
+	register: (cell: FailedCell) => void
+	unregister: (id: string) => void
+}
+
+const FailuresContext = createContext<FailuresRegistry | null>(null)
+
 /**
- * セルの外側。失敗や確かめの理由を、セルの大きさを変えずに出す。
- * 理由はセルの下に小さな吹き出しで出す（触れる・フォーカスする・編集中のとき）。読み上げにはすぐ伝える。
+ * 表の中で保存に失敗したセルを集める。`DataTableInlineEditFailureSummary` と一緒に、表の外側に置く（任意）。
  */
-export function DataTableInlineEditShell({
-	error,
-	editing = false,
-	className,
+export function DataTableInlineEditFailuresProvider({
 	children,
 }: {
-	error: string | null
-	editing?: boolean
-	className?: string
 	children: ReactNode
 }) {
+	const [cells, setCells] = useState<readonly FailedCell[]>([])
+	const register = useCallback((cell: FailedCell) => {
+		setCells(current => [...current.filter(item => item.id !== cell.id), cell])
+	}, [])
+	const unregister = useCallback((id: string) => {
+		setCells(current => current.filter(item => item.id !== id))
+	}, [])
+	const value = useMemo(
+		() => ({ cells, register, unregister }),
+		[cells, register, unregister],
+	)
+	return (
+		<FailuresContext.Provider value={value}>
+			{children}
+		</FailuresContext.Provider>
+	)
+}
+
+/**
+ * 「3 件を保存できませんでした」と出し、押すとそのセルへ移る。失敗が無いときは何も出さない。
+ * `DataTableInlineEditFailuresProvider` の中で、表の上か下に置く。
+ */
+export function DataTableInlineEditFailureSummary({
+	className,
+}: {
+	className?: string
+}) {
+	const registry = useContext(FailuresContext)
+	const cells = useMemo(() => {
+		// 表の中の並び順（上から、左から）にそろえる。
+		return [...(registry?.cells ?? [])].sort((a, b) => {
+			const left = a.element()
+			const right = b.element()
+			if (!left || !right) return 0
+			return left.compareDocumentPosition(right) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+				? -1
+				: 1
+		})
+	}, [registry?.cells])
+	if (!cells.length) return null
+	return (
+		<div
+			role='region'
+			aria-label='保存できなかったセル'
+			className={cn(
+				'flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm',
+				className,
+			)}
+		>
+			<CircleAlert aria-hidden className='h-4 w-4 shrink-0 text-destructive' />
+			<span className='font-medium text-destructive'>
+				{cells.length}件を保存できませんでした
+			</span>
+			<span className='text-muted-foreground text-xs'>
+				押すとそのセルへ移ります
+			</span>
+			<span className='flex flex-wrap gap-1'>
+				{cells.map((cell, index) => (
+					<button
+						key={cell.id}
+						type='button'
+						onClick={cell.focus}
+						className='max-w-80 truncate rounded-sm px-1.5 py-0.5 text-left text-destructive text-xs underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+					>
+						{index + 1}. {cell.title}
+					</button>
+				))}
+			</span>
+		</div>
+	)
+}
+
+// ---- 失敗の吹き出し -----------------------------------------------------------
+
+const FOCUSABLE =
+	'button:not([disabled]), a[href], input, [tabindex]:not([tabindex="-1"])'
+
+export type DataTableInlineEditShellProps<T> = {
+	edit: Pick<
+		DataTableInlineEdit<T>,
+		'error' | 'editing' | 'failure' | 'saving' | 'retry' | 'resume'
+	>
+	/** 何の値か（例「公開」「単価」）。失敗の見出しに使う。 */
+	label?: string
+	/** 値を人が読む文字にする（例 true →「公開」、1200 →「¥1,200」）。 */
+	formatValue?: (value: T) => string
+	/** 失敗の見出し。既定は「{label}を「{値}」にできませんでした」。 */
+	describeFailure?: (attempted: string) => string
+	/** 「直す」（編集に戻る）を出す。既定は true。 */
+	canResume?: boolean
+	className?: string
+	children: ReactNode
+}
+
+/**
+ * その場で直すセルの外側。失敗をセルの大きさを変えずに知らせる。
+ *
+ * - 失敗したセルは外周が赤い線になり、右端に赤い「!」が出る（中のセルが出す）。
+ * - 理由はセルに付く吹き出しで出す。失敗した直後は 1 度だけ自分で開き、外を押すか数秒で閉じる。
+ *   そのあとは、セルに触れる・フォーカスすると開く。
+ * - 吹き出しには、何が失敗したか・理由・元に戻した値と、「もう一度」「直す」を出す。
+ * - キーボードでは、セルで ↓ を押すと吹き出しの「もう一度」へ移り、Esc で戻る。
+ * - 読み上げには、失敗と理由をすぐ伝える。
+ * - 確かめで止まったとき（編集中）は、吹き出しに理由だけを出す。
+ */
+export function DataTableInlineEditShell<T>({
+	edit,
+	label,
+	formatValue = value => String(value ?? ''),
+	describeFailure,
+	canResume = true,
+	className,
+	children,
+}: DataTableInlineEditShellProps<T>) {
 	const errorId = useId()
+	const cellId = useId()
+	const anchor = useRef<HTMLDivElement>(null)
+	const content = useRef<HTMLDivElement>(null)
 	const [hovered, setHovered] = useState(false)
 	const [focused, setFocused] = useState(false)
-	const open = !!error && (hovered || focused || editing)
+	const [inside, setInside] = useState(false)
+	const [fresh, setFresh] = useState(false)
+	const [dismissed, setDismissed] = useState(false)
+	const focusOnOpen = useRef(false)
+	const leaveTimer = useRef<ReturnType<typeof setTimeout>>()
+	const registry = useContext(FailuresContext)
+	const { failure, error, editing } = edit
+
+	const shown = (value: T) => formatValue(value) || '空欄'
+	const attempted = failure ? shown(failure.attempted) : ''
+	const title = failure
+		? (describeFailure?.(attempted) ??
+			(label
+				? `${label}を「${attempted}」にできませんでした`
+				: `「${attempted}」を保存できませんでした`))
+		: ''
+	const kept = failure ? `「${shown(failure.kept)}」のままです。` : ''
+	const message = failure
+		? [`${title}。`, error, kept].filter(Boolean).join(' ')
+		: (error ?? '')
+
+	// 失敗した直後は 1 度だけ自分で開き、数秒で閉じる。
+	const count = failure?.count
+	useEffect(() => {
+		if (!count) return
+		setFresh(true)
+		setDismissed(false)
+		const id = setTimeout(() => setFresh(false), 5000)
+		return () => clearTimeout(id)
+	}, [count])
+	useEffect(() => () => clearTimeout(leaveTimer.current), [])
+
+	// 表の側の一覧に知らせる。
+	const register = registry?.register
+	const unregister = registry?.unregister
+	useEffect(() => {
+		if (!failure || !register || !unregister) return
+		register({
+			id: cellId,
+			title,
+			element: () => anchor.current,
+			focus: () => {
+				const target = anchor.current?.querySelector<HTMLElement>(FOCUSABLE)
+				target?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+				target?.focus()
+				setDismissed(false)
+			},
+		})
+		return () => unregister(cellId)
+	}, [failure, register, unregister, cellId, title])
+
+	const open = editing
+		? !!error
+		: !!failure &&
+			!edit.saving &&
+			!dismissed &&
+			(fresh || hovered || focused || inside)
+
+	function focusFirst() {
+		content.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+	}
+	function enter() {
+		setDismissed(false)
+		setFresh(true)
+		if (content.current) focusFirst()
+		else focusOnOpen.current = true
+	}
+	function back() {
+		setDismissed(true)
+		setInside(false)
+		anchor.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+	}
+	function leaveSoon() {
+		clearTimeout(leaveTimer.current)
+		leaveTimer.current = setTimeout(() => {
+			setHovered(false)
+			setInside(false)
+		}, 150)
+	}
+
 	return (
 		<ErrorIdContext.Provider value={error ? errorId : undefined}>
-			<TooltipProvider delayDuration={0}>
-				<Tooltip open={open}>
-					<TooltipTrigger asChild>
-						<div
-							className={cn('relative min-w-0', className)}
-							onPointerEnter={() => setHovered(true)}
-							onPointerLeave={() => setHovered(false)}
-							onFocus={() => setFocused(true)}
-							onBlur={event => {
-								if (!event.currentTarget.contains(event.relatedTarget as Node))
-									setFocused(false)
-							}}
-						>
-							{children}
-							{error ? (
-								<span id={errorId} role='alert' className='sr-only'>
-									{error}
-								</span>
-							) : null}
-						</div>
-					</TooltipTrigger>
-					{error ? (
-						<TooltipContent
-							side='bottom'
-							align='start'
-							sideOffset={2}
-							aria-hidden
-							className='max-w-72 bg-destructive text-destructive-foreground'
-						>
-							{error}
-						</TooltipContent>
-					) : null}
-				</Tooltip>
-			</TooltipProvider>
+			<Popover
+				open={open}
+				onOpenChange={next => {
+					// 外を押したら閉じる。
+					if (!next && !editing) {
+						setFresh(false)
+						setDismissed(true)
+					}
+				}}
+			>
+				<PopoverAnchor asChild>
+					<div
+						ref={anchor}
+						className={cn('relative min-w-0', className)}
+						onPointerEnter={event => {
+							if (event.pointerType !== 'mouse') return
+							clearTimeout(leaveTimer.current)
+							setDismissed(false)
+							setHovered(true)
+						}}
+						onPointerLeave={event => {
+							if (event.pointerType === 'mouse') leaveSoon()
+						}}
+						onFocus={() => setFocused(true)}
+						onBlur={event => {
+							const next = event.relatedTarget as Node | null
+							if (next && event.currentTarget.contains(next)) return
+							setFocused(false)
+							if (!(next && content.current?.contains(next)))
+								setDismissed(false)
+						}}
+						onKeyDown={event => {
+							if (failure && !editing && event.key === 'ArrowDown') {
+								event.preventDefault()
+								enter()
+							} else if (open && event.key === 'Escape') {
+								event.preventDefault()
+								setDismissed(true)
+							}
+						}}
+					>
+						{children}
+						{error ? (
+							<span id={errorId} className='sr-only'>
+								{message}
+								{failure ? ' 下矢印キーで、もう一度・直すへ移ります。' : null}
+							</span>
+						) : null}
+						{error ? (
+							// 失敗・確かめの理由をすぐ読み上げる（失敗するたびに読み直す）。
+							<span
+								key={failure ? failure.count : error}
+								role='alert'
+								className='sr-only'
+							>
+								{message}
+							</span>
+						) : null}
+					</div>
+				</PopoverAnchor>
+				{error ? (
+					<PopoverContent
+						ref={content}
+						side='bottom'
+						align='start'
+						sideOffset={2}
+						className={cn(
+							'border-destructive/40 p-0',
+							failure ? 'w-72' : 'w-auto max-w-72',
+						)}
+						aria-label={failure ? title : error}
+						onOpenAutoFocus={event => {
+							event.preventDefault()
+							if (focusOnOpen.current) focusFirst()
+							focusOnOpen.current = false
+						}}
+						onCloseAutoFocus={event => event.preventDefault()}
+						onEscapeKeyDown={event => {
+							event.preventDefault()
+							back()
+						}}
+						onPointerEnter={() => {
+							clearTimeout(leaveTimer.current)
+							setInside(true)
+						}}
+						onPointerLeave={leaveSoon}
+						onFocus={() => setInside(true)}
+						onBlur={event => {
+							const next = event.relatedTarget as Node | null
+							if (!(next && event.currentTarget.contains(next)))
+								setInside(false)
+						}}
+						onKeyDown={event => {
+							if (event.key !== 'Tab') return
+							const list = Array.from(
+								content.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+							)
+							const active = document.activeElement
+							if (
+								(event.shiftKey && active === list[0]) ||
+								(!event.shiftKey && active === list[list.length - 1])
+							) {
+								event.preventDefault()
+								back()
+							}
+						}}
+					>
+						{failure ? (
+							<div className='space-y-1.5 p-3 text-sm'>
+								<p className='flex items-start gap-1.5 font-medium text-destructive'>
+									<CircleAlert
+										aria-hidden
+										className='mt-0.5 h-4 w-4 shrink-0'
+									/>
+									{title}
+								</p>
+								{error ? (
+									<p className='text-foreground text-xs'>{error}</p>
+								) : null}
+								<p className='text-muted-foreground text-xs'>{kept}</p>
+								<div className='flex gap-2 pt-1.5'>
+									<Button
+										type='button'
+										size='sm'
+										variant='primary'
+										onClick={() => {
+											setDismissed(true)
+											setInside(false)
+											anchor.current
+												?.querySelector<HTMLElement>(FOCUSABLE)
+												?.focus()
+											void edit.retry()
+										}}
+									>
+										<RotateCcw aria-hidden />
+										もう一度
+									</Button>
+									{canResume ? (
+										<Button
+											type='button'
+											size='sm'
+											variant='secondary'
+											onClick={() => {
+												setInside(false)
+												edit.resume()
+											}}
+										>
+											<Pencil aria-hidden />
+											直す
+										</Button>
+									) : null}
+								</div>
+							</div>
+						) : (
+							<p className='flex items-center gap-1.5 px-2.5 py-1.5 text-destructive text-xs'>
+								<CircleAlert aria-hidden className='h-3.5 w-3.5 shrink-0' />
+								{error}
+							</p>
+						)}
+					</PopoverContent>
+				) : null}
+			</Popover>
 		</ErrorIdContext.Provider>
 	)
 }
@@ -307,6 +682,10 @@ export type DataTableEditableCellProps<T> = DataTableInlineEditOptions<T> & {
 	renderEditor: (editor: DataTableInlineEdit<T>) => ReactNode
 	/** 値を右に寄せる（数・金額など）。 */
 	align?: 'start' | 'end'
+	/** 何の値か（例「品目名」「単価」）。失敗の知らせの見出しに使う。 */
+	label?: string
+	/** 値を人が読む文字にする。失敗の知らせに使う。 */
+	formatValue?: (value: T) => string
 	className?: string
 }
 
@@ -320,6 +699,8 @@ export function DataTableEditableCell<T>({
 	renderValue,
 	renderEditor,
 	align = 'start',
+	label,
+	formatValue,
 	className,
 	...options
 }: DataTableEditableCellProps<T>) {
@@ -337,8 +718,9 @@ export function DataTableEditableCell<T>({
 
 	return (
 		<DataTableInlineEditShell
-			error={edit.error}
-			editing={edit.editing}
+			edit={edit}
+			label={label}
+			formatValue={formatValue}
 			className={className}
 		>
 			{edit.editing ? (

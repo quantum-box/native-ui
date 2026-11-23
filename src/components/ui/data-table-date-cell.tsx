@@ -16,6 +16,8 @@ export type DataTableDateCellProps = Omit<
 	min?: string
 	/** 選べる最後の日（`YYYY-MM-DD`）。 */
 	max?: string
+	/** 何の値か（例「納期」）。失敗の知らせに使う。 */
+	label?: string
 	/** 空を許さない。 */
 	required?: boolean
 	/** 表示の形。既定は `2026/11/24`。 */
@@ -31,6 +33,7 @@ export type DataTableDateCellProps = Omit<
  */
 export function DataTableDateCell({
 	ariaLabel,
+	label,
 	min,
 	max,
 	required = false,
@@ -44,6 +47,8 @@ export function DataTableDateCell({
 			{...options}
 			ariaLabel={ariaLabel}
 			className={className}
+			label={label}
+			formatValue={value => (value ? formatDate(value) : '')}
 			renderValue={value =>
 				value ? (
 					<span className='tabular-nums'>{formatDate(value)}</span>
@@ -59,7 +64,7 @@ export function DataTableDateCell({
 					min={min}
 					max={max}
 					className='tabular-nums'
-					initialText={edit.value}
+					initialText={edit.editValue}
 					parse={text => {
 						if (!text)
 							return required

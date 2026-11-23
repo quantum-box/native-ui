@@ -7,6 +7,8 @@ import { DataTableDateCell } from './data-table-date-cell'
 import {
 	DataTableEditingCell,
 	type DataTableInlineEdit,
+	DataTableInlineEditFailureSummary,
+	DataTableInlineEditFailuresProvider,
 	DataTableInlineEditTrigger,
 	DataTableInputEditor,
 } from './data-table-inline-edit'
@@ -151,9 +153,13 @@ async function flip(cell: HTMLElement) {
 function previewEdit<T>(value: T): DataTableInlineEdit<T> {
 	return {
 		value,
+		editValue: value,
 		editing: true,
 		status: 'idle',
 		error: null,
+		failure: null,
+		retry: async () => true,
+		resume: () => true,
 		saving: false,
 		disabled: false,
 		startEditing: () => true,
@@ -217,6 +223,7 @@ const KINDS: Kind[] = [
 				{(value, save) => (
 					<DataTableTextCell
 						ariaLabel={`品目名を変更（${key}）`}
+						label='品目名'
 						value={value as string}
 						onSave={save as (value: string) => Promise<void>}
 						disabled={disabled}
@@ -235,6 +242,7 @@ const KINDS: Kind[] = [
 				{(value, save) => (
 					<DataTableNumberCell
 						ariaLabel={`単価を変更（${key}）`}
+						label='単価'
 						prefix='¥'
 						value={value as number}
 						onSave={save as (value: number | null) => Promise<void>}
@@ -254,6 +262,7 @@ const KINDS: Kind[] = [
 				{(value, save) => (
 					<DataTableDateCell
 						ariaLabel={`納期を変更（${key}）`}
+						label='納期'
 						value={value as string}
 						onSave={save as (value: string) => Promise<void>}
 						disabled={disabled}
@@ -272,6 +281,7 @@ const KINDS: Kind[] = [
 				{(value, save) => (
 					<DataTableToggleCell
 						ariaLabel={`公開する（${key}）`}
+						label='公開'
 						onLabel='公開'
 						offLabel='非公開'
 						value={value as boolean}
@@ -456,12 +466,27 @@ const LINES: Line[] = [
 	},
 ]
 
-function EditableTableExample() {
+/** 失敗の理由を、保存の失敗から読む。 */
+const reason = (cause: unknown) =>
+	cause instanceof Error ? cause.message : '保存できませんでした。'
+
+const FAILURE_REASONS: Partial<Record<keyof Line, string>> = {
+	name: '見る権限が無いので、品目名は変えられません。',
+	price:
+		'ほかの人が先に単価を変えました。最新の値を読み込んでから直してください。',
+	active: '通信が切れました。もう一度試してください。',
+	status: '入荷済みの行は、状態を戻せません。',
+}
+
+function EditableTableExample({ failing = false }: { failing?: boolean }) {
 	const [lines, setLines] = React.useState(LINES)
 	const update = React.useCallback(
 		<K extends keyof Line>(id: string, key: K) =>
 			async (value: Line[K]) => {
 				await wait(500)
+				// 例: 失敗する表では、保存がいつも失敗する（理由は列ごと）。
+				if (failing)
+					throw new Error(FAILURE_REASONS[key] ?? '保存できませんでした。')
 				// 例: 「エラー」を含む名前は保存に失敗させる。
 				if (key === 'name' && String(value).includes('エラー'))
 					throw new Error('保存できませんでした')
@@ -471,7 +496,7 @@ function EditableTableExample() {
 					),
 				)
 			},
-		[],
+		[failing],
 	)
 	// 列は作り直さない（作り直すとセルの状態が消える）。
 	const columns = React.useMemo<ColumnDef<Line>[]>(
@@ -482,13 +507,12 @@ function EditableTableExample() {
 				cell: ({ row }) => (
 					<DataTableTextCell
 						ariaLabel={`${row.original.id}の品目名を変更`}
+						label={`${row.original.id}の品目名`}
 						value={row.original.name}
 						required
 						maxLength={40}
 						onSave={update(row.original.id, 'name')}
-						formatError={() =>
-							'品目名を保存できませんでした。もう一度試してください。'
-						}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-56', cellClassName: 'p-0' },
@@ -499,11 +523,13 @@ function EditableTableExample() {
 				cell: ({ row }) => (
 					<DataTableNumberCell
 						ariaLabel={`${row.original.id}の単価を変更`}
+						label={`${row.original.id}の単価`}
 						prefix='¥'
 						min={0}
 						max={1000000}
 						value={row.original.price}
 						onSave={update(row.original.id, 'price')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-32 text-right', cellClassName: 'p-0' },
@@ -514,11 +540,13 @@ function EditableTableExample() {
 				cell: ({ row }) => (
 					<DataTableNumberCell
 						ariaLabel={`${row.original.id}の数量を変更`}
+						label={`${row.original.id}の数量`}
 						suffix='個'
 						min={0}
 						allowEmpty
 						value={row.original.quantity}
 						onSave={update(row.original.id, 'quantity')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-28 text-right', cellClassName: 'p-0' },
@@ -546,9 +574,11 @@ function EditableTableExample() {
 				cell: ({ row }) => (
 					<DataTableDateCell
 						ariaLabel={`${row.original.id}の納期を変更`}
+						label={`${row.original.id}の納期`}
 						min='2026-11-01'
 						value={row.original.dueDate}
 						onSave={update(row.original.id, 'dueDate')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-36', cellClassName: 'p-0' },
@@ -563,6 +593,7 @@ function EditableTableExample() {
 						options={STATUS}
 						value={row.original.status}
 						onSave={update(row.original.id, 'status')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-36', cellClassName: 'p-0' },
@@ -577,6 +608,7 @@ function EditableTableExample() {
 						options={TAGS}
 						value={row.original.tags}
 						onSave={update(row.original.id, 'tags')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-52', cellClassName: 'p-0' },
@@ -587,11 +619,13 @@ function EditableTableExample() {
 				cell: ({ row }) => (
 					<DataTableToggleCell
 						ariaLabel={`${row.original.id}を使う`}
+						label={`${row.original.id}の「使う」`}
 						onLabel='使う'
 						offLabel='使わない'
 						value={row.original.active}
 						disabled={row.original.status === 'received'}
 						onSave={update(row.original.id, 'active')}
+						formatError={reason}
 					/>
 				),
 				meta: { headerClassName: 'w-32', cellClassName: 'p-0' },
@@ -600,15 +634,20 @@ function EditableTableExample() {
 		[update],
 	)
 	return (
-		<DataTable
-			columns={columns}
-			items={lines}
-			total={lines.length}
-			page={1}
-			pageSize={lines.length}
-			onPageChange={() => {}}
-			hidePagination
-		/>
+		<DataTableInlineEditFailuresProvider>
+			<div className='space-y-2'>
+				<DataTableInlineEditFailureSummary />
+				<DataTable
+					columns={columns}
+					items={lines}
+					total={lines.length}
+					page={1}
+					pageSize={lines.length}
+					onPageChange={() => {}}
+					hidePagination
+				/>
+			</div>
+		</DataTableInlineEditFailuresProvider>
 	)
 }
 
@@ -619,4 +658,43 @@ function EditableTableExample() {
  */
 export const EditableTable: Story = {
 	render: () => <EditableTableExample />,
+}
+
+function cellOf(label: string) {
+	return document
+		.querySelector(`[aria-label="${label}"]`)
+		?.closest('td') as HTMLElement | null
+}
+
+function FailingTableExample() {
+	// 表示されたら、3 つのセルを直して保存に失敗させる（例のため）。
+	React.useEffect(() => {
+		let stopped = false
+		void (async () => {
+			await wait(300)
+			const price = cellOf('L-1の単価を変更')
+			if (!stopped && price) await typeAndEnter(price, '1500')
+			const active = cellOf('L-2を使う')
+			if (!stopped && active) await flip(active)
+			const name = cellOf('L-4の品目名を変更')
+			if (!stopped && name) await typeAndEnter(name, 'ボールペン 赤')
+		})()
+		return () => {
+			stopped = true
+		}
+	}, [])
+	return <EditableTableExample failing />
+}
+
+/**
+ * 保存がいつも失敗する表。表示されると 3 つのセルを直して失敗させる。
+ * 失敗したセルは外周が赤い線になり、右端に「!」が出る。理由はセルに付く吹き出しで出る
+ * （失敗した直後は 1 度だけ自分で開き、外を押すか数秒で閉じる。そのあとは触れる・フォーカスすると開く）。
+ * 吹き出しには、何が失敗したか・理由・元の値と、「もう一度」「直す」が出る。キーボードではセルで ↓ を押すと移れる。
+ * 表の上の「3件を保存できませんでした」は、押すとそのセルへ移る（`DataTableInlineEditFailuresProvider` と
+ * `DataTableInlineEditFailureSummary` で、表の側で任意に付ける）。
+ */
+export const FailingTable: Story = {
+	name: '失敗が複数ある表',
+	render: () => <FailingTableExample />,
 }

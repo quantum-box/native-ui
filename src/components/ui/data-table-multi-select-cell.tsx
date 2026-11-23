@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 import { Button } from './button'
@@ -61,6 +61,14 @@ export function DataTableMultiSelectCell({
 	const edit = useDataTableInlineEdit({ ...rest, equals: sameSet })
 	const [draft, setDraft] = useState<readonly string[]>([])
 	const cancelled = useRef(false)
+	// 開いたときは、今の値（「直す」で戻ったときは失敗した値）から始める。
+	const editValue = edit.editValue
+	useEffect(() => {
+		if (edit.editing) {
+			cancelled.current = false
+			setDraft(editValue)
+		}
+	}, [edit.editing, editValue])
 	const labelOf = (value: string) =>
 		options.find(option => option.value === value)?.label ?? value
 
@@ -77,17 +85,19 @@ export function DataTableMultiSelectCell({
 
 	return (
 		<DataTableInlineEditShell
-			error={edit.editing ? null : edit.error}
+			// 選んでいる間の確かめの理由は、候補の枠の中に出す（吹き出しは重ねない）。
+			edit={{ ...edit, error: edit.editing ? null : edit.error }}
+			label={label}
+			formatValue={values =>
+				values.length ? values.map(labelOf).join('、') : '未設定'
+			}
 			className={className}
 		>
 			<Popover
 				open={edit.editing}
 				onOpenChange={open => {
 					if (open) {
-						if (edit.startEditing()) {
-							cancelled.current = false
-							setDraft(edit.value)
-						}
+						if (edit.startEditing()) cancelled.current = false
 					} else if (cancelled.current) {
 						edit.cancel()
 					} else {

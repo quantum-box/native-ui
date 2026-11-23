@@ -19,6 +19,8 @@ export type DataTableToggleCellProps = Omit<
 > & {
 	/** スイッチの読み上げ名（例「商品Aを公開する」）。 */
 	ariaLabel: string
+	/** 何の値か（例「公開」）。失敗の知らせに使う。 */
+	label?: string
 	/** オンのときの表示。 */
 	onLabel?: string
 	/** オフのときの表示。 */
@@ -32,6 +34,7 @@ export type DataTableToggleCellProps = Omit<
  */
 export function DataTableToggleCell({
 	ariaLabel,
+	label,
 	onLabel = 'オン',
 	offLabel = 'オフ',
 	className,
@@ -39,7 +42,17 @@ export function DataTableToggleCell({
 }: DataTableToggleCellProps) {
 	const edit = useDataTableInlineEdit(options)
 	return (
-		<DataTableInlineEditShell error={edit.error} className={className}>
+		<DataTableInlineEditShell
+			edit={edit}
+			className={className}
+			canResume={false}
+			formatValue={value => (value ? onLabel : offLabel)}
+			describeFailure={attempted =>
+				label
+					? `${label}を「${attempted}」に切り替えられませんでした`
+					: `「${attempted}」に切り替えられませんでした`
+			}
+		>
 			<ToggleBody
 				edit={edit}
 				ariaLabel={ariaLabel}

@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { type CSSProperties, type ReactNode, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 
@@ -76,6 +76,11 @@ export function DataTableSelectCell({
 	const committedValue = rest.value
 	const disabled = edit.disabled
 	const [activeOption, setActiveOption] = useState(committedValue)
+	// 開いたときは、今の値（「直す」で戻ったときは失敗した値）を選んだ状態にする。
+	const editValue = edit.editValue
+	useEffect(() => {
+		if (edit.editing) setActiveOption(editValue)
+	}, [edit.editing, editValue])
 	const value = edit.value
 	const valueLabel =
 		options.find(option => option.value === value)?.label ?? (value || '未設定')
@@ -95,12 +100,18 @@ export function DataTableSelectCell({
 		)
 
 	return (
-		<DataTableInlineEditShell error={edit.error}>
+		<DataTableInlineEditShell
+			edit={edit}
+			label={label}
+			formatValue={item =>
+				options.find(option => option.value === item)?.label ?? item
+			}
+		>
 			<Popover
 				open={edit.editing}
 				onOpenChange={nextOpen => {
 					if (!nextOpen) return edit.cancel()
-					if (edit.startEditing()) setActiveOption(committedValue)
+					edit.startEditing()
 				}}
 			>
 				<PopoverTrigger asChild>
