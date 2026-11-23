@@ -1,7 +1,8 @@
-import { Slot } from '@radix-ui/react-slot'
+import { Button as ButtonPrimitive } from '@base-ui/react/button'
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
+import { Slot } from '../../lib/slot'
 import { cn } from '../../lib/utils'
 
 const buttonVariants = cva(
@@ -41,12 +42,25 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-	({ className, variant, size, asChild = false, ...props }, ref) => {
-		const Comp = asChild ? Slot : 'button'
+	({ className, variant, size, asChild = false, type, ...props }, ref) => {
+		const classes = cn(buttonVariants({ variant, size, className }))
+		if (asChild) {
+			// 子の要素（Link など）をそのまま使う。role などは足さない
+			return (
+				<Slot
+					className={classes}
+					ref={ref as React.Ref<HTMLElement>}
+					{...(props as React.HTMLAttributes<HTMLElement>)}
+				/>
+			)
+		}
 		return (
-			<Comp
-				className={cn(buttonVariants({ variant, size, className }))}
+			<ButtonPrimitive
+				className={classes}
 				ref={ref}
+				// base-ui は type を "button" にするが、ふつうの <button> と同じく
+				// 指定が無ければ "submit" のままにする（フォームの中での動きを変えない）
+				type={type ?? 'submit'}
 				{...props}
 			/>
 		)
