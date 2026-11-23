@@ -38,6 +38,19 @@ interface ChatAttachment {
 	error?: string
 }
 
+/**
+ * 見本の URL を、画像として読んでも安全な形だけに絞る。
+ * blob:（選んだファイル）・data:image/・http(s):・同じサイトの相対の URL だけを通し、
+ * javascript: などは捨てる。
+ */
+function safePreviewUrl(url?: string) {
+	if (!url) return undefined
+	const trimmed = url.trim()
+	if (/^(blob:|https?:\/\/|data:image\/)/i.test(trimmed)) return trimmed
+	if (/^(\/(?!\/)|\.\.?\/)/.test(trimmed)) return trimmed
+	return undefined
+}
+
 function formatSize(size?: number) {
 	if (size === undefined) return ''
 	if (size < 1024) return `${size} B`
@@ -61,7 +74,8 @@ function AttachmentChip({
 	onOpen,
 	className,
 }: Readonly<AttachmentChipProps>) {
-	const isImage = attachment.type?.startsWith('image/') && attachment.previewUrl
+	const previewUrl = safePreviewUrl(attachment.previewUrl)
+	const isImage = attachment.type?.startsWith('image/') && previewUrl
 	const failed = attachment.status === 'error'
 	const body = (
 		<>
@@ -73,7 +87,7 @@ function AttachmentChip({
 				<img
 					alt=''
 					className='size-6 shrink-0 rounded-sm object-cover'
-					src={attachment.previewUrl}
+					src={previewUrl}
 				/>
 			) : (
 				<FileText aria-hidden className='size-4 shrink-0' />
