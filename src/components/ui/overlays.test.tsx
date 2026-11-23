@@ -382,6 +382,45 @@ describe('Popover の Tab と外を押したとき', () => {
 	})
 })
 
+describe('Popover を外から閉じたとき', () => {
+	it('開いているあいだにフォーカスが外へ出ていたら、閉じてもボタンへ戻さない', async () => {
+		function Demo() {
+			const [open, setOpen] = useState(true)
+			return (
+				<>
+					<Popover open={open} onOpenChange={setOpen}>
+						<PopoverTrigger>開く</PopoverTrigger>
+						<PopoverContent>
+							<input aria-label='中' />
+						</PopoverContent>
+					</Popover>
+					<input aria-label='外' />
+					<button type='button' onClick={() => setOpen(false)}>
+						閉じる
+					</button>
+				</>
+			)
+		}
+		const el = await render(<Demo />)
+		await act(async () => wait(50))
+		const outside = el.querySelector('[aria-label="外"]') as HTMLInputElement
+		await act(async () => {
+			outside.focus()
+			await wait()
+		})
+		const close = Array.from(el.querySelectorAll('button')).find(
+			b => b.textContent === '閉じる',
+		) as HTMLButtonElement
+		await act(async () => {
+			close.click()
+			outside.focus()
+			await wait(80)
+		})
+		expect(byRole('dialog')).toBeNull()
+		expect(document.activeElement).toBe(outside)
+	})
+})
+
 describe('DropdownMenu', () => {
 	function Menu(props: {
 		onSelect?: (e: Event) => void

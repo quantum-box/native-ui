@@ -174,14 +174,33 @@ export function useDismissHandlers(handlers: DismissHandlers, enabled = true) {
 
 /**
  * 閉じたときのフォーカスを Radix と同じにする。ふつうは開いたボタンへ戻すが、
- * modal でない物を外を押して閉じたときは戻さない（押した所にフォーカスを残す）。
+ * modal でない物で、開いているあいだに外を押した・フォーカスが外へ出たときは戻さない
+ * （閉じた理由が何でも。たとえば外から open を false にされたときも）。
  * `onCloseAutoFocus` で `preventDefault()` されたら動かさない。
+ *
+ * 返す `popupRef` を中身の要素に付ける（外かどうかを調べるため）。
  */
 export function useRadixCloseFocus(
 	onCloseAutoFocus: ((event: Event) => void) | undefined,
 ) {
 	const context = React.useContext(DismissContext)
-	return React.useCallback(() => {
+	const interactedOutside = React.useRef(false)
+	const [popup, setPopup] = React.useState<HTMLElement | null>(null)
+	React.useEffect(() => {
+		if (!popup) return
+		interactedOutside.current = false
+		const onOutside = (event: Event) => {
+			const target = event.target as Node | null
+			if (target && !popup.contains(target)) interactedOutside.current = true
+		}
+		document.addEventListener('pointerdown', onOutside, true)
+		document.addEventListener('focusin', onOutside, true)
+		return () => {
+			document.removeEventListener('pointerdown', onOutside, true)
+			document.removeEventListener('focusin', onOutside, true)
+		}
+	}, [popup])
+	const finalFocus = React.useCallback(() => {
 		if (onCloseAutoFocus) {
 			const event = new Event('focusScope.autoFocusOnUnmount', {
 				cancelable: true,
@@ -189,9 +208,27 @@ export function useRadixCloseFocus(
 			onCloseAutoFocus(event)
 			if (event.defaultPrevented) return false
 		}
-		if (context && !context.modal && context.closedOutside.current) return false
+		if (
+			context &&
+			!context.modal &&
+			(context.closedOutside.current || interactedOutside.current)
+		)
+			return false
 		return true
 	}, [onCloseAutoFocus, context])
+	return { finalFocus, popupRef: setPopup }
+}
+
+/** いくつかの ref を 1 つにまとめる */
+export function useMergedRefs<T>(
+	...refs: Array<React.Ref<T> | undefined>
+): React.RefCallback<T> {
+	return React.useCallback((el: T | null) => {
+		for (const ref of refs) {
+			if (typeof ref === 'function') ref(el)
+			else if (ref) (ref as React.MutableRefObject<T | null>).current = el
+		}
+	}, refs)
 }
 
 /** Radix の FocusScope と同じ、Tab で止まる物の一覧（見えない物は除く） */

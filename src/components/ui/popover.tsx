@@ -14,6 +14,7 @@ import {
 	useDismissCompat,
 	useDismissHandlers,
 	radixLoopTab,
+	useMergedRefs,
 	useRadixCloseFocus,
 	useRadixOpenFocus,
 } from '../../lib/overlay'
@@ -150,7 +151,8 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 		})
 		const anchor = React.useContext(AnchorContext)?.anchor
 		const focus = useRadixOpenFocus(onOpenAutoFocus, ref)
-		const finalFocus = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const mergedRef = useMergedRefs(focus.ref, popupRef)
 		return (
 			<PopoverPrimitive.Portal keepMounted={forceMount}>
 				<PopoverPrimitive.Positioner
@@ -171,7 +173,7 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 					})}
 				>
 					<PopoverPrimitive.Popup
-						ref={focus.ref}
+						ref={mergedRef}
 						initialFocus={focus.initialFocus}
 						finalFocus={finalFocus}
 						onKeyDown={event => {

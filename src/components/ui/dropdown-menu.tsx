@@ -14,6 +14,7 @@ import {
 	radixCssVars,
 	useDismissCompat,
 	useDismissHandlers,
+	useMergedRefs,
 	useRadixCloseFocus,
 } from '../../lib/overlay'
 import { Slot } from '../../lib/slot'
@@ -278,7 +279,8 @@ const MenuPopupCompat = React.forwardRef<HTMLDivElement, MenuPopupProps>(
 		},
 		ref,
 	) => {
-		const finalFocus = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const mergedRef = useMergedRefs(ref, popupRef)
 		const handlers = {
 			onEscapeKeyDown,
 			onPointerDownOutside,
@@ -310,7 +312,7 @@ const MenuPopupCompat = React.forwardRef<HTMLDivElement, MenuPopupProps>(
 					})}
 				>
 					<MenuPrimitive.Popup
-						ref={ref}
+						ref={mergedRef}
 						finalFocus={finalFocus}
 						onKeyDown={event => {
 							onKeyDown?.(event)

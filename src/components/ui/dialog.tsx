@@ -11,6 +11,7 @@ import {
 	openState,
 	useDismissCompat,
 	useDismissHandlers,
+	useMergedRefs,
 	useRadixCloseFocus,
 	useRadixOpenFocus,
 } from '../../lib/overlay'
@@ -165,10 +166,11 @@ const DialogPopupCompat = React.forwardRef<
 			onInteractOutside,
 		})
 		const focus = useRadixOpenFocus(onOpenAutoFocus, ref)
-		const finalFocus = useRadixCloseFocus(onCloseAutoFocus)
+		const { finalFocus, popupRef } = useRadixCloseFocus(onCloseAutoFocus)
+		const mergedRef = useMergedRefs(focus.ref, popupRef)
 		return (
 			<DialogPrimitive.Popup
-				ref={focus.ref}
+				ref={mergedRef}
 				initialFocus={focus.initialFocus}
 				finalFocus={finalFocus}
 				render={compatRender(
