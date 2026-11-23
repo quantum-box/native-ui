@@ -1,6 +1,5 @@
 'use client'
 
-import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
 import {
 	Controller,
@@ -11,6 +10,7 @@ import {
 	type FieldValues,
 } from 'react-hook-form'
 
+import { Slot } from '../../lib/slot'
 import { cn } from '../../lib/utils'
 import { Label } from './label'
 
