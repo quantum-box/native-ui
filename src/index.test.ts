@@ -40,6 +40,7 @@ describe('public API', () => {
 		'AiBestMatchBadge',
 		'AiLabel',
 		'AiField',
+		'AiReasoningDetails',
 		'FactLabel',
 		'FactField',
 		'FactPanel',

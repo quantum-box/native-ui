@@ -3,6 +3,7 @@
 import { Check, Database, ExternalLink } from 'lucide-react'
 import * as React from 'react'
 
+import { useHoverOpen } from '../../lib/use-hover-open'
 import { cn } from '../../lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
@@ -74,29 +75,6 @@ function FactSourceDetails({
 			) : null}
 		</div>
 	)
-}
-
-/** 指を乗せると開き、離すと少し待って閉じる。押しても開け閉めできる。 */
-function useHoverOpen() {
-	const [open, setOpen] = React.useState(false)
-	const timer = React.useRef<ReturnType<typeof setTimeout>>()
-	const cancel = () => {
-		if (timer.current) clearTimeout(timer.current)
-	}
-	React.useEffect(() => cancel, [])
-	const hover = {
-		onPointerEnter: (event: React.PointerEvent) => {
-			if (event.pointerType !== 'mouse') return
-			cancel()
-			setOpen(true)
-		},
-		onPointerLeave: (event: React.PointerEvent) => {
-			if (event.pointerType !== 'mouse') return
-			cancel()
-			timer.current = setTimeout(() => setOpen(false), 150)
-		},
-	}
-	return { open, setOpen, hover }
 }
 
 // 地は透けない色にする。入力欄の枠に重ねても、枠線が印の上に透けて見えないように。
