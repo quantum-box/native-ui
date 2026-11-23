@@ -11,6 +11,7 @@ import {
 	useDataTableInlineEditErrorId,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
+import { useDataTableDensity } from './data-table-density'
 import { Switch } from './switch'
 
 export type DataTableToggleCellProps = Omit<
@@ -76,10 +77,11 @@ function ToggleBody({
 }) {
 	const id = useId()
 	const errorId = useDataTableInlineEditErrorId()
+	const density = useDataTableDensity()
 	return (
 		<div
 			className={cn(
-				dataTableInlineEditCellClassName,
+				dataTableInlineEditCellClassName(density),
 				edit.error && dataTableInlineEditErrorClassName,
 			)}
 		>

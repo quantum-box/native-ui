@@ -5,9 +5,14 @@ import {
 	getCoreRowModel,
 	useReactTable,
 } from '@tanstack/react-table'
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 
 import { cn } from '../../lib/utils'
+import {
+	type DataTableDensity,
+	DataTableDensityProvider,
+	dataTableDensityStyles,
+} from './data-table-density'
 import { Button } from './button'
 import {
 	Table,
@@ -24,6 +29,8 @@ declare module '@tanstack/react-table' {
 		cellClassName?: string
 		/** その列の見出しに付ける class。 */
 		headerClassName?: string
+		/** その列の中身の幅の上限（px）。入りきらない文字は 1 行で「…」と省き、触れると全部が出る。 */
+		maxWidth?: number
 	}
 }
 
@@ -48,6 +55,16 @@ export type DataTableProps<T> = {
 	emptyMessage?: string
 	/** 行が無く、読み込み中のときの文言。 */
 	loadingMessage?: string
+	/**
+	 * 密度。`compact` は行の多い表向けに詰めた形（1 行 32px、左右の余白 8px）。既定は `default`（1 行 40px）。
+	 * 表の中のセルはどれもこの密度に合わせる。
+	 */
+	density?: DataTableDensity
+	/**
+	 * 行の高さ。既定の `fixed` は、どの行も密度で決まる同じ高さにする（中身は 1 行で、入りきらない分は省く）。
+	 * `auto` は中身に合わせて高さを変える。
+	 */
+	rowHeight?: 'fixed' | 'auto'
 	className?: string
 }
 
@@ -68,8 +85,12 @@ export function DataTable<T>({
 	hidePagination = false,
 	emptyMessage = '記録はありません。',
 	loadingMessage = '読み込んでいます…',
+	density = 'default',
+	rowHeight = 'fixed',
 	className,
 }: DataTableProps<T>) {
+	const size = dataTableDensityStyles[density]
+	const fixed = rowHeight === 'fixed'
 	const data = useMemo(() => [...items], [items])
 	const table = useReactTable({
 		columns,
@@ -81,88 +102,144 @@ export function DataTable<T>({
 	})
 	const pageCount = Math.max(1, Math.ceil(total / pageSize))
 	return (
-		<div className={cn('min-w-0 space-y-3', className)} aria-busy={busy}>
-			<div className='min-w-0 overflow-hidden rounded-lg border border-border bg-background'>
-				<Table className='min-w-[720px]'>
-					<TableHeader className='border-t-0 bg-muted/50'>
-						{table.getHeaderGroups().map(group => (
-							<TableRow key={group.id}>
-								{group.headers.map(header => (
-									<TableHead
-										colSpan={header.colSpan}
-										className={cn(
-											'whitespace-nowrap',
-											header.column.columnDef.meta?.headerClassName,
-										)}
-										key={header.id}
-									>
-										{header.isPlaceholder
-											? null
-											: flexRender(
-													header.column.columnDef.header,
-													header.getContext(),
-												)}
-									</TableHead>
-								))}
-							</TableRow>
-						))}
-					</TableHeader>
-					<TableBody>
-						{table.getRowModel().rows.map(row => (
-							<TableRow key={row.id}>
-								{row.getVisibleCells().map(cell => (
+		<DataTableDensityProvider value={density}>
+			<div
+				className={cn('min-w-0 space-y-3', className)}
+				aria-busy={busy}
+				data-density={density}
+			>
+				<div className='min-w-0 overflow-hidden rounded-lg border border-border bg-background'>
+					<Table className='min-w-[720px]'>
+						<TableHeader className='border-t-0 bg-muted/50'>
+							{table.getHeaderGroups().map(group => (
+								<TableRow key={group.id}>
+									{group.headers.map(header => (
+										<TableHead
+											colSpan={header.colSpan}
+											className={cn(
+												'whitespace-nowrap',
+												size.row,
+												size.x,
+												header.column.columnDef.meta?.headerClassName,
+											)}
+											key={header.id}
+										>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+										</TableHead>
+									))}
+								</TableRow>
+							))}
+						</TableHeader>
+						<TableBody>
+							{table.getRowModel().rows.map(row => (
+								<TableRow key={row.id}>
+									{row.getVisibleCells().map(cell => (
+										<TableCell
+											className={cn(
+												size.x,
+												fixed && cn(size.row, 'py-0'),
+												cell.column.columnDef.meta?.cellClassName,
+											)}
+											key={cell.id}
+										>
+											{fixed ? (
+												<DataTableCellContent
+													className={size.maxRow}
+													maxWidth={cell.column.columnDef.meta?.maxWidth}
+												>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
+												</DataTableCellContent>
+											) : (
+												flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)
+											)}
+										</TableCell>
+									))}
+								</TableRow>
+							))}
+							{!data.length && (
+								<TableRow>
 									<TableCell
-										className={cell.column.columnDef.meta?.cellClassName}
-										key={cell.id}
+										className='py-10 text-center text-muted-foreground'
+										colSpan={table.getVisibleLeafColumns().length}
 									>
-										{flexRender(cell.column.columnDef.cell, cell.getContext())}
+										{busy ? loadingMessage : emptyMessage}
 									</TableCell>
-								))}
-							</TableRow>
-						))}
-						{!data.length && (
-							<TableRow>
-								<TableCell
-									className='py-10 text-center text-muted-foreground'
-									colSpan={table.getVisibleLeafColumns().length}
-								>
-									{busy ? loadingMessage : emptyMessage}
-								</TableCell>
-							</TableRow>
-						)}
-					</TableBody>
-				</Table>
+								</TableRow>
+							)}
+						</TableBody>
+					</Table>
+				</div>
+				{!hidePagination && (
+					<nav
+						aria-label='ページ送り'
+						className='flex flex-wrap items-center justify-between gap-3 text-sm'
+					>
+						<span>
+							{total.toLocaleString()}件 · {page} / {pageCount}ページ
+						</span>
+						<div className='flex gap-2'>
+							<Button
+								type='button'
+								variant='secondary'
+								size='sm'
+								disabled={busy || page <= 1}
+								onClick={() => onPageChange(page - 1)}
+							>
+								前へ
+							</Button>
+							<Button
+								type='button'
+								variant='secondary'
+								size='sm'
+								disabled={busy || page >= pageCount}
+								onClick={() => onPageChange(page + 1)}
+							>
+								次へ
+							</Button>
+						</div>
+					</nav>
+				)}
 			</div>
-			{!hidePagination && (
-				<nav
-					aria-label='ページ送り'
-					className='flex flex-wrap items-center justify-between gap-3 text-sm'
-				>
-					<span>
-						{total.toLocaleString()}件 · {page} / {pageCount}ページ
-					</span>
-					<div className='flex gap-2'>
-						<Button
-							type='button'
-							variant='secondary'
-							size='sm'
-							disabled={busy || page <= 1}
-							onClick={() => onPageChange(page - 1)}
-						>
-							前へ
-						</Button>
-						<Button
-							type='button'
-							variant='secondary'
-							size='sm'
-							disabled={busy || page >= pageCount}
-							onClick={() => onPageChange(page + 1)}
-						>
-							次へ
-						</Button>
-					</div>
-				</nav>
-			)}
+		</DataTableDensityProvider>
+	)
+}
+
+/**
+ * セルの中身を 1 行に収める（行の高さを中身で変えない）。入りきらない文字は「…」で省き、
+ * 省いたときだけ、触れると全部の文字が出るようにする。
+ */
+function DataTableCellContent({
+	className,
+	maxWidth,
+	children,
+}: {
+	className?: string
+	maxWidth?: number
+	children: ReactNode
+}) {
+	return (
+		<div
+			className={cn('min-w-0 truncate', className)}
+			style={maxWidth ? { maxWidth } : undefined}
+			onPointerEnter={event => {
+				const node = event.currentTarget
+				if (node.scrollWidth > node.clientWidth) {
+					if (!node.title) node.title = node.textContent ?? ''
+				} else if (node.title) node.removeAttribute('title')
+			}}
+		>
+			{children}
 		</div>
 	)
 }

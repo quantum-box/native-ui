@@ -263,13 +263,13 @@ describe('文字をその場で直すセル', () => {
 			/>,
 		)
 		const box = (node: Element | null) =>
-			(node?.className.match(/min-h-\[52px\]|px-5|py-2/g) ?? []).join(' ')
+			(node?.className.match(/\bh-\[39px\]|\bpx-5\b/g) ?? []).join(' ')
 		const display = button('品目名を変更')
-		expect(box(display)).toBe('min-h-[52px] px-5 py-2')
+		expect(box(display)).toBe('h-[39px] px-5')
 		await click('品目名を変更')
 		const field = input()
 		const cell = field.closest('div')
-		expect(box(cell)).toBe('min-h-[52px] px-5 py-2')
+		expect(box(cell)).toBe('h-[39px] px-5')
 		expect(cell?.className).toContain('ring-inset')
 		// 入力欄に枠と余白は無い。
 		expect(field.className).toContain('border-0')
@@ -569,7 +569,11 @@ describe('複数を選ぶセル', () => {
 		expect(option('新商品').getAttribute('aria-checked')).toBe('true')
 		await click('保存')
 		expect(save).toHaveBeenCalledExactlyOnceWith(['new', 'sale', 'limited'])
-		expect(button('タグを変更').textContent).toBe('新商品セール限定保存済み')
+		// 幅を測るための見えない並びは除いて読む。
+		const shown = button('タグを変更').cloneNode(true) as HTMLElement
+		for (const node of Array.from(shown.querySelectorAll('[aria-hidden=true]')))
+			node.remove()
+		expect(shown.textContent).toBe('新商品セール限定保存済み')
 	})
 	it('「やめる」と Esc では保存しない', async () => {
 		const save = vi.fn()

@@ -19,6 +19,7 @@ import {
 	dataTableInlineEditCellClassName,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
+import { useDataTableDensity } from './data-table-density'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 export type DataTableSelectOption = {
@@ -73,6 +74,7 @@ export function DataTableSelectCell({
 	...rest
 }: DataTableSelectCellProps) {
 	const edit = useDataTableInlineEdit({ ...rest, formatError })
+	const density = useDataTableDensity()
 	const committedValue = rest.value
 	const disabled = edit.disabled
 	const [activeOption, setActiveOption] = useState(committedValue)
@@ -92,7 +94,10 @@ export function DataTableSelectCell({
 	if (!options.length)
 		return (
 			<div
-				className={cn(dataTableInlineEditCellClassName, 'whitespace-nowrap')}
+				className={cn(
+					dataTableInlineEditCellClassName(density),
+					'whitespace-nowrap',
+				)}
 			>
 				{renderValue(valueLabel, value)}
 				{!disabled ? emptyOptionsAction : null}

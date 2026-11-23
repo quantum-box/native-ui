@@ -3,6 +3,17 @@ import type { ColumnDef } from '@tanstack/react-table'
 import * as React from 'react'
 
 import { DataTable } from './data-table'
+import {
+	DataTableComputedCell,
+	type DataTableFormula,
+	DataTableReadOnlyCell,
+	evaluateDataTableFormula,
+	roundDataTableNumber,
+} from './data-table-computed-cell'
+import {
+	type DataTableDensity,
+	DataTableDensityProvider,
+} from './data-table-density'
 import { DataTableDateCell } from './data-table-date-cell'
 import {
 	DataTableEditingCell,
@@ -410,6 +421,30 @@ function StatesExample() {
  */
 export const States: Story = { render: () => <StatesExample /> }
 
+/**
+ * 状態の一覧を、ふつう（1 行 40px）とコンパクト（1 行 32px・左右の余白 8px）で並べる。
+ * 表に密度を 1 つ渡すと、中のセルはどれもその密度に合わせる（手で組んだ表は `DataTableDensityProvider` で伝える）。
+ */
+export const StatesByDensity: Story = {
+	name: '状態の一覧（ふつうとコンパクト）',
+	render: () => (
+		<div className='space-y-6'>
+			<section className='space-y-2'>
+				<h3 className='font-medium text-sm'>ふつう（default）</h3>
+				<DataTableDensityProvider value='default'>
+					<StatesExample />
+				</DataTableDensityProvider>
+			</section>
+			<section className='space-y-2'>
+				<h3 className='font-medium text-sm'>コンパクト（compact）</h3>
+				<DataTableDensityProvider value='compact'>
+					<StatesExample />
+				</DataTableDensityProvider>
+			</section>
+		</div>
+	),
+}
+
 // ---- 1 つの表で直す ---------------------------------------------------------
 
 type Line = {
@@ -421,6 +456,8 @@ type Line = {
 	status: string
 	tags: readonly string[]
 	active: boolean
+	/** 金額を手で決めたとき（上書き）。計算のままなら null。 */
+	manualAmount?: number | null
 }
 
 const LINES: Line[] = [
@@ -478,8 +515,20 @@ const FAILURE_REASONS: Partial<Record<keyof Line, string>> = {
 	status: '入荷済みの行は、状態を戻せません。',
 }
 
-function EditableTableExample({ failing = false }: { failing?: boolean }) {
-	const [lines, setLines] = React.useState(LINES)
+type AmountMode = 'readonly' | 'reverse' | 'override' | 'tax'
+
+function EditableTableExample({
+	failing = false,
+	amountMode = 'readonly',
+	density,
+	rows = LINES,
+}: {
+	failing?: boolean
+	amountMode?: AmountMode
+	density?: DataTableDensity
+	rows?: Line[]
+}) {
+	const [lines, setLines] = React.useState(rows)
 	const update = React.useCallback(
 		<K extends keyof Line>(id: string, key: K) =>
 			async (value: Line[K]) => {
@@ -515,23 +564,32 @@ function EditableTableExample({ failing = false }: { failing?: boolean }) {
 						formatError={reason}
 					/>
 				),
-				meta: { headerClassName: 'w-56', cellClassName: 'p-0' },
+				meta: { headerClassName: 'w-56', cellClassName: 'p-0', maxWidth: 220 },
 			},
 			{
 				accessorKey: 'price',
 				header: '単価',
-				cell: ({ row }) => (
-					<DataTableNumberCell
-						ariaLabel={`${row.original.id}の単価を変更`}
-						label={`${row.original.id}の単価`}
-						prefix='¥'
-						min={0}
-						max={1000000}
-						value={row.original.price}
-						onSave={update(row.original.id, 'price')}
-						formatError={reason}
-					/>
-				),
+				cell: ({ row }) =>
+					row.original.status === 'received' ? (
+						<DataTableReadOnlyCell
+							ariaLabel={`${row.original.id}の単価`}
+							reason='入荷済みの行なので、単価を直す権限がありません。'
+							align='end'
+						>
+							{formatDataTableNumber(row.original.price, { prefix: '¥' })}
+						</DataTableReadOnlyCell>
+					) : (
+						<DataTableNumberCell
+							ariaLabel={`${row.original.id}の単価を変更`}
+							label={`${row.original.id}の単価`}
+							prefix='¥'
+							min={0}
+							max={1000000}
+							value={row.original.price}
+							onSave={update(row.original.id, 'price')}
+							formatError={reason}
+						/>
+					),
 				meta: { headerClassName: 'w-32 text-right', cellClassName: 'p-0' },
 			},
 			{
@@ -553,19 +611,84 @@ function EditableTableExample({ failing = false }: { failing?: boolean }) {
 			},
 			{
 				id: 'amount',
-				header: '金額',
-				cell: ({ row }) =>
-					row.original.price !== null && row.original.quantity !== null
-						? formatDataTableNumber(
-								row.original.price * row.original.quantity,
-								{
-									prefix: '¥',
-								},
-							)
-						: '—',
+				header: amountMode === 'tax' ? '税込金額' : '金額',
+				cell: ({ row }) => {
+					const { id, price, quantity, manualAmount = null } = row.original
+					const label = `${id}の${amountMode === 'tax' ? '税込金額' : '金額'}`
+					if (price === null || quantity === null)
+						return (
+							<DataTableComputedCell
+								ariaLabel={label}
+								label={label}
+								value={null}
+								reason='単価と数量が決まると計算します。'
+							/>
+						)
+					const formula: DataTableFormula = [
+						{
+							label: '単価',
+							value: price,
+							format: { prefix: '¥' },
+							cellLabel: `${id}の単価を変更`,
+						},
+						'×',
+						{
+							label: '数量',
+							value: quantity,
+							format: { suffix: '個' },
+							cellLabel: `${id}の数量を変更`,
+						},
+						...(amountMode === 'tax'
+							? ([
+									'×',
+									{ label: '税率', value: 1.1, format: { fractionDigits: 2 } },
+								] as const)
+							: []),
+					]
+					const raw = evaluateDataTableFormula(formula)
+					return (
+						<DataTableComputedCell
+							ariaLabel={label}
+							label={label}
+							value={
+								amountMode === 'tax'
+									? roundDataTableNumber(raw, 0, 'floor')
+									: raw
+							}
+							format={{ prefix: '¥' }}
+							formula={formula}
+							note={
+								amountMode === 'tax'
+									? '1 円未満は切り捨てています（税率 10%）。'
+									: amountMode === 'reverse'
+										? '単価は 1 円未満を切り捨てて計算し直します。'
+										: undefined
+							}
+							reverse={
+								amountMode === 'reverse'
+									? {
+											term: 0,
+											solve: total => total / quantity,
+											rounding: 'floor',
+											onSave: update(id, 'price'),
+										}
+									: undefined
+							}
+							override={
+								amountMode === 'override'
+									? {
+											value: manualAmount,
+											onSave: update(id, 'manualAmount'),
+										}
+									: undefined
+							}
+							formatError={reason}
+						/>
+					)
+				},
 				meta: {
-					headerClassName: 'w-32 text-right',
-					cellClassName: 'text-right tabular-nums text-muted-foreground',
+					headerClassName: 'w-36 text-right',
+					cellClassName: 'p-0',
 				},
 			},
 			{
@@ -611,7 +734,7 @@ function EditableTableExample({ failing = false }: { failing?: boolean }) {
 						formatError={reason}
 					/>
 				),
-				meta: { headerClassName: 'w-52', cellClassName: 'p-0' },
+				meta: { headerClassName: 'w-52', cellClassName: 'p-0', maxWidth: 170 },
 			},
 			{
 				accessorKey: 'active',
@@ -631,13 +754,14 @@ function EditableTableExample({ failing = false }: { failing?: boolean }) {
 				meta: { headerClassName: 'w-32', cellClassName: 'p-0' },
 			},
 		],
-		[update],
+		[update, amountMode],
 	)
 	return (
 		<DataTableInlineEditFailuresProvider>
 			<div className='space-y-2'>
 				<DataTableInlineEditFailureSummary />
 				<DataTable
+					density={density}
 					columns={columns}
 					items={lines}
 					total={lines.length}
@@ -819,4 +943,126 @@ function WidthCheckExample() {
 export const WidthCheck: Story = {
 	name: '列の幅が動かないことの確かめ',
 	render: () => <WidthCheckExample />,
+}
+
+// ---- 計算した値 -----------------------------------------------------------------
+
+/**
+ * 計算した値（読むだけ）。金額は単価 × 数量で計算した値で、値の左に Σ の印が出る。
+ * 触れる・フォーカスすると「単価 ¥380 × 数量 24個 = ¥9,120」の式が出て、式の中の単価・数量を押すとそのセルへ移る。
+ * 読むだけのセルは、触れても背景が変わらず、押せる形にもならない（直せるセルとの違い）。
+ * 4 行目（入荷済み）の単価は、直す権限が無いセルの例（鍵の印、触れると理由）。
+ * 単価や数量を直すと、金額もすぐ変わる（保存中は前の値、保存できたら新しい値）。
+ */
+export const ComputedReadOnly: Story = {
+	name: '計算した値（読むだけ・式）',
+	render: () => <EditableTableExample amountMode='readonly' />,
+}
+
+/**
+ * 逆算で直す。金額を直すと、単価 = 金額 ÷ 数量 で単価を計算し直す。割り切れないときは 1 円未満を切り捨てる。
+ * 直している間は「単価が ¥380 → ¥400 になります」のように、何が変わるかを先に見せる
+ * （割り切れないときは、金額がいくらになるかも見せる）。
+ */
+export const ComputedReverse: Story = {
+	name: '計算した値を逆算で直す',
+	render: () => <EditableTableExample amountMode='reverse' />,
+}
+
+/**
+ * 上書きで直す。金額を直すと、計算をやめてその値を手で決める（「手入力」の印）。
+ * 触れて出る式の枠の「計算に戻す」で、計算した値に戻せる。
+ */
+export const ComputedOverride: Story = {
+	name: '計算した値を上書きで直して、計算に戻す',
+	render: () => <EditableTableExample amountMode='override' />,
+}
+
+/**
+ * 端数の注意つき。税込金額 = 単価 × 数量 × 1.10 で、1 円未満は切り捨て。式の下に一言の注意が出る。
+ */
+export const ComputedWithNote: Story = {
+	name: '計算した値（端数の注意つき）',
+	render: () => <EditableTableExample amountMode='tax' />,
+}
+
+// ---- 密度と行の高さ -------------------------------------------------------------
+
+const NAMES = [
+	'りんごジュース 1L',
+	'冷凍ブルーベリー',
+	'紙コップ 200ml',
+	'ボールペン 黒',
+	'とても長い名前の商品（業務用・大容量パック・まとめ買い向け）',
+	'緑茶 500ml',
+]
+const MANY_LINES: Line[] = Array.from({ length: 30 }, (_, index) => ({
+	id: `L-${index + 1}`,
+	name: NAMES[index % NAMES.length],
+	price: ((index * 37) % 40) * 30 + 120,
+	quantity: index % 7 === 3 ? null : ((index * 13) % 50) + 1,
+	dueDate:
+		index % 5 === 2 ? '' : `2026-12-${String(101 + (index % 28)).slice(1)}`,
+	status: STATUS[index % STATUS.length].value,
+	tags: TAGS.slice(0, index % 4).map(tag => tag.value),
+	active: index % 3 !== 0,
+}))
+
+/**
+ * 行の多い表を、コンパクト（1 行 32px）で出す。長い名前は 1 行で「…」と省き、触れると全部が出る。
+ * タグが多いときは折り返さずに「+N」にまとめる。どの行も同じ高さ。
+ */
+export const CompactManyRows: Story = {
+	name: '行の多い表（コンパクト）',
+	render: () => <EditableTableExample density='compact' rows={MANY_LINES} />,
+}
+
+function RowHeightCheckExample() {
+	const root = React.useRef<HTMLDivElement>(null)
+	const [result, setResult] = React.useState<string[] | null>(null)
+	React.useEffect(() => {
+		const id = setTimeout(() => {
+			const tables = Array.from(
+				root.current?.querySelectorAll<HTMLElement>('[data-density]') ?? [],
+			)
+			setResult(
+				tables.map(table => {
+					const heights = Array.from(table.querySelectorAll('tbody tr')).map(
+						row => Math.round(row.getBoundingClientRect().height * 10) / 10,
+					)
+					// 一番下の行は下の線が無いので、1px 低い。
+					const body = heights.slice(0, -1)
+					const same = body.every(height => height === body[0])
+					return `${table.dataset.density}: ${heights.length} 行 · ${
+						same
+							? `どの行も ${body[0]}px（一番下の行は下の線が無く ${heights[heights.length - 1]}px）`
+							: `高さが違う行があります（${heights.join(', ')}）`
+					}`
+				}),
+			)
+		}, 800)
+		return () => clearTimeout(id)
+	}, [])
+	return (
+		<div ref={root} className='space-y-6'>
+			<div role='status' className='text-sm'>
+				{result ? (
+					result.map(line => <p key={line}>{line}</p>)
+				) : (
+					<p className='text-muted-foreground'>測っています…</p>
+				)}
+			</div>
+			<EditableTableExample rows={MANY_LINES.slice(0, 8)} />
+			<EditableTableExample density='compact' rows={MANY_LINES.slice(0, 8)} />
+		</div>
+	)
+}
+
+/**
+ * 行の高さが中身で変わらないことを、その場で測って確かめる。ふつうとコンパクトの表で、全部の行の高さを測る。
+ * 長い名前・空の値・タグの多い行・計算できない金額があっても、どの行も同じ高さになる。
+ */
+export const RowHeightCheck: Story = {
+	name: '行の高さが同じことの確かめ',
+	render: () => <RowHeightCheckExample />,
 }

@@ -125,6 +125,32 @@ export {
 } from './components/ui/collapsible'
 export { DataTable, type DataTableProps } from './components/ui/data-table'
 export {
+	DataTableComputedCell,
+	type DataTableComputedCellProps,
+	type DataTableComputedOverride,
+	type DataTableComputedReverse,
+	type DataTableFormula,
+	type DataTableFormulaOperator,
+	type DataTableFormulaTerm,
+	DataTableReadOnlyCell,
+	type DataTableReadOnlyCellProps,
+	type DataTableRounding,
+	evaluateDataTableFormula,
+	formulaText,
+	roundDataTableNumber,
+} from './components/ui/data-table-computed-cell'
+export {
+	type DataTableDensity,
+	DataTableDensityProvider,
+	dataTableDensityStyles,
+	useDataTableDensity,
+	useDataTableDensityStyles,
+} from './components/ui/data-table-density'
+export {
+	type DataTableOverflowItem,
+	DataTableOverflowList,
+} from './components/ui/data-table-overflow-list'
+export {
 	DataTableColumnHeader,
 	type DataTableColumnHeaderProps,
 	type DataTableFilterField,
@@ -235,6 +261,10 @@ export {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from './components/ui/dropdown-menu'
+export {
+	HoverPeek,
+	type HoverPeekTriggerProps,
+} from './components/ui/hover-peek'
 export {
 	HoverCard,
 	HoverCardContent,

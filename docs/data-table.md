@@ -308,3 +308,41 @@ dataTableRecordColumn<Invoice, Customer>({
 - `allowEmpty` で「未設定」に戻せる。保存には記録（または `null`）が渡る。
 - `validate` に記録（または `null`）が渡る。だめなら理由の文言を返すと保存しない。
 - セルの種類を途中で変えるときは `key` も変える（種類ごとに候補を読むフックが違うため）。
+
+## 密度と行の高さ
+
+- `DataTable` の `density` で密度を選ぶ。`default`（既定）は 1 行 40px・左右の余白 20px、`compact` は 1 行 32px・左右の余白 8px で、印（保存中・✓・!）や絵も小さくなる。文字の大きさは同じ。
+- 表の中のセル（見出し・ふつうのセル・その場で直すセル・記録のセル・計算した値のセル）は、どれも表の密度に合わせる。セルごとに指定しなくてよい。手で組んだ表では `DataTableDensityProvider` で伝える。
+- 既定を `default`（40px）にしたのは、Field の今の一覧（ふつうのセルは `h-9` で 1 行 約 36px、その場で選ぶセルのある行は 52px）に近く、どの行も同じ高さにそろえられるため。行の多い表は `compact` を選ぶ。
+- 行の高さは中身で変わらない（`rowHeight='fixed'`、既定）。セルの中身は 1 行で、入りきらない文字は「…」と省き、省いたときだけ触れると全部が出る。列の中身の幅の上限は `meta.maxWidth`（px）で決められる。行の高さを中身に合わせたい表は `rowHeight='auto'`。
+- 複数の記録・タグは折り返さずに 1 行で並べ、入りきらない分は幅を測って「+N」にまとめる（`DataTableOverflowList`）。記録の「+N」は、触れる・押すと全部の記録が出る。
+
+## 計算した値・直せない値
+
+`DataTableComputedCell` は計算した値（例 金額 = 単価 × 数量）を出す。
+
+```tsx
+<DataTableComputedCell
+  ariaLabel={`${line.id}の金額`}
+  label='金額'
+  value={line.price * line.quantity}
+  format={{ prefix: '¥' }}
+  formula={[
+    { label: '単価', value: line.price, format: { prefix: '¥' }, cellLabel: `${line.id}の単価を変更` },
+    '×',
+    { label: '数量', value: line.quantity, format: { suffix: '個' }, cellLabel: `${line.id}の数量を変更` },
+  ]}
+  note='1 円未満は切り捨てています。'
+/>
+```
+
+- 値の左に Σ の印を出す。触れる・フォーカスすると、実際の数を入れた式（例「単価 ¥380 × 数量 24個 = ¥9,120」）と `note` が出る。キーボードでは ↓ で式の枠へ移る。読み上げにも式を伝える。
+- 式の中の項目に `cellLabel`（そのセルの `ariaLabel`）を渡すと、押してそのセルへ移れる（そのまま直せる）。
+- 何も渡さなければ読むだけ。読むだけのセルは、触れても背景が変わらず、押せる形（カーソル）にもならない。直せるセルは触れると背景が変わり、押せる形になる。
+- 直し方は列ごとに選ぶ。
+  - `reverse`（逆算）: 値を直すと、決めた項目を計算し直す。`{ term: 0, solve: total => total / 数量, rounding: 'floor', onSave }`。割り切れないときの端数は `rounding`（四捨五入・切り捨て・切り上げ）と項目の `format.fractionDigits` で決まる。
+  - `override`（上書き）: 計算をやめて値を手で決める。`{ value: 手で決めた値 | null, onSave }`。手で決めた値には「手入力」の印が付き、式の枠の「計算に戻す」で戻せる（`onSave(null)`）。
+  - 直している間は、何が変わるかを先に見せる（例「単価が ¥380 → ¥400 になります。割り切れないため切り捨てて、金額は ¥9,600 になります。」「計算（¥9,120）をやめて、¥9,500 を手で決めます。」）。
+- 式の計算・丸めは `evaluateDataTableFormula`・`roundDataTableNumber` としても使える。
+
+`DataTableReadOnlyCell` は、権限が無いなどで直せないセル。右端に鍵の印を出し、触れる・フォーカスすると理由（例「直す権限がありません」）が出る。

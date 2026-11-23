@@ -17,6 +17,12 @@ import {
 
 import { cn } from '../../lib/utils'
 import { Button } from './button'
+import {
+	type DataTableDensity,
+	dataTableDensityStyles,
+	useDataTableDensity,
+	useDataTableDensityStyles,
+} from './data-table-density'
 import { Popover, PopoverAnchor, PopoverContent } from './popover'
 
 /** その場で直すセルの今の様子。 */
@@ -183,11 +189,27 @@ export type DataTableInlineEdit<T> = ReturnType<
  * その場で直すセルの箱。表示・編集中・保存中・保存できた・失敗のどれでも、
  * 高さ・余白・文字の位置が同じになるように、どのセルもこの形を使う。
  */
-export const dataTableInlineEditCellClassName =
-	'flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left text-sm outline-none'
+export function dataTableInlineEditCellClassName(
+	density: DataTableDensity = 'default',
+) {
+	const size = dataTableDensityStyles[density]
+	return cn(
+		'flex w-full items-center text-left text-sm outline-none',
+		size.box,
+		size.x,
+		size.gap,
+	)
+}
 
-/** 押せるセル（表示のとき）の見た目。フォーカスの線はセルの内側に 1 本。 */
-export const dataTableInlineEditTriggerClassName = `${dataTableInlineEditCellClassName} hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent`
+/** 押せるセル（表示のとき）の見た目。触れると背景が変わり、フォーカスの線はセルの内側に 1 本。 */
+export function dataTableInlineEditTriggerClassName(
+	density: DataTableDensity = 'default',
+) {
+	return cn(
+		dataTableInlineEditCellClassName(density),
+		'cursor-pointer hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent',
+	)
+}
 
 /** 失敗したセルの印（赤い線を内側に 1 本）。 */
 export const dataTableInlineEditErrorClassName =
@@ -204,23 +226,30 @@ export function DataTableInlineEditStatusIcon({
 	status: DataTableInlineEditStatus
 	error?: string | null
 }) {
+	const size = useDataTableDensityStyles()
 	return (
 		<span
-			className='flex w-4 shrink-0 justify-end text-muted-foreground'
+			className={cn(
+				'flex shrink-0 justify-end text-muted-foreground',
+				size.slot,
+			)}
 			role='status'
 		>
 			{status === 'saving' ? (
 				<>
-					<Loader2 aria-hidden className='h-3.5 w-3.5 animate-spin' />
+					<Loader2 aria-hidden className={cn(size.icon, 'animate-spin')} />
 					<span className='sr-only'>保存中</span>
 				</>
 			) : status === 'saved' ? (
 				<>
-					<Check aria-hidden className='h-3.5 w-3.5' />
+					<Check aria-hidden className={size.icon} />
 					<span className='sr-only'>保存済み</span>
 				</>
 			) : error ? (
-				<CircleAlert aria-hidden className='h-3.5 w-3.5 text-destructive' />
+				<CircleAlert
+					aria-hidden
+					className={cn(size.icon, 'text-destructive')}
+				/>
 			) : null}
 		</span>
 	)
@@ -640,27 +669,29 @@ export function DataTableInlineEditError({ error }: { error: string | null }) {
  * 編集中のセル。セルそのものが入力欄になる（表計算のように、枠や余白は足さず、外周の内側に線を 1 本）。
  * 文字の位置と大きさは表示のときと同じ。右端に印の場所を空けておくので、直し始めても文字が動かない。
  */
-export function DataTableEditingCell({
-	error = null,
-	align = 'start',
-	sizer,
-	children,
-	className,
-	...props
-}: HTMLAttributes<HTMLDivElement> & {
-	error?: string | null
-	align?: 'start' | 'end'
-	/**
-	 * 表示のときの中身。見えないまま同じ場所に置き、列の幅を表示のときと同じに保つ。
-	 * 入力欄そのものは列の幅に効かないので、編集に入っても出ても、列の幅とほかの列の位置が動かない。
-	 */
-	sizer?: ReactNode
-}) {
+export const DataTableEditingCell = forwardRef<
+	HTMLDivElement,
+	HTMLAttributes<HTMLDivElement> & {
+		error?: string | null
+		align?: 'start' | 'end'
+		/**
+		 * 表示のときの中身。見えないまま同じ場所に置き、列の幅を表示のときと同じに保つ。
+		 * 入力欄そのものは列の幅に効かないので、編集に入っても出ても、列の幅とほかの列の位置が動かない。
+		 */
+		sizer?: ReactNode
+	}
+>(function DataTableEditingCell(
+	{ error = null, align = 'start', sizer, children, className, ...props },
+	ref,
+) {
+	const density = useDataTableDensity()
+	const size = dataTableDensityStyles[density]
 	return (
 		<div
 			{...props}
+			ref={ref}
 			className={cn(
-				dataTableInlineEditCellClassName,
+				dataTableInlineEditCellClassName(density),
 				'relative bg-background ring-2 ring-inset',
 				error ? 'ring-destructive' : 'ring-ring',
 				className,
@@ -682,10 +713,14 @@ export function DataTableEditingCell({
 						className={cn(
 							// セルの文字の場所に重ねる（左は余白の内側。右揃えは表示の文字の右端にそろえる）。
 							// 左揃えの入力欄は、編集中は空いている右端の印の場所まで使う（文字の左端は動かない）。
-							'absolute inset-y-0 left-5 flex items-center',
+							'absolute inset-y-0 flex items-center',
+							size.overlayLeft,
 							align === 'end'
-								? 'right-[2.75rem] justify-end text-right tabular-nums'
-								: 'right-5',
+								? cn(
+										size.overlayRightEnd,
+										'justify-end text-right tabular-nums',
+									)
+								: size.overlayRight,
 						)}
 					>
 						{children}
@@ -704,7 +739,7 @@ export function DataTableEditingCell({
 			<DataTableInlineEditStatusIcon status='idle' />
 		</div>
 	)
-}
+})
 
 export type DataTableEditableCellProps<T> = DataTableInlineEditOptions<T> & {
 	/** セルを押す所の読み上げ名（例「商品Aの品名を変更」）。 */
@@ -815,6 +850,7 @@ export const DataTableInlineEditTrigger = forwardRef<
 	ref,
 ) {
 	const errorId = useDataTableInlineEditErrorId()
+	const density = useDataTableDensity()
 	return (
 		<button
 			ref={ref}
@@ -825,7 +861,7 @@ export const DataTableInlineEditTrigger = forwardRef<
 			disabled={disabled}
 			{...props}
 			className={cn(
-				dataTableInlineEditTriggerClassName,
+				dataTableInlineEditTriggerClassName(density),
 				'data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring',
 				error && dataTableInlineEditErrorClassName,
 				className,
@@ -853,6 +889,8 @@ export type DataTableInputEditorProps<T> = Omit<
 	initialText: string
 	/** 入れた文字を値に直す。だめなら `{ error }` を返す。 */
 	parse: (text: string) => { value: T } | { error: string }
+	/** 入れている文字が変わるたびに呼ばれる（直す前に、何が変わるかを見せるときなど）。 */
+	onTextChange?: (text: string) => void
 }
 
 /**
@@ -863,10 +901,15 @@ export function DataTableInputEditor<T>({
 	edit,
 	initialText,
 	parse,
+	onTextChange,
 	className,
 	...props
 }: DataTableInputEditorProps<T>) {
 	const [text, setText] = useState(initialText)
+	useEffect(() => {
+		onTextChange?.(initialText)
+		// 始めたときの文字を 1 度だけ知らせる。
+	}, [])
 	const done = useRef(false)
 	const errorId = useDataTableInlineEditErrorId()
 	async function commit(leaving: boolean) {
@@ -890,13 +933,16 @@ export function DataTableInputEditor<T>({
 			{...props}
 			value={text}
 			aria-invalid={edit.error ? true : undefined}
-			aria-describedby={edit.error ? errorId : undefined}
+			aria-describedby={edit.error ? errorId : props['aria-describedby']}
 			className={cn(
 				'h-5 w-full min-w-0 border-0 bg-transparent p-0 text-foreground text-sm leading-5 outline-none placeholder:text-subtle-foreground',
 				className,
 			)}
 			onFocus={event => event.currentTarget.select()}
-			onChange={event => setText(event.target.value)}
+			onChange={event => {
+				setText(event.target.value)
+				onTextChange?.(event.target.value)
+			}}
 			onKeyDown={event => {
 				if (event.key === 'Enter') {
 					event.preventDefault()

@@ -1,6 +1,6 @@
 import type { ColumnDef, ColumnMeta } from '@tanstack/react-table'
 import { ArrowUpRight } from 'lucide-react'
-import { useMemo } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 import {
@@ -8,6 +8,7 @@ import {
 	type DataTableSelectCellProps,
 	type DataTableSelectOption,
 } from './data-table-select-cell'
+import { DataTableOverflowList } from './data-table-overflow-list'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 import {
 	RecordActionButton,
@@ -49,7 +50,7 @@ export type DataTableRecordCellProps<T = unknown> = {
 	status?: RecordStatus
 	/** 複数の記録を出すとき。読み込み中などの記録は `recordPlaceholder` で置く。 */
 	records?: readonly (T | RecordPlaceholder)[]
-	/** 複数のとき、並べて出す数。残りは「+N」にまとめる。既定は 2。 */
+	/** 複数のとき、並べて出す数の上限。既定は、セルの幅に入るだけ並べ、残りを「+N」にまとめる。 */
 	max?: number
 	/** 補足（コードなど）も出す。 */
 	showDescription?: boolean
@@ -67,7 +68,7 @@ export function DataTableRecordCell<T = unknown>({
 	record,
 	status,
 	records,
-	max = 2,
+	max,
 	showDescription = false,
 	emptyText = '未設定',
 	className,
@@ -104,50 +105,97 @@ export function DataTableRecordCell<T = unknown>({
 				showDescription={showDescription}
 			/>
 		)
-	const shown = records.slice(0, max)
-	const rest = records.length - shown.length
+	const keyOf = (item: T | RecordPlaceholder) =>
+		isPlaceholder(item) ? item.key : definition.getId(item)
+	const quiet = (item: T | RecordPlaceholder) =>
+		isPlaceholder(item) ? (
+			<RecordChip kind={kind} status={item[PLACEHOLDER]} interactive={false} />
+		) : (
+			<RecordChip
+				kind={kind}
+				record={item}
+				interactive={false}
+				showDescription={showDescription}
+			/>
+		)
 	return (
-		<span
-			className={cn(
-				'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1',
-				className,
+		<DataTableOverflowList
+			className={className}
+			max={max}
+			items={records.map(item => ({
+				key: keyOf(item),
+				node: chip(item),
+				measure: quiet(item),
+			}))}
+			renderMore={hidden => (
+				<MoreRecords
+					label={`ほかの${definition.name} ${hidden}件を見る`}
+					title={`${definition.name}（${records.length}件）`}
+					count={hidden}
+				>
+					{records.map(item => (
+						<li key={keyOf(item)} className='flex min-w-0 px-1'>
+							{chip(item)}
+						</li>
+					))}
+				</MoreRecords>
 			)}
-		>
-			{shown.map(chip)}
-			{rest > 0 ? (
-				<Popover>
-					<PopoverTrigger asChild>
-						<button
-							type='button'
-							aria-label={`ほかの${definition.name} ${rest}件を見る`}
-							className='rounded-sm bg-muted px-1.5 text-muted-foreground text-xs leading-5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-							onClick={event => event.stopPropagation()}
-						>
-							+{rest}
-						</button>
-					</PopoverTrigger>
-					<PopoverContent
-						align='start'
-						className='w-64 p-2'
-						aria-label={`${definition.name}（${records.length}件）`}
-					>
-						<p className='px-1 pb-1 text-muted-foreground text-xs'>
-							{definition.name}（{records.length}件）
-						</p>
-						<ul className='space-y-1'>
-							{records.map(item => (
-								<li
-									key={isPlaceholder(item) ? item.key : definition.getId(item)}
-									className='flex min-w-0 px-1'
-								>
-									{chip(item)}
-								</li>
-							))}
-						</ul>
-					</PopoverContent>
-				</Popover>
-			) : null}
-		</span>
+		/>
+	)
+}
+
+/**
+ * 「+N」。触れる・押すと、残りを含む全部の記録が出る（それぞれ触れると要点と「〜で開く」が出る）。
+ */
+function MoreRecords({
+	label,
+	title,
+	count,
+	children,
+}: {
+	label: string
+	title: string
+	count: number
+	children: ReactNode
+}) {
+	const [open, setOpen] = useState(false)
+	const timer = useRef<ReturnType<typeof setTimeout>>()
+	useEffect(() => () => clearTimeout(timer.current), [])
+	const later = (next: boolean, delay: number) => {
+		clearTimeout(timer.current)
+		timer.current = setTimeout(() => setOpen(next), delay)
+	}
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<button
+					type='button'
+					aria-label={label}
+					className='rounded-sm bg-muted px-1.5 text-muted-foreground text-xs leading-5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+					onClick={event => event.stopPropagation()}
+					onPointerEnter={event => {
+						if (event.pointerType === 'mouse') later(true, 300)
+					}}
+					onPointerLeave={event => {
+						if (event.pointerType === 'mouse') later(false, 200)
+					}}
+				>
+					+{count}
+				</button>
+			</PopoverTrigger>
+			<PopoverContent
+				align='start'
+				className='w-64 p-2'
+				aria-label={title}
+				onPointerEnter={() => clearTimeout(timer.current)}
+				onPointerLeave={event => {
+					if (event.pointerType === 'mouse') later(false, 200)
+				}}
+			>
+				<p className='px-1 pb-1 text-muted-foreground text-xs'>{title}</p>
+				<ul className='space-y-1'>{children}</ul>
+			</PopoverContent>
+		</Popover>
 	)
 }
 

@@ -21,6 +21,7 @@ import {
 	type DataTableSelectOption,
 	DataTableValueChip,
 } from './data-table-select-cell'
+import { DataTableOverflowList } from './data-table-overflow-list'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 export type DataTableMultiSelectCellProps = Omit<
@@ -113,17 +114,25 @@ export function DataTableMultiSelectCell({
 						saving={edit.saving}
 						disabled={edit.disabled}
 					>
-						<span className='flex min-w-0 flex-wrap gap-1 whitespace-normal'>
-							{edit.value.length ? (
-								edit.value.map(value => (
-									<span key={value} className='min-w-0'>
-										{renderValue(labelOf(value), value)}
+						{edit.value.length ? (
+							<DataTableOverflowList
+								className='gap-x-1'
+								items={edit.value.map(value => ({
+									key: value,
+									node: renderValue(labelOf(value), value),
+								}))}
+								renderMore={hidden => (
+									<span
+										className='text-muted-foreground text-xs'
+										title={edit.value.map(labelOf).join('、')}
+									>
+										+{hidden}
 									</span>
-								))
-							) : (
-								<span className='text-muted-foreground'>{emptyLabel}</span>
-							)}
-						</span>
+								)}
+							/>
+						) : (
+							<span className='text-muted-foreground'>{emptyLabel}</span>
+						)}
 					</DataTableInlineEditTrigger>
 				</PopoverTrigger>
 				<PopoverContent
