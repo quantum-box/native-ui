@@ -130,6 +130,15 @@ export {
 	type DataTableFilterField,
 } from './components/ui/data-table-column-header'
 export {
+	DataTableRecordCell,
+	type DataTableRecordCellProps,
+	DataTableRecordSelectCell,
+	type DataTableRecordSelectCellProps,
+	dataTableRecordColumn,
+	type RecordPlaceholder,
+	recordPlaceholder,
+} from './components/ui/data-table-record-cell'
+export {
 	DataTableSelectCell,
 	type DataTableSelectCellProps,
 	type DataTableSelectOption,
@@ -215,6 +224,23 @@ export {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from './components/ui/dropdown-menu'
+export {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from './components/ui/hover-card'
+export {
+	type AnyRecordKindDefinition,
+	defineRecordKind,
+	RecordChip,
+	type RecordChipProps,
+	type RecordKindDefinition,
+	RecordKindProvider,
+	type RecordKindProviderProps,
+	type RecordStatus,
+	recordKindText,
+	useRecordKind,
+} from './components/ui/record'
 export {
 	Form,
 	FormControl,
