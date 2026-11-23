@@ -58,6 +58,11 @@ describe('public API', () => {
 		'TraceCollapsibleTrigger',
 		'TraceCollapsibleContent',
 		'Collapsible',
+		'DataTable',
+		'DataTableColumnHeader',
+		'DataTableSelectCell',
+		'DataTableValueChip',
+		'DataTableViewNotice',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})
