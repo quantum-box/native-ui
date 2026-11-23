@@ -232,6 +232,9 @@ export {
 export {
 	type AnyRecordKindDefinition,
 	defineRecordKind,
+	type RecordAction,
+	recordActions,
+	RecordCard,
 	RecordChip,
 	type RecordChipProps,
 	type RecordKindDefinition,
@@ -239,6 +242,7 @@ export {
 	type RecordKindProviderProps,
 	type RecordStatus,
 	recordKindText,
+	recordOpenLabel,
 	useRecordKind,
 } from './components/ui/record'
 export {

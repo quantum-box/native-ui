@@ -1,15 +1,29 @@
-import { CircleAlert, CircleSlash, Lock } from 'lucide-react'
+import {
+	ArrowUpRight,
+	CircleAlert,
+	CircleSlash,
+	Copy,
+	ExternalLink,
+	Lock,
+} from 'lucide-react'
 import {
 	type ComponentType,
 	type MouseEvent,
+	type KeyboardEvent,
+	type ReactElement,
 	type ReactNode,
 	createContext,
 	useContext,
+	useEffect,
+	useId,
 	useMemo,
+	useRef,
+	useState,
 } from 'react'
 
 import { cn } from '../../lib/utils'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
+import { Button } from './button'
+import { Popover, PopoverAnchor, PopoverContent } from './popover'
 
 /** 記録の様子。 */
 export type RecordStatus =
@@ -18,6 +32,38 @@ export type RecordStatus =
 	| 'missing'
 	| 'forbidden'
 	| 'unavailable'
+
+/** 要点の枠の下に出す操作。 */
+export type RecordAction = {
+	label: string
+	icon?: ComponentType<{ className?: string }>
+	/** 移る先。`newTab` でなければアプリの画面の移動の仕組みで移る。 */
+	href?: string
+	/** 新しいタブで開く。 */
+	newTab?: boolean
+	/** 押したときの動き（コピーなど）。 */
+	onSelect?: () => void | Promise<void>
+	/** `onSelect` が終わった後に少しの間出す文言（例「コピーしました」）。 */
+	doneLabel?: string
+}
+
+/** よく使う操作を作る。 */
+export const recordActions = {
+	/** 新しいタブで開く。 */
+	newTab: (href: string, label = '新しいタブで開く'): RecordAction => ({
+		label,
+		icon: ExternalLink,
+		href,
+		newTab: true,
+	}),
+	/** 文字をコピーする（ID など）。 */
+	copy: (text: string, label = 'ID をコピー'): RecordAction => ({
+		label,
+		icon: Copy,
+		doneLabel: 'コピーしました',
+		onSelect: () => navigator.clipboard?.writeText(text),
+	}),
+}
 
 /**
  * 記録の種類ごとの決まり（取引先・商品・担当者など）。アプリが 1 か所で決めて登録する。
@@ -36,10 +82,16 @@ export type RecordKindDefinition<T = unknown> = {
 	icon?: ComponentType<{ className?: string }>
 	/** 記録ごとの絵（担当者の顔など）。あれば `icon` の代わりに出す。 */
 	renderAvatar?: (record: T) => ReactNode
-	/** 詳細の画面の場所。あれば押すとそこへ移る。 */
+	/** どのシステムの記録か（例「商品管理」「顧客管理」「会計」）。要点の枠の上に出す。 */
+	system?: string
+	/** 詳細の画面の場所。あれば押すとそこへ移り、要点の枠に「{システム}で開く」が出る。 */
 	getHref?: (record: T) => string | undefined
-	/** 触れると出る要点。 */
+	/** 「{システム}で開く」の文言を変える。 */
+	openLabel?: string
+	/** 触れると出る要点の中身。 */
 	renderPreview?: (record: T) => ReactNode
+	/** 要点の枠の下に足す操作（新しいタブで開く・ID をコピー・関係する一覧を見るなど）。 */
+	getActions?: (record: T) => readonly RecordAction[]
 	/** 検索に使う言葉（読み仮名・コードなど）。 */
 	getKeywords?: (record: T) => string[]
 	/** 付け替えるときの候補を出す（アプリのデータを読むフックでもよい）。 */
@@ -149,9 +201,352 @@ function isPlainLeftClick(event: MouseEvent) {
 	)
 }
 
+/** 押したとき、⌘・Ctrl などを押していなければアプリの方法で移る。 */
+function linkProps(href: string, navigate?: (href: string) => void) {
+	return {
+		href,
+		onClick: (event: MouseEvent) => {
+			// 行を押したときの動きと重ならないようにする。
+			event.stopPropagation()
+			if (navigate && isPlainLeftClick(event)) {
+				event.preventDefault()
+				navigate(href)
+			}
+		},
+	}
+}
+
+/** 開く操作の文言。既定は「{システム}で開く」（システムが無ければ「{名前}を開く」）。 */
+export function recordOpenLabel(
+	definition: Pick<RecordKindDefinition, 'name' | 'system' | 'openLabel'>,
+) {
+	return (
+		definition.openLabel ??
+		(definition.system
+			? `${definition.system}で開く`
+			: `${definition.name}を開く`)
+	)
+}
+
+const FOCUSABLE = 'a[href], button, [tabindex]:not([tabindex="-1"])'
+
+type PeekTriggerProps = {
+	ref: (node: HTMLElement | null) => void
+	'aria-describedby': string
+	'aria-expanded': boolean
+	'aria-haspopup': 'dialog'
+	onPointerEnter: (event: React.PointerEvent) => void
+	onPointerLeave: (event: React.PointerEvent) => void
+	onFocus: (event: React.FocusEvent) => void
+	onBlur: (event: React.FocusEvent) => void
+	onKeyDown: (event: KeyboardEvent) => void
+}
+
+/**
+ * 記録に触れる・フォーカスすると要点の枠を出す。
+ * キーボードでは ↓ で枠の中の操作へ移り、Esc で戻る。Tab で枠の端を越えると閉じて記録に戻る。
+ */
+function RecordPeek({
+	label,
+	renderTrigger,
+	children,
+}: {
+	label: string
+	renderTrigger: (props: PeekTriggerProps) => ReactElement
+	children: ReactNode
+}) {
+	const [open, setOpen] = useState(false)
+	const timer = useRef<ReturnType<typeof setTimeout>>()
+	const anchor = useRef<HTMLElement | null>(null)
+	const content = useRef<HTMLDivElement>(null)
+	const focusOnOpen = useRef(false)
+	// 枠から記録へ戻したときは、フォーカスで枠を開き直さない。
+	const returning = useRef(false)
+	const hintId = useId()
+	useEffect(() => () => clearTimeout(timer.current), [])
+
+	function later(next: boolean, delay: number) {
+		clearTimeout(timer.current)
+		timer.current = setTimeout(() => setOpen(next), delay)
+	}
+	function focusables() {
+		return Array.from(
+			content.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+		)
+	}
+	function focusFirst() {
+		;(focusables()[0] ?? content.current)?.focus()
+	}
+	/** 枠の中の最初の操作へ移る。枠がまだ無ければ、出たときに移る。 */
+	function enter() {
+		clearTimeout(timer.current)
+		if (open && content.current) return focusFirst()
+		focusOnOpen.current = true
+		setOpen(true)
+	}
+	function leaveTo(target: EventTarget | null) {
+		const node = target as Node | null
+		return !(
+			node &&
+			(content.current?.contains(node) || anchor.current?.contains(node))
+		)
+	}
+	function back() {
+		clearTimeout(timer.current)
+		setOpen(false)
+		returning.current = true
+		anchor.current?.focus()
+		returning.current = false
+	}
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverAnchor asChild>
+				{renderTrigger({
+					ref: node => {
+						anchor.current = node
+					},
+					'aria-describedby': hintId,
+					'aria-expanded': open,
+					'aria-haspopup': 'dialog',
+					onPointerEnter: event => {
+						if (event.pointerType === 'mouse') later(true, 400)
+					},
+					onPointerLeave: event => {
+						if (event.pointerType === 'mouse') later(false, 150)
+					},
+					onFocus: event => {
+						// キーボードでフォーカスしたときだけ出す（押したときは移るので出さない）。
+						if (returning.current) return
+						let keyboard = false
+						try {
+							keyboard = event.currentTarget.matches(':focus-visible')
+						} catch {}
+						if (keyboard) later(true, 400)
+					},
+					onBlur: event => {
+						if (leaveTo(event.relatedTarget)) later(false, 150)
+					},
+					onKeyDown: event => {
+						// リンクでない記録は Enter・Space でも枠の操作へ移る。
+						const isLink = event.currentTarget.tagName === 'A'
+						if (
+							event.key === 'ArrowDown' ||
+							(!isLink && (event.key === 'Enter' || event.key === ' '))
+						) {
+							event.preventDefault()
+							enter()
+						} else if (event.key === 'Escape' && open) {
+							event.preventDefault()
+							clearTimeout(timer.current)
+							setOpen(false)
+						}
+					},
+				})}
+			</PopoverAnchor>
+			<span id={hintId} className='sr-only'>
+				下矢印キーで、要点と開く操作へ移ります
+			</span>
+			<PopoverContent
+				ref={content}
+				tabIndex={-1}
+				align='start'
+				className='w-80 p-0'
+				aria-label={label}
+				onOpenAutoFocus={event => {
+					// 触れて出たときはフォーカスを動かさない。キーボードで入ったときだけ最初の操作へ。
+					event.preventDefault()
+					if (focusOnOpen.current) focusFirst()
+					focusOnOpen.current = false
+				}}
+				onCloseAutoFocus={event => event.preventDefault()}
+				onEscapeKeyDown={event => {
+					event.preventDefault()
+					back()
+				}}
+				onPointerEnter={() => clearTimeout(timer.current)}
+				onPointerLeave={event => {
+					if (event.pointerType === 'mouse') later(false, 150)
+				}}
+				onBlur={event => {
+					if (leaveTo(event.relatedTarget)) later(false, 150)
+				}}
+				onKeyDown={event => {
+					if (event.key !== 'Tab') return
+					const list = focusables()
+					const first = list[0]
+					const last = list[list.length - 1]
+					const active = document.activeElement
+					if (
+						!list.length ||
+						(event.shiftKey && active === first) ||
+						(!event.shiftKey && active === last)
+					) {
+						event.preventDefault()
+						back()
+					}
+				}}
+			>
+				{children}
+			</PopoverContent>
+		</Popover>
+	)
+}
+
+function RecordActionButton({
+	action,
+	navigate,
+}: {
+	action: RecordAction
+	navigate?: (href: string) => void
+}) {
+	const [done, setDone] = useState(false)
+	useEffect(() => {
+		if (!done) return
+		const id = setTimeout(() => setDone(false), 1500)
+		return () => clearTimeout(id)
+	}, [done])
+	const Icon = action.icon
+	const body = (
+		<>
+			{Icon ? <Icon aria-hidden /> : null}
+			<span aria-live='polite'>
+				{done && action.doneLabel ? action.doneLabel : action.label}
+			</span>
+		</>
+	)
+	if (action.href)
+		return (
+			<Button asChild size='sm' variant='ghost'>
+				<a
+					{...(action.newTab
+						? {
+								href: action.href,
+								target: '_blank',
+								rel: 'noreferrer',
+								onClick: (event: MouseEvent) => event.stopPropagation(),
+							}
+						: linkProps(action.href, navigate))}
+				>
+					{body}
+				</a>
+			</Button>
+		)
+	return (
+		<Button
+			type='button'
+			size='sm'
+			variant='ghost'
+			onClick={async event => {
+				event.stopPropagation()
+				await action.onSelect?.()
+				setDone(true)
+			}}
+		>
+			{body}
+		</Button>
+	)
+}
+
+/**
+ * 要点の枠の中身。上に種類とシステム、真ん中に要点、下に開く操作とほかの操作を出す。
+ * 消えた・見る権限が無い・読み込めない記録では、開けないことと理由を出す。
+ */
+export function RecordCard<T = unknown>({
+	kind,
+	record,
+	status = record ? 'ready' : 'missing',
+}: {
+	kind: string
+	record?: T | null
+	status?: Exclude<RecordStatus, 'loading'>
+}) {
+	const { definition, navigate } = useRecordKind<T>(kind)
+	const reasonId = useId()
+	const Icon = definition.icon
+	const ready = status === 'ready' && record
+	const href = ready ? definition.getHref?.(record) : undefined
+	const actions = ready ? (definition.getActions?.(record) ?? []) : []
+	const openLabel = recordOpenLabel(definition)
+	const reason =
+		status === 'forbidden'
+			? '見る権限が無いので開けません。'
+			: status === 'unavailable'
+				? '読み込めなかったので開けません。'
+				: '削除されているので開けません。'
+	return (
+		<div className='text-sm'>
+			<div className='flex items-center gap-1.5 border-border border-b px-3 py-2 text-xs'>
+				{Icon ? (
+					<Icon aria-hidden className='h-3.5 w-3.5 text-muted-foreground' />
+				) : null}
+				<span className='font-medium text-foreground'>{definition.name}</span>
+				{definition.system ? (
+					<span className='text-muted-foreground'>· {definition.system}</span>
+				) : null}
+			</div>
+			<div className='px-3 py-2.5'>
+				{ready ? (
+					definition.renderPreview ? (
+						definition.renderPreview(record)
+					) : (
+						<p className='font-medium'>{definition.getLabel(record)}</p>
+					)
+				) : (
+					<p className='text-muted-foreground'>
+						{status === 'forbidden'
+							? `${definition.name}（${recordKindText(definition, 'forbidden')}）`
+							: recordKindText(
+									definition,
+									status === 'ready' ? 'missing' : status,
+								)}
+					</p>
+				)}
+			</div>
+			{ready && !href && !actions.length ? null : (
+				<div className='flex flex-wrap items-center gap-1 border-border border-t p-2'>
+					{href ? (
+						<Button asChild size='sm' variant='primary'>
+							<a {...linkProps(href, navigate)}>
+								{openLabel}
+								<ArrowUpRight aria-hidden />
+							</a>
+						</Button>
+					) : !ready ? (
+						<>
+							<Button
+								type='button'
+								size='sm'
+								variant='secondary'
+								aria-disabled='true'
+								aria-describedby={reasonId}
+								className='cursor-not-allowed opacity-50'
+								onClick={event => event.preventDefault()}
+							>
+								{openLabel}
+							</Button>
+							<span id={reasonId} className='text-muted-foreground text-xs'>
+								{reason}
+							</span>
+						</>
+					) : null}
+					{actions.map(action => (
+						<RecordActionButton
+							key={action.label}
+							action={action}
+							navigate={navigate}
+						/>
+					))}
+				</div>
+			)}
+		</div>
+	)
+}
+
 /**
  * 別の業務の記録を 1 つ出す。見た目と動きは、登録した種類の決まりで決まる。
- * 押すと詳細へ移り、触れると要点が出る。読み込み中・消えた・見る権限が無いときも決まりどおりに出す。
+ * 押すと詳細へ移る。触れる・フォーカスすると、種類とシステム・要点・開く操作の枠が出る（↓ で操作へ移れる）。
+ * 読み込み中・消えた・見る権限が無い・読み込めないときも決まりどおりに出す。
  */
 export function RecordChip<T = unknown>({
 	kind,
@@ -166,6 +561,8 @@ export function RecordChip<T = unknown>({
 		'inline-flex min-w-0 max-w-full items-center gap-1.5 align-middle text-sm',
 		className,
 	)
+	const focusRing =
+		'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 	if (status === 'loading') {
 		return (
@@ -194,13 +591,25 @@ export function RecordChip<T = unknown>({
 		const text = recordKindText(definition, state)
 		// 見る権限が無いときは、何の記録かが分かるように種類の名前を付ける。
 		const shown = state === 'forbidden' ? `${definition.name}（${text}）` : text
-		return (
-			<span className={cn(base, 'text-muted-foreground')} title={shown}>
+		const chip = (props?: PeekTriggerProps) => (
+			<span
+				{...props}
+				role={props ? 'button' : undefined}
+				tabIndex={props ? 0 : undefined}
+				className={cn(base, 'text-muted-foreground', props && focusRing)}
+				title={props ? undefined : shown}
+			>
 				<Icon aria-hidden className='h-3.5 w-3.5 shrink-0' />
 				<span className={cn('truncate', state === 'missing' && 'line-through')}>
 					{shown}
 				</span>
 			</span>
+		)
+		if (!interactive) return chip()
+		return (
+			<RecordPeek label={`${definition.name}: ${shown}`} renderTrigger={chip}>
+				<RecordCard kind={kind} status={state} />
+			</RecordPeek>
 		)
 	}
 
@@ -222,7 +631,7 @@ export function RecordChip<T = unknown>({
 					className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
 				/>
 			) : null}
-			<span className='truncate' title={label}>
+			<span className='truncate' title={interactive ? undefined : label}>
 				{label}
 			</span>
 			{description ? (
@@ -232,40 +641,37 @@ export function RecordChip<T = unknown>({
 			) : null}
 		</>
 	)
-	const anchor = href ? (
-		<a
-			href={href}
-			className={cn(
-				base,
-				'rounded-sm text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-			)}
-			onClick={event => {
-				// 行を押したときの動きと重ならないようにする。
-				event.stopPropagation()
-				if (navigate && isPlainLeftClick(event)) {
-					event.preventDefault()
-					navigate(href)
-				}
-			}}
-		>
-			{content}
-		</a>
-	) : (
-		<span
-			className={base}
-			tabIndex={interactive && definition.renderPreview ? 0 : undefined}
-		>
-			{content}
-		</span>
-	)
+	if (!interactive) return <span className={base}>{content}</span>
 
-	if (!interactive || !definition.renderPreview) return anchor
+	const trigger = (props: PeekTriggerProps) =>
+		href ? (
+			<a
+				{...props}
+				{...linkProps(href, navigate)}
+				className={cn(
+					base,
+					focusRing,
+					'text-foreground underline-offset-2 hover:underline',
+				)}
+			>
+				{content}
+			</a>
+		) : (
+			<span
+				{...props}
+				role='button'
+				tabIndex={0}
+				className={cn(base, focusRing)}
+			>
+				{content}
+			</span>
+		)
 	return (
-		<HoverCard openDelay={400} closeDelay={100}>
-			<HoverCardTrigger asChild>{anchor}</HoverCardTrigger>
-			<HoverCardContent aria-label={`${definition.name}「${label}」の要点`}>
-				{definition.renderPreview(record)}
-			</HoverCardContent>
-		</HoverCard>
+		<RecordPeek
+			label={`${definition.name}「${label}」の要点`}
+			renderTrigger={trigger}
+		>
+			<RecordCard kind={kind} record={record} />
+		</RecordPeek>
 	)
 }

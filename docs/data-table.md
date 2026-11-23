@@ -209,12 +209,18 @@ const columns: ColumnDef<Product>[] = [
 ```tsx
 const customerKind = defineRecordKind<Customer>({
   name: '取引先',
+  system: '顧客管理',
   icon: Building2,
   getId: customer => customer.id,
   getLabel: customer => customer.name,
   getDescription: customer => customer.code,
   getHref: customer => `/customers/${customer.id}`,
   renderPreview: customer => <CustomerSummary customer={customer} />,
+  getActions: customer => [
+    recordActions.newTab(`/customers/${customer.id}`),
+    { label: 'この取引先の請求書を見る', icon: FileText, href: `/invoices?customer=${customer.id}` },
+    recordActions.copy(customer.code, 'コードをコピー'),
+  ],
   useCandidates: useCustomerOptions, // 付け替えの候補（アプリのフック）
   missingText: '削除された取引先',
 })
@@ -228,7 +234,11 @@ const customerKind = defineRecordKind<Customer>({
 ```
 
 - `getHref` があれば押すと詳細へ移る。`navigate` を渡すとアプリの方法で移り、⌘・Ctrl を押しながらだとふつうのリンクとして新しいタブで開く。行を押したときの動きとは重ならない。
-- `renderPreview` があれば、触れるかフォーカスすると要点が出る。
+- 記録に触れる・キーボードでフォーカスすると、要点の枠が出る。枠の上に種類の名前と `system`（どのシステムの記録か。例「商品 · 商品管理」）、真ん中に `renderPreview`、下に「{システム}で開く」（`getHref` の場所へ移る。文言は `openLabel` で変えられる）と `getActions` の操作が並ぶ。
+- キーボードでは記録で ↓ を押すと枠の中の最初の操作（「{システム}で開く」）へ移る。Tab で操作を順に移り、Esc か枠の端で Tab を押すと記録へ戻る。読み上げには「下矢印キーで、要点と開く操作へ移ります」と伝える。
+- 消えた・見る権限が無い・読み込めない記録でも枠は出る。「{システム}で開く」は押せない形で出し、横に理由（「見る権限が無いので開けません。」など）を出す。
+- `getActions` には `recordActions.newTab(href)`（新しいタブで開く）・`recordActions.copy(text, label)`（コピー。押すと「コピーしました」）や、`{ label, icon, href }`（例「この商品の受注を見る」）、`{ label, onSelect }` を並べる。
+- 枠の中身だけを出したいときは `RecordCard` を使う。
 - `renderAvatar` があれば、`icon` の代わりに記録ごとの絵（担当者の頭文字など）を出す。
 - 文言は種類ごとに変えられる: `missingText`（既定「削除された{名前}」）・`forbiddenText`（既定「見る権限がありません」。前に種類の名前が付く）・`unavailableText`（既定「{名前}を読み込めませんでした」）・`loadingText`（読み上げ）。
 - `getKeywords` は付け替えの検索に使う言葉（読み仮名・コードなど）。

@@ -17,6 +17,7 @@ import {
 	type RecordKindDefinition,
 	RecordKindProvider,
 	defineRecordKind,
+	recordActions,
 } from './record'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
@@ -50,6 +51,12 @@ const customerKind = defineRecordKind<Customer>({
 	getLabel: customer => customer.name,
 	getDescription: customer => customer.code,
 	getHref: customer => `/customers/${customer.id}`,
+	system: '顧客管理',
+	renderPreview: customer => <p>コード {customer.code}</p>,
+	getActions: customer => [
+		recordActions.newTab(`/customers/${customer.id}`),
+		recordActions.copy(customer.id),
+	],
 	useCandidates: () => ({ records: [ACME, BETA, GAMMA] }),
 })
 
@@ -73,6 +80,21 @@ async function render(
 			</RecordKindProvider>,
 		),
 	)
+}
+/** 読み上げだけの文字（操作の案内）を除いた、目に見える文字。 */
+function visibleText() {
+	const copy = document.body.cloneNode(true) as HTMLElement
+	for (const node of Array.from(copy.querySelectorAll('.sr-only')))
+		node.remove()
+	return copy.textContent
+}
+async function key(target: Element | null, name: string) {
+	await act(async () => {
+		target?.dispatchEvent(
+			new KeyboardEvent('keydown', { key: name, bubbles: true }),
+		)
+		await new Promise(resolve => setTimeout(resolve, 30))
+	})
 }
 function button(label: string) {
 	const match = Array.from(document.querySelectorAll('button')).find(
@@ -128,7 +150,7 @@ describe('記録を 1 つ出す', () => {
 				customer: { ...customerKind, missingText: '取引をやめた取引先' },
 			},
 		})
-		expect(document.body.textContent).toBe('取引をやめた取引先')
+		expect(visibleText()).toBe('取引をやめた取引先')
 	})
 	it('登録していない種類は理由を出して止まる', async () => {
 		const error = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -136,6 +158,64 @@ describe('記録を 1 つ出す', () => {
 			render(<RecordChip kind='product' record={ACME} />),
 		).rejects.toThrow('記録の種類「product」が登録されていません')
 		error.mockRestore()
+	})
+})
+
+describe('要点の枠', () => {
+	it('↓ で枠を開き、種類とシステムを出して「顧客管理で開く」へ移る。Esc で記録に戻る', async () => {
+		const navigate = vi.fn()
+		await render(<RecordChip kind='customer' record={ACME} />, { navigate })
+		const link = document.querySelector('a')
+		expect(link?.getAttribute('aria-haspopup')).toBe('dialog')
+		expect(
+			document.getElementById(link?.getAttribute('aria-describedby') ?? '')
+				?.textContent,
+		).toContain('下矢印キー')
+		await act(async () => link?.focus())
+		await key(link, 'ArrowDown')
+		const dialog = document.querySelector('[role=dialog]')
+		expect(dialog?.getAttribute('aria-label')).toBe('取引先「山田商店」の要点')
+		expect(dialog?.textContent).toContain('取引先· 顧客管理')
+		expect(dialog?.textContent).toContain('コード C-001')
+		const open = document.activeElement as HTMLAnchorElement
+		expect(open.textContent).toBe('顧客管理で開く')
+		expect(open.getAttribute('href')).toBe('/customers/c1')
+		await key(open, 'Escape')
+		expect(document.activeElement).toBe(link)
+		// 記録へ戻ったフォーカスで、枠が開き直さない。
+		await act(async () => new Promise(resolve => setTimeout(resolve, 500)))
+		expect(document.querySelector('[role=dialog]')).toBeNull()
+		await key(link, 'ArrowDown')
+		await act(async () => (document.activeElement as HTMLElement).click())
+		expect(navigate).toHaveBeenCalledExactlyOnceWith('/customers/c1')
+	})
+	it('種類の決まりの操作を出す（新しいタブで開く・ID をコピー）', async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined)
+		Object.assign(navigator, { clipboard: { writeText } })
+		await render(<RecordChip kind='customer' record={ACME} />)
+		const link = document.querySelector('a')
+		await key(link, 'ArrowDown')
+		const dialog = document.querySelector('[role=dialog]')
+		const newTab = Array.from(dialog?.querySelectorAll('a') ?? []).find(
+			node => node.textContent === '新しいタブで開く',
+		)
+		expect(newTab?.getAttribute('target')).toBe('_blank')
+		await act(async () => button('ID をコピー').click())
+		expect(writeText).toHaveBeenCalledWith('c1')
+		expect(button('コピーしました')).toBeTruthy()
+	})
+	it('見る権限が無い記録では、開けないことと理由を出す', async () => {
+		await render(<RecordChip kind='customer' status='forbidden' />)
+		const chip = document.querySelector<HTMLElement>('[role=button]')
+		await key(chip, 'ArrowDown')
+		const open = button('顧客管理で開く')
+		expect(document.activeElement).toBe(open)
+		expect(open.getAttribute('aria-disabled')).toBe('true')
+		expect(
+			document.getElementById(open.getAttribute('aria-describedby') ?? '')
+				?.textContent,
+		).toBe('見る権限が無いので開けません。')
+		expect(document.querySelectorAll('[role=dialog] a')).toHaveLength(0)
 	})
 })
 
@@ -147,7 +227,7 @@ describe('表のセルに記録を出す', () => {
 				<DataTableRecordCell kind='customer' record={BETA} showDescription />
 			</>,
 		)
-		expect(document.body.textContent).toBe('未設定鈴木食品C-002')
+		expect(visibleText()).toBe('未設定鈴木食品C-002')
 	})
 	it('複数の記録は並べ、多いときは「+N」で残りを出す', async () => {
 		await render(
@@ -188,7 +268,12 @@ describe('表のセルに記録を出す', () => {
 			/>,
 		)
 		const cells = Array.from(document.querySelectorAll('tbody td')).map(
-			cell => cell.textContent,
+			cell => {
+				const copy = cell.cloneNode(true) as HTMLElement
+				for (const node of Array.from(copy.querySelectorAll('.sr-only')))
+					node.remove()
+				return copy.textContent
+			},
 		)
 		expect(cells).toEqual(['INV-1', '山田商店', 'INV-2', '未設定'])
 	})
