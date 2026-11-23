@@ -53,7 +53,7 @@ function TooltipProvider({
 export interface TooltipProps {
 	open?: boolean
 	defaultOpen?: boolean
-	onOpenChange?: (open: boolean) => void
+	onOpenChange?(open: boolean): void
 	/** 触れてから出るまでの時間。指定が無ければ Provider の値 */
 	delayDuration?: number
 	/** true なら、出た中身の上に指を移しても残さない */

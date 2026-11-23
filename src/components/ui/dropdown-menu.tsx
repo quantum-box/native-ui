@@ -35,7 +35,7 @@ export interface DropdownMenuProps {
 	open?: boolean
 	defaultOpen?: boolean
 	/** 開く・閉じるときに呼ぶ */
-	onOpenChange?: (open: boolean) => void
+	onOpenChange?(open: boolean): void
 	/** 既定は true（外を触れなくし、スクロールを止める） */
 	modal?: boolean
 	dir?: 'ltr' | 'rtl'
@@ -155,7 +155,7 @@ function DropdownMenuPortal({
 export interface DropdownMenuSubProps {
 	open?: boolean
 	defaultOpen?: boolean
-	onOpenChange?: (open: boolean) => void
+	onOpenChange?(open: boolean): void
 	children?: React.ReactNode
 }
 
@@ -180,7 +180,7 @@ export interface DropdownMenuRadioGroupProps
 	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'defaultValue'> {
 	value?: string
 	defaultValue?: string
-	onValueChange?: (value: string) => void
+	onValueChange?(value: string): void
 	asChild?: boolean
 }
 
@@ -249,7 +249,7 @@ export interface DropdownMenuContentProps
 	loop?: boolean
 	forceMount?: boolean
 	/** 閉じたときのフォーカス。`preventDefault()` で動かさない */
-	onCloseAutoFocus?: (event: Event) => void
+	onCloseAutoFocus?(event: Event): void
 }
 
 interface MenuPopupProps extends DropdownMenuContentProps {
@@ -359,7 +359,7 @@ interface ItemCompatProps
 	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
 	disabled?: boolean
 	/** 押したとき（クリック・Enter・Space）に呼ぶ。`preventDefault()` で閉じない */
-	onSelect?: (event: Event) => void
+	onSelect?(event: Event): void
 	/** 頭の文字で探すときの文字 */
 	textValue?: string
 	asChild?: boolean
@@ -408,7 +408,7 @@ const checkedState =
 
 export interface DropdownMenuCheckboxItemProps extends ItemCompatProps {
 	checked?: boolean | 'indeterminate'
-	onCheckedChange?: (checked: boolean) => void
+	onCheckedChange?(checked: boolean): void
 }
 
 const DropdownMenuCheckboxItem = React.forwardRef<
