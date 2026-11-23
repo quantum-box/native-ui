@@ -9,6 +9,7 @@ API でページを送る一覧の表と、表の中で使う部品。Storybook 
 | `DataTableSelectCell` | 表の中でその場で値を選んで保存するセル |
 | `DataTableValueChip` | 表の中で値を小さな札として出す |
 | `DataTableViewNotice` | 一覧の上の案内。並び替え・絞り込みが効いているときに「すべて解除」を出す |
+| `DataTableRecordCell` ほか | 別の業務の記録（取引先・商品・担当者など）を、種類ごとの決まりどおりに出す（下の「別の業務の記録を出すセル」） |
 
 どの部品も、アプリの仕組み（URL・API・テナントなど）には触らない。
 今の並び替え・絞り込み・ページは使う側が渡し、変わったら関数で知らせる。
@@ -120,3 +121,86 @@ const columns: ColumnDef<Product>[] = [
 ```
 
 一覧の上に置く。どれかが効いているときだけ「並び替え・絞り込みを適用中」と「すべて解除」を出す。
+
+## 別の業務の記録を出すセル
+
+表のセルに、取引先・商品・店・担当者・請求書など別の業務の記録を出すときは、記録の種類ごとの見た目と動きを `RecordKindProvider` に 1 か所で登録する。どの表に出しても同じ見た目と動きになる。native-ui は種類の名前を知らず、登録された決まりどおりに出すだけ。Storybook の `Components/DataTableRecordCell` に例がある。
+
+| 部品 | 役目 |
+| --- | --- |
+| `RecordKindProvider` / `defineRecordKind` | 種類ごとの決まりを登録する |
+| `RecordChip` | 記録を 1 つ出す（表の外でも使える） |
+| `DataTableRecordCell` | 表のセルに記録を 1 つ、または複数出す |
+| `dataTableRecordColumn` | 記録を出す列をまとめて作る |
+| `DataTableRecordSelectCell` | その場で別の記録に付け替える |
+| `HoverCard` | 触れると出る小さな枠（要点に使う） |
+
+### 種類の決まり
+
+```tsx
+const customerKind = defineRecordKind<Customer>({
+  name: '取引先',
+  icon: Building2,
+  getId: customer => customer.id,
+  getLabel: customer => customer.name,
+  getDescription: customer => customer.code,
+  getHref: customer => `/customers/${customer.id}`,
+  renderPreview: customer => <CustomerSummary customer={customer} />,
+  useCandidates: useCustomerOptions, // 付け替えの候補（アプリのフック）
+  missingText: '削除された取引先',
+})
+
+<RecordKindProvider
+  kinds={{ customer: customerKind, product: productKind, member: memberKind }}
+  navigate={href => navigate(href)} // アプリの画面の移動の仕組み
+>
+  <App />
+</RecordKindProvider>
+```
+
+- `getHref` があれば押すと詳細へ移る。`navigate` を渡すとアプリの方法で移り、⌘・Ctrl を押しながらだとふつうのリンクとして新しいタブで開く。行を押したときの動きとは重ならない。
+- `renderPreview` があれば、触れるかフォーカスすると要点が出る。
+- `renderAvatar` があれば、`icon` の代わりに記録ごとの絵（担当者の頭文字など）を出す。
+- 文言は種類ごとに変えられる: `missingText`（既定「削除された{名前}」）・`forbiddenText`（既定「見る権限がありません」。前に種類の名前が付く）・`unavailableText`（既定「{名前}を読み込めませんでした」）・`loadingText`（読み上げ）。
+- `getKeywords` は付け替えの検索に使う言葉（読み仮名・コードなど）。
+- `kinds` は毎回作り直さない（外で 1 回作って渡す）。
+
+### セルに出す
+
+```tsx
+// 列ごと作る（表ごとにセルを書かない）
+dataTableRecordColumn<Invoice, Customer>({
+  id: 'customer',
+  header: '取引先',
+  kind: 'customer',
+  get: invoice => invoice.customer,
+  status: invoice => invoice.customerStatus, // 'loading' | 'missing' | 'forbidden' | 'unavailable'
+})
+
+// 自分でセルを書くとき
+<DataTableRecordCell kind='member' records={[sato, recordPlaceholder('forbidden', 'u-9')]} max={2} />
+```
+
+- 記録の様子は `ready`（ふつう）・`loading`・`missing`（消えた）・`forbidden`（見る権限が無い）・`unavailable`（読み込めない）。記録が `null` で様子を渡さなければ「未設定」（`emptyText` で変えられる）。
+- 複数の記録は並べて出し、`max`（既定 2）を超えたら「+N」を押すと全部が出る。並びの中の読み込み中・消えた記録は `recordPlaceholder(様子, 見分け)` で置く。
+- 記録を読むのはアプリ側。ID から名前を引くフックなどで記録と様子を作って渡す。
+
+### 付け替える
+
+```tsx
+<DataTableRecordSelectCell<Member>
+  kind='member'
+  ariaLabel={`${task.title}の担当者を変更`}
+  record={task.member}
+  allowEmpty
+  onSave={async member => {
+    const saved = await updateTask(task.id, { memberId: member?.id ?? null })
+    replaceTask(saved)
+  }}
+/>
+```
+
+- 流れは `DataTableSelectCell` と同じ（保存中は止める、保存できたら印、失敗したら元に戻して理由を出す）。
+- 候補は種類の決まりの `useCandidates` から出す。`candidates` を渡すとそちらを使う。今の記録が候補に無くても出す。
+- `allowEmpty` で「未設定」に戻せる。保存には記録（または `null`）が渡る。
+- セルの種類を途中で変えるときは `key` も変える（種類ごとに候補を読むフックが違うため）。

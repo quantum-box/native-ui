@@ -69,6 +69,17 @@ describe('public API', () => {
 		'DataTableSelectCell',
 		'DataTableValueChip',
 		'DataTableViewNotice',
+		'HoverCard',
+		'HoverCardTrigger',
+		'HoverCardContent',
+		'RecordKindProvider',
+		'defineRecordKind',
+		'useRecordKind',
+		'RecordChip',
+		'DataTableRecordCell',
+		'DataTableRecordSelectCell',
+		'dataTableRecordColumn',
+		'recordPlaceholder',
 	])('exports %s', exportName => {
 		expect(nativeUi[exportName as keyof typeof nativeUi]).toBeDefined()
 	})
