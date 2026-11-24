@@ -151,7 +151,8 @@ pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 | `inputs/` | 入力 | Input・Checkbox・Switch・Select・Combobox・Form（これから足す Textarea・カレンダーもここ） |
 | `overlays/` | 重なる物 | Dialog・Sheet・Popover・Tooltip・DropdownMenu・Command・Toast・HoverCard・HoverPeek |
 | `layout/` | 並べる・見せる | Tabs・Collapsible |
-| `table/` | 表 | Table・DataTable と表のセル（その場で直すセル・記録のセル・計算した値のセル・密度）・記録の見せ方（record） |
+| `table/` | 表 | Table・DataTable と表のセル（その場で直すセル・記録のセル・計算した値のセル・密度） |
+| `record/` | 記録 | 別の業務の記録（取引先・商品・店・担当者など）の見せ方。表の外でも使う物（RecordChip・RecordCard・RecordPicker など） |
 | `ai/` | AI | AiField（AI が入れた入力欄）・AiReasoning（判断の中身）・AiSuggestion（候補） |
 | `ai-chat/` | AI チャット | Message・Bubble・MessageScroller・Trace・Chat*（送る欄・道具の記録・実行の前の確かめ など） |
 | `fact/` | データ基盤の値 | FactLabel・FactValue・FactField・FactPanel・AiValue（文の中の印） |

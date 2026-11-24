@@ -291,7 +291,7 @@ export {
 	recordToneStyle,
 	useRecordKind,
 	useRecordSystem,
-} from './components/table/record'
+} from './components/record/record'
 export {
 	Form,
 	FormControl,

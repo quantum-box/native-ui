@@ -27,7 +27,7 @@ import {
 	defineRecordKind,
 	recordActions,
 	useRecordKind,
-} from './record'
+} from '../record/record'
 import {
 	Table,
 	TableBody,

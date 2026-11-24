@@ -18,7 +18,7 @@ import {
 	recordToneStyle,
 	useRecordKind,
 	useRecordSystem,
-} from './record'
+} from '../record/record'
 
 const PLACEHOLDER = Symbol('record-placeholder')
 

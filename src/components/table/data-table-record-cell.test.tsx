@@ -19,7 +19,7 @@ import {
 	RecordKindProvider,
 	defineRecordKind,
 	recordActions,
-} from './record'
+} from '../record/record'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
 let root: Root | undefined
