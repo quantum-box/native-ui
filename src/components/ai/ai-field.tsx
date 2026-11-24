@@ -132,7 +132,7 @@ function AiField({
 			case 'filled':
 			case 'filling':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 to-ai-2 px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 px-1.5 text-white'>
 						<Sparkles
 							aria-hidden
 							className={cn(

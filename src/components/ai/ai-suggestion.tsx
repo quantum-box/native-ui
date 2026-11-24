@@ -76,7 +76,7 @@ function AiBestMatchBadge({
 	return (
 		<span
 			className={cn(
-				'inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 to-ai-2 px-1.5 py-px font-medium text-[10px] text-white',
+				'inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 px-1.5 py-px font-medium text-[10px] text-white',
 				className,
 			)}
 		>

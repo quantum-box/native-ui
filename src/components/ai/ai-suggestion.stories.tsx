@@ -114,3 +114,52 @@ export const 印: Story = {
 		</div>
 	),
 }
+
+/** 使う側が 3 色目を上書きした例（水色）。ライトとダークで別の値を書く */
+const OVERRIDE = {
+	light: { '--nui-ai-3': '197.1 99.2% 50%' },
+	dark: { '--nui-ai-3': '197 55% 46%' },
+} as const
+
+function Marks({ title }: { title: string }) {
+	return (
+		<div className='grid gap-2'>
+			<p className='text-muted-foreground text-xs'>{title}</p>
+			<div className='flex flex-wrap items-center gap-2'>
+				<AiBestMatchBadge />
+				<AiLabel />
+				<AiValue>消耗品費</AiValue>
+			</div>
+			<AiSuggestion>
+				<Choices />
+			</AiSuggestion>
+		</div>
+	)
+}
+
+/**
+ * AI の印は、どれも ai-1 → ai-2 → ai-3 の 3 色のグラデーション。
+ * `--nui-ai-1`〜`--nui-ai-3` を上書きすると、どの AI の部品も同じように色が変わる。
+ */
+export const 色を上書きする: Story = {
+	args: { children: null },
+	render: () => (
+		<div className='grid w-[56rem] grid-cols-2 gap-4'>
+			{(['light', 'dark'] as const).map(theme => (
+				<div
+					key={theme}
+					className={`${theme === 'dark' ? 'dark' : ''} grid gap-4 rounded-lg border border-border bg-background p-4 text-foreground`}
+				>
+					<Marks
+						title={`${theme === 'dark' ? 'ダーク' : 'ライト'}・そのまま`}
+					/>
+					<div style={OVERRIDE[theme] as React.CSSProperties}>
+						<Marks
+							title={`${theme === 'dark' ? 'ダーク' : 'ライト'}・3 色目を水色に上書き`}
+						/>
+					</div>
+				</div>
+			))}
+		</div>
+	),
+}
