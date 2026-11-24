@@ -42,3 +42,37 @@ test('キーボードでフォーカスしても出る', async ({ page }) => {
 	await trigger.blur()
 	await expect(page.getByText('取引先 C-0001・渋谷区')).toHaveCount(0)
 })
+
+test('中身の文を選んでいるあいだは、指が離れても閉じない（外を押すと閉じる）', async ({
+	page,
+}) => {
+	await page.goto(story('hover-card--default'))
+	const trigger = page.getByRole('link', { name: '山田商店' })
+	const line = page.getByText('最後の取引: 2026-11-20（¥182,400）')
+
+	await trigger.hover()
+	await expect(line).toBeVisible()
+
+	// 中身の 1 行を、左から右へなぞって選び、そのまま指を遠くへ動かしてから離す
+	const box = await line.boundingBox()
+	if (!box) throw new Error('中身の場所が分からない')
+	await page.mouse.move(box.x + 2, box.y + box.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(box.x + box.width - 2, box.y + box.height / 2, {
+		steps: 5,
+	})
+	await page.mouse.move(700, 600, { steps: 5 })
+	await page.mouse.up()
+
+	// 閉じる待ち時間（0.3 秒）を過ぎても、中身と選んだ文が残る
+	await page.waitForTimeout(800)
+	await expect(line).toBeVisible()
+	const selected = await page.evaluate(() =>
+		document.getSelection()?.toString(),
+	)
+	expect(selected).toContain('最後の取引')
+
+	// 外を押すと閉じる
+	await page.mouse.click(5, 5)
+	await expect(line).toHaveCount(0)
+})
