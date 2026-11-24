@@ -304,6 +304,26 @@ describe('Command（cmdk と同じ動き）', () => {
 		expect(shown()).toEqual(['続きを読む'])
 	})
 
+	it('項目に id を渡しても、↓ で移れて、読み上げはその id を指す', async () => {
+		const onSelect = vi.fn()
+		await render(
+			<Command>
+				<CommandInput />
+				<CommandList>
+					<CommandItem value='a'>Alpha</CommandItem>
+					<CommandItem id='custom-beta' value='b' onSelect={onSelect}>
+						Beta
+					</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		await key('ArrowDown')
+		expect(selected()).toBe('Beta')
+		expect(input().getAttribute('aria-activedescendant')).toBe('custom-beta')
+		await key('Enter')
+		expect(onSelect).toHaveBeenCalledWith('b')
+	})
+
 	it('forceMount の項目は、合わなくても出す', async () => {
 		await render(
 			<Command>

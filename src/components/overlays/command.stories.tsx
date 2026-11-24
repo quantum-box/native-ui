@@ -75,3 +75,23 @@ export const 近さが同じ群: Story = {
 		</Command>
 	),
 }
+
+/** 群のいちばん近い項目が使えないとき（「a」で探すと、使えない「a」がいちばん近い） */
+export const 使えない項目がいちばん近い群: Story = {
+	render: () => (
+		<Command className='w-80 rounded-lg border border-border shadow-overlay'>
+			<CommandInput placeholder='探す' />
+			<CommandList>
+				<CommandGroup heading='果物'>
+					<CommandItem value='a' disabled>
+						a（品切れ）
+					</CommandItem>
+					<CommandItem value='banana'>banana</CommandItem>
+				</CommandGroup>
+				<CommandGroup heading='ほか'>
+					<CommandItem value='apricot'>apricot</CommandItem>
+				</CommandGroup>
+			</CommandList>
+		</Command>
+	),
+}

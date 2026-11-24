@@ -7,9 +7,9 @@ import { type Page, expect, test } from '@playwright/test'
 const story = (id: string) =>
 	`/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&globals=theme:light`
 
-/** 見えている項目を、画面の上から順に */
+/** 見えていて選べる項目を、画面の上から順に */
 const onScreen = (page: Page) =>
-	page.locator('[cmdk-item]').evaluateAll(items =>
+	page.locator('[cmdk-item]:not([data-disabled="true"])').evaluateAll(items =>
 		items
 			.filter(el => (el as HTMLElement).offsetParent !== null)
 			.map(el => ({
@@ -30,6 +30,8 @@ for (const [id, search] of [
 	// 近さが同じ群は、群ごとにまとまって並ぶ（群をまたいで行き来しない）
 	['command--近さが同じ群', 'a'],
 	['command--近さが同じ群', 'p'],
+	// 群のいちばん近い項目が使えなくても、群の並びは画面と同じ
+	['command--使えない項目がいちばん近い群', 'a'],
 ] as const) {
 	test(`${id} を「${search}」で絞ると、画面の並びと ↓ で動く順が同じ`, async ({
 		page,

@@ -223,9 +223,13 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 			const unitIndex = new Map<string, number>()
 			items.forEach((entry, index) => {
 				const unit = unitOf(entry)
+				// 群の近さは、画面（CSS の order）と同じく、使えない項目も含めた
+				// いちばん近い項目の近さ。使えない項目は、移る先には入れない
 				unitScore.set(
 					unit,
-					Math.max(unitScore.get(unit) ?? 0, rank(scoreOf(entry.id))),
+					entry.info.groupId
+						? rank(groupBest(entry.info.groupId))
+						: rank(scoreOf(entry.id)),
 				)
 				if (!unitIndex.has(unit)) unitIndex.set(unit, index)
 			})
@@ -243,7 +247,7 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 					(position.get(a) ?? 0) - (position.get(b) ?? 0)
 				)
 			})
-		}, [filtering, scoreOf])
+		}, [filtering, scoreOf, groupBest])
 
 		// 打った文字が変わったら先頭を選ぶ。選んでいる項目が消えたときも先頭を選ぶ
 		const lastSearch = React.useRef<string | null>(null)
@@ -521,6 +525,7 @@ export interface CommandItemProps
 const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 	(
 		{
+			id: idProp,
 			value: valueProp,
 			keywords,
 			onSelect,
@@ -537,7 +542,8 @@ const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 		const command = useCommand('CommandItem')
 		const groupId = React.useContext(GroupContext)
 		const id = React.useId()
-		const domId = `${id}-item`
+		// 使う側が id を渡せば、それを描く id にも、選んだ項目を指す id にも使う
+		const domId = idProp ?? `${id}-item`
 		const elementRef = React.useRef<HTMLDivElement | null>(null)
 		const [textValue, setTextValue] = React.useState('')
 		const value = (valueProp ?? textValue).trim()
