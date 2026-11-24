@@ -23,6 +23,8 @@ import { cn } from '../../lib/utils'
 
 interface SelectCompat {
 	open: boolean
+	/** 一覧を描いておくときは true（開いている間と、閉じる動きが終わるまで） */
+	present: boolean
 	labels: Map<string, React.ReactNode>
 	register: (value: string, label: React.ReactNode) => void
 }
@@ -63,6 +65,11 @@ function Select({
 }: SelectProps) {
 	const [innerOpen, setInnerOpen] = React.useState(defaultOpen ?? false)
 	const isOpen = open ?? innerOpen
+	// base-ui は一度開いた一覧を、閉じたあとも見えない形で DOM に残す。
+	// 残った一覧を画面の読み上げや検索が拾ってしまうので、閉じる動きが
+	// 終わったら一覧ごと外す。開いたら、その描画のうちに描き直す
+	const [present, setPresent] = React.useState(isOpen)
+	if (isOpen && !present) setPresent(true)
 	const [labels, setLabels] = React.useState(
 		() => new Map<string, React.ReactNode>(),
 	)
@@ -78,8 +85,8 @@ function Select({
 		[],
 	)
 	const compat = React.useMemo(
-		() => ({ open: isOpen, labels, register }),
-		[isOpen, labels, register],
+		() => ({ open: isOpen, present: isOpen || present, labels, register }),
+		[isOpen, present, labels, register],
 	)
 	return (
 		<SelectPrimitive.Root
@@ -91,6 +98,9 @@ function Select({
 			onOpenChange={(next: boolean) => {
 				setInnerOpen(next)
 				onOpenChange?.(next)
+			}}
+			onOpenChangeComplete={(next: boolean) => {
+				if (!next) setPresent(false)
 			}}
 			{...props}
 		>
@@ -265,56 +275,58 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
 				{compat && !compat.open ? (
 					<SelectCollector>{children}</SelectCollector>
 				) : null}
-				<SelectPrimitive.Portal>
-					<SelectPrimitive.Positioner
-						alignItemWithTrigger={position === 'item-aligned'}
-						className={cn(
-							'z-50',
-							hideWhenDetached && 'data-[anchor-hidden]:invisible',
-						)}
-						{...positionerCompat({
-							side,
-							sideOffset,
-							align,
-							alignOffset,
-							avoidCollisions,
-							collisionBoundary,
-							collisionPadding,
-							sticky,
-						})}
-					>
-						<SelectPrimitive.Popup
-							ref={ref}
+				{compat && !compat.present ? null : (
+					<SelectPrimitive.Portal>
+						<SelectPrimitive.Positioner
+							alignItemWithTrigger={position === 'item-aligned'}
 							className={cn(
-								'relative z-50 flex max-h-96 min-w-[8rem] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1',
-								position === 'popper' &&
-									'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
-								className,
+								'z-50',
+								hideWhenDetached && 'data-[anchor-hidden]:invisible',
 							)}
-							style={{ ...radixCssVars('select'), ...style }}
-							render={compatRender('div', false, null, openState)}
-							{...props}
+							{...positionerCompat({
+								side,
+								sideOffset,
+								align,
+								alignOffset,
+								avoidCollisions,
+								collisionBoundary,
+								collisionPadding,
+								sticky,
+							})}
 						>
-							<SelectScrollUpButton />
-							<SelectPrimitive.List
-								// Radix の Viewport と同じ並べ方（スクロールの線は出さない）
-								style={{
-									position: 'relative',
-									flex: 1,
-									overflow: 'hidden auto',
-								}}
+							<SelectPrimitive.Popup
+								ref={ref}
 								className={cn(
-									'p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+									'relative z-50 flex max-h-96 min-w-[8rem] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1',
 									position === 'popper' &&
-										'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+										'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
+									className,
 								)}
+								style={{ ...radixCssVars('select'), ...style }}
+								render={compatRender('div', false, null, openState)}
+								{...props}
 							>
-								{children}
-							</SelectPrimitive.List>
-							<SelectScrollDownButton />
-						</SelectPrimitive.Popup>
-					</SelectPrimitive.Positioner>
-				</SelectPrimitive.Portal>
+								<SelectScrollUpButton />
+								<SelectPrimitive.List
+									// Radix の Viewport と同じ並べ方（スクロールの線は出さない）
+									style={{
+										position: 'relative',
+										flex: 1,
+										overflow: 'hidden auto',
+									}}
+									className={cn(
+										'p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+										position === 'popper' &&
+											'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+									)}
+								>
+									{children}
+								</SelectPrimitive.List>
+								<SelectScrollDownButton />
+							</SelectPrimitive.Popup>
+						</SelectPrimitive.Positioner>
+					</SelectPrimitive.Portal>
+				)}
 			</>
 		)
 	},
