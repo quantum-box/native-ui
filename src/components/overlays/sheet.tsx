@@ -91,7 +91,10 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
 			>
 				{children}
 				{hideClose ? null : (
-					<DialogClose className='absolute top-3 right-3 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none'>
+					<DialogClose
+						data-corner-close=''
+						className='absolute top-3 right-3 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none'
+					>
 						<X className='size-4' />
 						<span className='sr-only'>{closeLabel}</span>
 					</DialogClose>

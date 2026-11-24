@@ -166,6 +166,26 @@ describe('Dialog', () => {
 		expect(input.selectionEnd).toBe('初めの値'.length)
 	})
 
+	it('中に操作できる物が無いとき、右上の × ではなく中身そのものへフォーカスを置く', async () => {
+		const el = await render(
+			<Dialog>
+				<DialogTrigger asChild>
+					<button type='button'>開く</button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogTitle>読むだけ</DialogTitle>
+					<DialogDescription>説明</DialogDescription>
+				</DialogContent>
+			</Dialog>,
+		)
+		await press(el.querySelector('button') as HTMLElement)
+		await act(async () => wait(50))
+		const corner = document.querySelector('[data-corner-close]')
+		expect(corner).not.toBeNull()
+		expect(document.activeElement).not.toBe(corner)
+		expect(document.activeElement).toBe(byRole('dialog'))
+	})
+
 	it('Esc で閉じ、フォーカスは開いたボタンへ戻る', async () => {
 		const onOpenChange = vi.fn()
 		const el = await render(<SimpleDialog onOpenChange={onOpenChange} />)
@@ -261,6 +281,18 @@ describe('Dialog', () => {
 })
 
 describe('DetailSheet', () => {
+	it('開いたとき、右上の × にフォーカスを置かない', async () => {
+		await render(
+			<DetailSheet open onClose={() => {}} title='詳細'>
+				<p>読み込み中…</p>
+			</DetailSheet>,
+		)
+		await act(async () => wait(50))
+		const corner = document.querySelector('[data-corner-close]')
+		expect(corner).not.toBeNull()
+		expect(document.activeElement).not.toBe(corner)
+	})
+
 	it('open で出て、Esc で onClose を呼ぶ', async () => {
 		const onClose = vi.fn()
 		await render(
