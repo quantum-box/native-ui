@@ -85,7 +85,10 @@ interface CommandContext {
 }
 
 const Context = React.createContext<CommandContext | null>(null)
-const GroupContext = React.createContext<string | undefined>(undefined)
+/** 項目が入っている群（id と、群の forceMount） */
+const GroupContext = React.createContext<
+	{ id: string; forceMount: boolean } | undefined
+>(undefined)
 
 function useCommand(part: string) {
 	const context = React.useContext(Context)
@@ -262,11 +265,18 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 			}
 		}, [search, scores, ordered, active, setActive])
 
+		// 選んでいる項目が、いま描かれている（合っているか forceMount の）ときだけ指す。
+		// 検索で隠れたら、読み上げが無い項目を指さないよう外す
 		const activeDomId = React.useMemo(() => {
-			for (const info of registry.current.values())
-				if (info.value === active && !info.disabled) return info.domId
+			for (const [id, info] of registry.current)
+				if (
+					info.value === active &&
+					!info.disabled &&
+					((scores.get(id) ?? 0) > 0 || info.forceMount)
+				)
+					return info.domId
 			return undefined
-		}, [active, version])
+		}, [active, scores])
 
 		// 選んだ項目が見えるようにスクロールする
 		React.useLayoutEffect(() => {
@@ -461,6 +471,11 @@ const Group = React.forwardRef<HTMLDivElement, CommandGroupProps>(
 		const id = React.useId()
 		const headingId = `${id}-heading`
 		const visible = forceMount || command.groupVisible(id)
+		// 群に forceMount を付けたら、中の項目も合わなくても出す（cmdk と同じ）
+		const groupContextValue = React.useMemo(
+			() => ({ id, forceMount: !!forceMount }),
+			[id, forceMount],
+		)
 		return (
 			<div
 				ref={ref}
@@ -488,7 +503,9 @@ const Group = React.forwardRef<HTMLDivElement, CommandGroupProps>(
 					aria-labelledby={heading ? headingId : undefined}
 					style={{ display: 'flex', flexDirection: 'column' }}
 				>
-					<GroupContext.Provider value={id}>{children}</GroupContext.Provider>
+					<GroupContext.Provider value={groupContextValue}>
+						{children}
+					</GroupContext.Provider>
 				</div>
 			</div>
 		)
@@ -530,7 +547,7 @@ const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 			keywords,
 			onSelect,
 			disabled = false,
-			forceMount = false,
+			forceMount: forceMountProp = false,
 			children,
 			style,
 			onPointerMove,
@@ -540,7 +557,9 @@ const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 		ref,
 	) => {
 		const command = useCommand('CommandItem')
-		const groupId = React.useContext(GroupContext)
+		const group = React.useContext(GroupContext)
+		const groupId = group?.id
+		const forceMount = forceMountProp || !!group?.forceMount
 		const id = React.useId()
 		// 使う側が id を渡せば、それを描く id にも、選んだ項目を指す id にも使う
 		const domId = idProp ?? `${id}-item`

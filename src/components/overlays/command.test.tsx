@@ -324,6 +324,38 @@ describe('Command（cmdk と同じ動き）', () => {
 		expect(onSelect).toHaveBeenCalledWith('b')
 	})
 
+	it('群に forceMount を付けると、合わなくても群の中の項目を出す', async () => {
+		await render(
+			<Command>
+				<CommandInput />
+				<CommandList>
+					<CommandGroup heading='いつも出す' forceMount>
+						<CommandItem value='new'>新しく作る</CommandItem>
+					</CommandGroup>
+					<CommandGroup heading='候補'>
+						<CommandItem value='alpha'>Alpha</CommandItem>
+					</CommandGroup>
+				</CommandList>
+			</Command>,
+		)
+		await type('zzz')
+		expect(shown()).toEqual(['新しく作る'])
+	})
+
+	it('検索で全部が隠れたら、読み上げは何も指さない', async () => {
+		await render(<Fruits />)
+		expect(input().getAttribute('aria-activedescendant')).toBeTruthy()
+		await type('zzz')
+		expect(shown()).toEqual([])
+		expect(input().hasAttribute('aria-activedescendant')).toBe(false)
+		// 戻すと、また先頭を指す
+		await type('')
+		const active = document.querySelector(
+			'[data-selected="true"]',
+		) as HTMLElement
+		expect(input().getAttribute('aria-activedescendant')).toBe(active.id)
+	})
+
 	it('forceMount の項目は、合わなくても出す', async () => {
 		await render(
 			<Command>
