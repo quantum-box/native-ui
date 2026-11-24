@@ -50,6 +50,8 @@ const preset = {
 				destructive: {
 					DEFAULT: 'hsl(var(--nui-destructive) / <alpha-value>)',
 					foreground: 'hsl(var(--nui-destructive-foreground) / <alpha-value>)',
+					// 白い文字をのせる地（destructive の Button）
+					strong: 'hsl(var(--nui-destructive-strong) / <alpha-value>)',
 				},
 				success: 'hsl(var(--nui-success) / <alpha-value>)',
 				warning: 'hsl(var(--nui-warning) / <alpha-value>)',
@@ -66,6 +68,20 @@ const preset = {
 					foreground: 'hsl(var(--nui-foreground) / <alpha-value>)',
 				},
 				selected: 'hsl(var(--nui-selected) / <alpha-value>)',
+				ai: {
+					1: 'hsl(var(--nui-ai-1) / <alpha-value>)',
+					2: 'hsl(var(--nui-ai-2) / <alpha-value>)',
+					3: 'hsl(var(--nui-ai-3) / <alpha-value>)',
+					foreground: 'hsl(var(--nui-ai-foreground) / <alpha-value>)',
+					subtle: 'hsl(var(--nui-ai-subtle) / <alpha-value>)',
+					border: 'hsl(var(--nui-ai-border) / <alpha-value>)',
+				},
+				fact: {
+					DEFAULT: 'hsl(var(--nui-fact) / <alpha-value>)',
+					foreground: 'hsl(var(--nui-fact-foreground) / <alpha-value>)',
+					subtle: 'hsl(var(--nui-fact-subtle) / <alpha-value>)',
+					border: 'hsl(var(--nui-fact-border) / <alpha-value>)',
+				},
 				popover: {
 					DEFAULT: 'hsl(var(--nui-popover) / <alpha-value>)',
 					foreground: 'hsl(var(--nui-popover-foreground) / <alpha-value>)',
