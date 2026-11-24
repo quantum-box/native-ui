@@ -4,6 +4,7 @@ import { type Root, createRoot } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { DataTableDateCell } from './data-table-date-cell'
+import { DataTableOverflowList } from './data-table-overflow-list'
 import {
 	DataTableInlineEditFailureSummary,
 	DataTableInlineEditFailuresProvider,
@@ -208,6 +209,10 @@ describe('文字をその場で直すセル', () => {
 		expect(document.querySelector('input')).toBeNull()
 		expect(button('品目名を変更').textContent).toContain('りんご')
 		expect(alertText()).toBe('使えない名前です。')
+		// ほかへ移った後も、理由は吹き出しで読める（出た直後は 1 度だけ自分で開く）。
+		expect(document.querySelector('[role=dialog]')?.textContent).toContain(
+			'使えない名前です。',
+		)
 		expect(save).not.toHaveBeenCalled()
 	})
 	it('ほかへ移ると保存し、失敗したら元に戻して理由を出す', async () => {
@@ -601,5 +606,33 @@ describe('複数を選ぶセル', () => {
 		expect(document.querySelector('[role=dialog]')).toBeNull()
 		expect(save).not.toHaveBeenCalled()
 		expect(button('タグを変更').textContent).toContain('未設定')
+	})
+})
+
+describe('1 行に並べて「+N」にまとめる', () => {
+	it('セルの幅だけでなく、中身の幅が変わったときも測り直す', async () => {
+		const observed: Element[] = []
+		vi.stubGlobal(
+			'ResizeObserver',
+			class {
+				observe(node: Element) {
+					observed.push(node)
+				}
+				unobserve() {}
+				disconnect() {}
+			},
+		)
+		await render(
+			<DataTableOverflowList
+				items={[
+					{ key: 'a', node: 'りんご' },
+					{ key: 'b', node: 'みかん' },
+				]}
+				renderMore={hidden => `+${hidden}`}
+			/>,
+		)
+		const ruler = document.querySelector('[aria-hidden=true]')
+		expect(observed).toContain(ruler)
+		expect(observed).toContain(ruler?.parentElement)
 	})
 })

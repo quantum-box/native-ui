@@ -438,6 +438,15 @@ export function DataTableInlineEditShell<T>({
 		const id = setTimeout(() => setFresh(false), 5000)
 		return () => clearTimeout(id)
 	}, [count])
+	// Tab やクリックでほかへ移ったときに確かめで止まったら、その理由も 1 度だけ自分で開く。
+	const leftWithError = !editing && !failure ? error : null
+	useEffect(() => {
+		if (!leftWithError) return
+		setFresh(true)
+		setDismissed(false)
+		const id = setTimeout(() => setFresh(false), 5000)
+		return () => clearTimeout(id)
+	}, [leftWithError])
 	useEffect(() => () => clearTimeout(leaveTimer.current), [])
 
 	// 表の側の一覧に知らせる。
@@ -459,9 +468,11 @@ export function DataTableInlineEditShell<T>({
 		return () => unregister(cellId)
 	}, [failure, register, unregister, cellId, title])
 
+	// 編集中は確かめの理由をそのまま出す。編集の外では、保存の失敗も、ほかへ移ったときに止まった確かめの理由も、
+	// 触れる・フォーカスすると出す（出た直後は 1 度だけ自分で開く）。
 	const open = editing
 		? !!error
-		: !!failure &&
+		: !!error &&
 			!edit.saving &&
 			!dismissed &&
 			(fresh || hovered || focused || inside)
