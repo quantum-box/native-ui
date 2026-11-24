@@ -179,7 +179,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 				}}
 				data-slot='textarea'
 				className={cn(
-					'flex w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground leading-relaxed transition-colors duration-fast placeholder:text-subtle-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 read-only:bg-surface read-only:focus-visible:border-border-strong read-only:focus-visible:ring-muted-foreground/15 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:border-destructive aria-[invalid=true]:focus-visible:ring-destructive/25',
+					'flex w-full min-w-0 rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground leading-relaxed transition-colors duration-fast placeholder:text-subtle-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 read-only:bg-surface read-only:focus-visible:border-border-strong read-only:focus-visible:ring-muted-foreground/15 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:border-destructive aria-[invalid=true]:focus-visible:ring-destructive/25',
 					autoResize ? 'resize-none' : 'resize-y',
 					className,
 				)}
