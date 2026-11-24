@@ -21,13 +21,15 @@ export interface FieldProps
 	description?: React.ReactNode
 	/** 入力の誤り。出すと入力欄に aria-invalid を付け、説明の代わりに赤く出す。 */
 	error?: React.ReactNode
-	/** 入力欄の id。省くと作る。 */
+	/** 入力欄の id。省くと作る。入力欄を div などで包んで渡すときは、中の入力欄にこの id を付ける。 */
 	controlId?: string
 	/** ラベルの横に「必須」を出す。 */
 	required?: boolean
 	/** 入力欄。1 つの要素（Input・Select・Textarea・それらを横に並べた箱など）。 */
 	children: React.ReactNode
 }
+
+const CONTAINERS = new Set(['div', 'span', 'fieldset', 'section'])
 
 type ControlProps = {
 	id?: string
@@ -59,13 +61,19 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 		const describedBy = [child?.props['aria-describedby'], hasNote && noteId]
 			.filter(Boolean)
 			.join(' ')
-		const control = child
-			? React.cloneElement(child, {
-					id,
-					'aria-describedby': describedBy || undefined,
-					...(error ? { 'aria-invalid': true } : {}),
-				})
-			: children
+		// 入力欄を横に並べる箱（div など）を渡されたときは、箱に id を付けない。
+		// 付けると中の入力欄の id と重なり、ラベルが箱を指してしまう。
+		// 中の入力欄に controlId と同じ id を付けておけば、ラベルはそちらを指す。
+		const container =
+			typeof child?.type === 'string' && CONTAINERS.has(child.type)
+		const control =
+			child && !container
+				? React.cloneElement(child, {
+						id,
+						'aria-describedby': describedBy || undefined,
+						...(error ? { 'aria-invalid': true } : {}),
+					})
+				: children
 		return (
 			<div
 				ref={ref}
