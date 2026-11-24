@@ -387,6 +387,13 @@ describe('DateTimePicker', () => {
 		await type(date(), '11/25')
 		expect(onValueChange).toHaveBeenCalledWith('2026-11-25T18:00')
 		expect(time().value).toBe('18:00')
+		// 時刻を消したときは、はじめの時刻を戻さない（空にできる）
+		await type(time(), '')
+		expect(time().value).toBe('')
+		expect(onValueChange).toHaveBeenLastCalledWith('')
+		// 日付を入れ直すと、また入る
+		await type(date(), '11/26')
+		expect(onValueChange).toHaveBeenLastCalledWith('2026-11-26T18:00')
 	})
 
 	it('min・max の外の日は選べず、端の日では時刻も絞る', async () => {
@@ -449,6 +456,27 @@ describe('DateTimePicker', () => {
 		expect(time().value).toBe('09:30')
 		await act(async () => root?.render(view(true)))
 		expect(new FormData(form).has('at')).toBe(false)
+	})
+
+	it('form を渡すと、見える 2 つの欄も、値を送る欄も、そのフォームに入る', async () => {
+		await render(
+			<>
+				<form id='booking' />
+				<DateTimePicker
+					today={TODAY}
+					form='booking'
+					name='at'
+					defaultValue='2026-11-24T09:30'
+					required
+				/>
+			</>,
+		)
+		const form = find<HTMLFormElement>('form')
+		expect(date().form).toBe(form)
+		expect(time().form).toBe(form)
+		expect(date().required).toBe(true)
+		expect(time().required).toBe(true)
+		expect(new FormData(form).get('at')).toBe('2026-11-24T09:30')
 	})
 
 	it('Field の中では、ラベルが日付の欄を指し、説明とエラーが両方の欄につながる', async () => {

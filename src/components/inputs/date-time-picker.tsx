@@ -130,9 +130,11 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 			setPartial(split(initial))
 		})
 
-		const update = (nextDate: string, nextTime: string) => {
+		const update = (nextDate: string, nextTime: string, fromDate = false) => {
 			let filled = nextTime
-			if (nextDate && !filled && isTimeString(defaultTime)) filled = defaultTime
+			// はじめの時刻は、日付を入れたときにだけ入れる（時刻を消したときには戻さない）
+			if (fromDate && nextDate && !filled && isTimeString(defaultTime))
+				filled = defaultTime
 			let next = nextDate && filled ? `${nextDate}T${filled}` : ''
 			// 端の日に動かしたとき、時刻が範囲の外なら端の時刻に寄せる
 			if (next && min && next < min) next = min
@@ -167,7 +169,7 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 					aria-describedby={describedBy}
 					aria-invalid={invalid}
 					value={date}
-					onValueChange={next => update(next, time)}
+					onValueChange={next => update(next, time, true)}
 					min={minDate || undefined}
 					max={maxDate || undefined}
 					isDateDisabled={isDateDisabled}
@@ -176,6 +178,7 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 					disabled={disabled}
 					readOnly={readOnly}
 					required={required}
+					form={form}
 					labels={dateLabels}
 					calendarLabels={calendarLabels}
 				/>
@@ -192,6 +195,7 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 					disabled={disabled}
 					readOnly={readOnly}
 					required={required}
+					form={form}
 					labels={timeLabels}
 				/>
 				{name && (
