@@ -778,6 +778,28 @@ describe('DateRangePicker', () => {
 		expect(document.querySelector('[data-slot="calendar"]')).toBeNull()
 	})
 
+	it('names が無くても、reset ではじめの期間に戻る', async () => {
+		await render(
+			<form>
+				<DateRangePicker
+					today={TODAY}
+					defaultValue={{ from: '2026-11-01', to: '2026-11-30' }}
+				/>
+			</form>,
+		)
+		await click(trigger())
+		await act(wait)
+		await click(day('2026-11-10'))
+		await click(day('2026-11-12'))
+		await act(() => wait(300))
+		expect(trigger().textContent).toBe('2026/11/10 〜 2026/11/12')
+		await act(async () => {
+			;(document.querySelector('form') as HTMLFormElement).reset()
+			await wait()
+		})
+		expect(trigger().textContent).toBe('2026/11/01 〜 2026/11/30')
+	})
+
 	it('names を渡すと、はじめと終わりをフォームで送れる', async () => {
 		await render(
 			<form>

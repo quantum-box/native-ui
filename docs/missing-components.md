@@ -40,7 +40,7 @@ Field が自分で作っている物を洗い出した。ここは案だけで�
 | --- | --- | --- | --- |
 | SearchField（探す欄） | `AppSearchField` と手書き 4 | 25 / 25 | 今の InputGroup の上にすぐ作れる |
 | FilePicker（ファイルを選ぶ） | 見えない `<input type='file'>` とボタン | 24 / 23 | 引っぱって落とす形は今は 0。ボタンで選ぶ形だけでよい |
-| 月・時刻・日時の入力 | ブラウザの `month` 5 / 4、`time` 10 / 6、`datetime-local` 6 / 6 | 21 | 今回のカレンダーには入れていない。日付の部品の続きとして作れる |
+| 月・時刻・日時の入力 | ブラウザの `month` 5 / 4、`time` 10 / 6、`datetime-local` 6 / 6 | 21 | **作った**（MonthPicker・TimePicker・DateTimePicker）。値の形はブラウザの入力と同じ |
 | 押せる行 | `rowActivateProps()` | 40 / 38 | 新しい部品ではなく、Table の行に `onActivate` を足す |
 | Meter（横の棒） | 同じ書き方の手書き | 7 / 5 | base-ui に `meter`・`progress` がある |
 | 日時の表示 | `formatDate` を 16 回、別々に書いている | 24 / 21 | 部品より、共通の関数 1 つ |

@@ -108,7 +108,8 @@ export function isMonthString(value: unknown): value is string {
 
 /** 月を n か月動かす */
 export function addMonthsToMonth(month: string, amount: number) {
-	return monthOf(addMonths(`${month}-01`, amount))
+	// 10000 年をこえても月の所だけを取れるよう、後ろの「-日」を切る
+	return addMonths(`${month}-01`, amount).slice(0, -3)
 }
 
 /** 見ている人の現地の「今日」 */
@@ -152,16 +153,7 @@ export function monthGrid(month: string, weekStartsOn: 0 | 1 = 0): string[][] {
  * 年を省いた `11/24`・`11月24日`・`1124`（年は `today` の年）。月と日の 0 は省ける。
  */
 export function parseDateText(text: string, today: string = todayString()) {
-	// 全角の数字と記号を半角に直す
-	const normalized = text
-		.trim()
-		.replace(/[０-９]/g, char =>
-			String.fromCharCode(char.charCodeAt(0) - 0xfee0),
-		)
-		.replace(/[／．－ー]/g, char =>
-			char === '／' ? '/' : char === '．' ? '.' : '-',
-		)
-		.replace(/\s+/g, '')
+	const normalized = toHalfWidth(text)
 	if (!normalized) return ''
 	const thisYear = Number(today.slice(0, 4))
 
@@ -185,4 +177,125 @@ export function parseDateText(text: string, today: string = todayString()) {
 /** 既定の表示の形（`2026/11/24`）。DataTableDateCell と同じ */
 export function formatDateSlash(value: string) {
 	return value.replace(/-/g, '/')
+}
+
+const TIME = /^(\d{2}):(\d{2})$/
+const DATE_TIME = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/
+
+/** 全角の数字と記号を半角に直し、空白を取る */
+function toHalfWidth(text: string) {
+	return text
+		.trim()
+		.replace(/[０-９]/g, char =>
+			String.fromCharCode(char.charCodeAt(0) - 0xfee0),
+		)
+		.replace(/[／．－ー：]/g, char =>
+			char === '／' ? '/' : char === '．' ? '.' : char === '：' ? ':' : '-',
+		)
+		.replace(/\s+/g, '')
+}
+
+/** 扱える最初の月と最後の月 */
+export const MIN_MONTH = '0001-01'
+export const MAX_MONTH = '9999-12'
+
+/** 年・月から `YYYY-MM` を作る。無い月は `''` */
+export function toMonthString(year: number, month: number) {
+	if (!Number.isInteger(year) || !Number.isInteger(month)) return ''
+	if (year < 1 || year > 9999 || month < 1 || month > 12) return ''
+	return `${pad(year, 4)}-${pad(month)}`
+}
+
+/** 月を min と max のあいだに収める。扱える範囲（1 年〜9999 年）の外は端の月に寄せる */
+export function clampMonth(value: string, min?: string, max?: string) {
+	let month = value
+	const inDomain: boolean = isMonthString(month)
+	if (!inDomain) month = month.length > 7 ? MAX_MONTH : MIN_MONTH
+	if (min && month < min) return min
+	if (max && month > max) return max
+	return month
+}
+
+/**
+ * 手で打った文字を月に直す。読めなければ `''`。
+ * 受け取る形: `2026-11`・`2026/11`・`2026.11`・`2026年11月`・`202611`、
+ * 年を省いた `11`・`11月`（年は `today` の年）。月の 0 は省ける。
+ */
+export function parseMonthText(text: string, today: string = todayString()) {
+	const normalized = toHalfWidth(text)
+	if (!normalized) return ''
+
+	let match = /^(\d{4})(\d{2})$/.exec(normalized)
+	if (match) return toMonthString(Number(match[1]), Number(match[2]))
+
+	match = /^(\d{1,4})[-/.年](\d{1,2})月?$/.exec(normalized)
+	if (match) return toMonthString(Number(match[1]), Number(match[2]))
+
+	match = /^(\d{1,2})月?$/.exec(normalized)
+	if (match) return toMonthString(Number(today.slice(0, 4)), Number(match[1]))
+
+	return ''
+}
+
+/** 月の既定の表示の形（`2026/11`） */
+export function formatMonthSlash(value: string) {
+	return value.replace(/-/g, '/')
+}
+
+/** 時・分から `HH:MM` を作る。無い時刻（24:00・9:60 など）は `''` */
+export function toTimeString(hour: number, minute: number) {
+	if (!Number.isInteger(hour) || !Number.isInteger(minute)) return ''
+	if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return ''
+	return `${pad(hour)}:${pad(minute)}`
+}
+
+/** `HH:MM`（00:00〜23:59）か */
+export function isTimeString(value: unknown): value is string {
+	if (typeof value !== 'string') return false
+	const match = TIME.exec(value)
+	if (!match) return false
+	return toTimeString(Number(match[1]), Number(match[2])) === value
+}
+
+/** 0 時からの分の数 */
+export function minutesOf(value: string) {
+	return Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5))
+}
+
+/**
+ * 手で打った文字を時刻に直す。読めなければ `''`。
+ * 受け取る形: `09:30`・`9:30`・`9.30`・`9時30分`・`9時`・`930`・`0930`、時だけの `9`（9:00）。
+ */
+export function parseTimeText(text: string) {
+	const normalized = toHalfWidth(text)
+	if (!normalized) return ''
+
+	let match = /^(\d{1,2})[:.時](\d{1,2})分?$/.exec(normalized)
+	if (match) return toTimeString(Number(match[1]), Number(match[2]))
+
+	match = /^(\d{1,2})時?$/.exec(normalized)
+	if (match) return toTimeString(Number(match[1]), 0)
+
+	match = /^(\d{1,2})(\d{2})$/.exec(normalized)
+	if (match) return toTimeString(Number(match[1]), Number(match[2]))
+
+	return ''
+}
+
+/** 選べる時刻の一覧。`step` 分きざみで、min と max のあいだ（どちらも含む） */
+export function timeOptions(step = 30, min = '00:00', max = '23:59') {
+	const size = Number.isInteger(step) && step > 0 ? step : 30
+	const options: string[] = []
+	for (let minutes = 0; minutes < 24 * 60; minutes += size) {
+		const time = toTimeString(Math.floor(minutes / 60), minutes % 60)
+		if (time >= min && time <= max) options.push(time)
+	}
+	return options
+}
+
+/** `YYYY-MM-DDTHH:MM`（`<input type="datetime-local">` と同じ形）で、本当にある日時か */
+export function isDateTimeString(value: unknown): value is string {
+	if (typeof value !== 'string') return false
+	const match = DATE_TIME.exec(value)
+	return Boolean(match && isDateString(match[1]) && isTimeString(match[2]))
 }

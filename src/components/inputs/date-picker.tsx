@@ -9,14 +9,10 @@ import {
 	parseDateText,
 	todayString,
 } from '../../lib/calendar-date'
+import { useMergedRefs } from '../../lib/overlay'
 import { cn } from '../../lib/utils'
 import { Button } from '../basics/button'
-import {
-	Popover,
-	PopoverAnchor,
-	PopoverContent,
-	PopoverTrigger,
-} from '../overlays/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '../overlays/popover'
 import {
 	Calendar,
 	type CalendarLabels,
@@ -24,11 +20,12 @@ import {
 	type DateRange,
 } from './calendar'
 import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from './input-group'
+	PickerField,
+	type PickerFieldBaseProps,
+	PickerFooter,
+	keepFocusForContent,
+	useFormReset,
+} from './picker-field'
 
 /*
  * 日付の入力欄。手で打つことも、右のボタンでカレンダーを開いて選ぶこともできる。
@@ -60,48 +57,9 @@ export const datePickerLabels: DatePickerLabels = {
 	clear: '消す',
 }
 
-/** 見えない入力欄が入っているフォームの reset を聞く */
-function useFormReset(
-	ref: React.RefObject<HTMLInputElement | null>,
-	onReset: () => void,
-) {
-	const latest = React.useRef(onReset)
-	latest.current = onReset
-	React.useEffect(() => {
-		const form = ref.current?.form
-		if (!form) return
-		// reset は取り消せる（onReset で preventDefault）。このリスナーは React の onReset より
-		// 先に呼ばれるので、イベントが配り終わるのを待ってから、取り消されていないときだけ戻す
-		const handle = (event: Event) => {
-			setTimeout(() => {
-				if (!event.defaultPrevented) latest.current()
-			}, 0)
-		}
-		form.addEventListener('reset', handle)
-		return () => form.removeEventListener('reset', handle)
-	})
-}
-
-const focusCalendarDay = (event: Event) => {
-	// 開いたら、選んだ日（無ければ今日）にフォーカスを置く（Calendar の autoFocus がやる）
-	event.preventDefault()
-}
-
-export interface DatePickerProps
-	extends CalendarPass,
-		Omit<
-			React.InputHTMLAttributes<HTMLInputElement>,
-			'value' | 'defaultValue' | 'onChange' | 'type' | 'min' | 'max'
-		> {
+export interface DatePickerProps extends CalendarPass, PickerFieldBaseProps {
 	/** 選んだ日（`YYYY-MM-DD`）。空は `''` */
 	value?: string
-	defaultValue?: string
-	/** 日が決まったとき・消したときに呼ぶ（消したときは `''`） */
-	onValueChange?(value: string): void
-	open?: boolean
-	/** はじめから開いておく */
-	defaultOpen?: boolean
-	onOpenChange?(open: boolean): void
 	/** 表示の形。既定は `2026/11/24` */
 	formatDate?(value: string): string
 	/** カレンダーの下の「今日」「消す」を出さない */
@@ -110,21 +68,13 @@ export interface DatePickerProps
 	labels?: Partial<DatePickerLabels>
 	/** カレンダーの文言 */
 	calendarLabels?: Partial<CalendarLabels>
-	/** 囲み（枠）の class */
-	className?: string
-	/** カレンダーの枠の class */
-	contentClassName?: string
 }
+
+const asDate = (raw: unknown) => (isDateString(raw) ? raw : '')
 
 const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 	(
 		{
-			value: valueProp,
-			defaultValue = '',
-			onValueChange,
-			open: openProp,
-			defaultOpen = false,
-			onOpenChange,
 			min,
 			max,
 			isDateDisabled,
@@ -134,185 +84,69 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 			hideFooter = false,
 			labels: labelsProp,
 			calendarLabels,
-			className,
-			contentClassName,
-			name,
-			form,
 			placeholder = '年/月/日',
-			disabled,
-			readOnly,
-			required,
-			onBlur,
-			onKeyDown,
-			...inputProps
+			...props
 		},
 		ref,
 	) => {
 		const labels = { ...datePickerLabels, ...labelsProp }
 		const today = isDateString(todayProp) ? todayProp : todayString()
-
-		const [innerValue, setInnerValue] = React.useState(defaultValue)
-		const raw = valueProp !== undefined ? valueProp : innerValue
-		const value = isDateString(raw) ? raw : ''
-
-		const [innerOpen, setInnerOpen] = React.useState(defaultOpen)
-		const canEdit = !disabled && !readOnly
-		// 使えない・読むだけになったら、開いていても閉じる（開いたまま値を変えられないように）
-		const open = (openProp ?? innerOpen) && canEdit
-		const setOpen = (next: boolean) => {
-			setInnerOpen(next)
-			onOpenChange?.(next)
-		}
-
-		// 打っている途中の文字。null のあいだは、値を表示の形にした物を見せる
-		const [draft, setDraft] = React.useState<string | null>(null)
-
-		// フォームの reset で、はじめの値に戻す（外で値を持つときは、外に任せる）
-		const hiddenRef = React.useRef<HTMLInputElement>(null)
-		useFormReset(hiddenRef, () => {
-			setInnerValue(defaultValue)
-			setDraft(null)
-		})
-		const text = draft ?? (value ? formatDate(value) : '')
-
 		const selectable = (date: string) =>
 			!((min && date < min) || (max && date > max) || isDateDisabled?.(date))
 
-		const commit = (next: string) => {
-			setDraft(null)
-			if (next === value) return
-			if (valueProp === undefined) setInnerValue(next)
-			onValueChange?.(next)
-		}
-
-		/** 打った文字を確かめる。読めない・選べないときは元の値に戻す */
-		const commitDraft = () => {
-			if (draft === null) return
-			if (draft.trim() === '') {
-				if (required) setDraft(null)
-				else commit('')
-				return
-			}
-			const parsed = parseDateText(draft, today)
-			if (parsed && selectable(parsed)) commit(parsed)
-			else setDraft(null)
-		}
-
 		return (
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverAnchor asChild>
-					<InputGroup data-slot='date-picker' className={className}>
-						<InputGroupInput
-							ref={ref}
-							type='text'
-							inputMode='numeric'
-							autoComplete='off'
-							placeholder={placeholder}
-							disabled={disabled}
-							readOnly={readOnly}
-							required={required}
-							className='tabular-nums'
-							form={form}
-							{...inputProps}
-							value={text}
-							onChange={event => setDraft(event.target.value)}
-							onBlur={event => {
-								commitDraft()
-								onBlur?.(event)
-							}}
-							onKeyDown={event => {
-								onKeyDown?.(event)
-								if (event.defaultPrevented) return
-								if (event.key === 'Enter' && draft !== null) {
-									// 打った文字を確かめるだけにして、フォームは送らない
-									event.preventDefault()
-									commitDraft()
-								} else if (
-									event.key === 'ArrowDown' &&
-									event.altKey &&
-									canEdit
-								) {
-									event.preventDefault()
-									commitDraft()
-									setOpen(true)
-								}
-							}}
+			<PickerField
+				ref={ref}
+				slot='date-picker'
+				normalize={asDate}
+				parse={text => parseDateText(text, today)}
+				format={formatDate}
+				selectable={selectable}
+				icon={<CalendarIcon />}
+				openLabel={labels.open}
+				placeholder={placeholder}
+				{...props}
+			>
+				{({ value, select }) => (
+					<>
+						<Calendar
+							autoFocus
+							value={value}
+							onValueChange={select}
+							min={min}
+							max={max}
+							isDateDisabled={isDateDisabled}
+							weekStartsOn={weekStartsOn}
+							today={today}
+							labels={calendarLabels}
 						/>
-						<InputGroupAddon align='inline-end'>
-							<PopoverTrigger asChild disabled={!canEdit}>
-								<InputGroupButton
-									size='icon-xs'
-									aria-label={labels.open}
-									disabled={!canEdit}
-								>
-									<CalendarIcon />
-								</InputGroupButton>
-							</PopoverTrigger>
-						</InputGroupAddon>
-						{name && (
-							// 使えない欄の値は、ブラウザの入力欄と同じく送らない
-							<input
-								ref={hiddenRef}
-								type='hidden'
-								form={form}
-								name={name}
-								value={value}
-								disabled={disabled}
-							/>
-						)}
-					</InputGroup>
-				</PopoverAnchor>
-				<PopoverContent
-					align='start'
-					className={cn('w-auto p-0', contentClassName)}
-					onOpenAutoFocus={focusCalendarDay}
-				>
-					<Calendar
-						autoFocus
-						value={value}
-						onValueChange={next => {
-							commit(next)
-							setOpen(false)
-						}}
-						min={min}
-						max={max}
-						isDateDisabled={isDateDisabled}
-						weekStartsOn={weekStartsOn}
-						today={today}
-						labels={calendarLabels}
-					/>
-					{!hideFooter && (
-						<div className='flex items-center justify-between gap-2 border-t border-border px-2 py-1.5'>
-							<Button
-								type='button'
-								variant='ghost'
-								size='sm'
-								disabled={!selectable(today)}
-								onClick={() => {
-									commit(today)
-									setOpen(false)
-								}}
-							>
-								{labels.today}
-							</Button>
-							{!required && (
+						{!hideFooter && (
+							<PickerFooter>
 								<Button
 									type='button'
 									variant='ghost'
 									size='sm'
-									disabled={!value}
-									onClick={() => {
-										commit('')
-										setOpen(false)
-									}}
+									disabled={!selectable(today)}
+									onClick={() => select(today)}
 								>
-									{labels.clear}
+									{labels.today}
 								</Button>
-							)}
-						</div>
-					)}
-				</PopoverContent>
-			</Popover>
+								{!props.required && (
+									<Button
+										type='button'
+										variant='ghost'
+										size='sm'
+										disabled={!value}
+										onClick={() => select('')}
+									>
+										{labels.clear}
+									</Button>
+								)}
+							</PickerFooter>
+						)}
+					</>
+				)}
+			</PickerField>
 		)
 	},
 )
@@ -415,8 +249,10 @@ const DateRangePicker = React.forwardRef<
 		const [draft, setDraft] = React.useState<DateRange | null>(null)
 
 		// フォームの reset で、はじめの値に戻す
-		const hiddenRef = React.useRef<HTMLInputElement>(null)
-		useFormReset(hiddenRef, () => {
+		// reset は、押す所（ボタン）のフォームで聞く（names が無くても、はじめの値に戻る）
+		const triggerRef = React.useRef<HTMLButtonElement>(null)
+		const mergedRef = useMergedRefs(ref, triggerRef)
+		useFormReset(triggerRef, () => {
 			setInnerValue(defaultValue)
 			setDraft(null)
 		})
@@ -447,7 +283,7 @@ const DateRangePicker = React.forwardRef<
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild disabled={disabled}>
 					<button
-						ref={ref}
+						ref={mergedRef}
 						type='button'
 						data-slot='date-range-picker'
 						aria-haspopup='dialog'
@@ -477,7 +313,6 @@ const DateRangePicker = React.forwardRef<
 				{names && (
 					<>
 						<input
-							ref={hiddenRef}
 							type='hidden'
 							form={form}
 							name={names[0]}
@@ -497,7 +332,7 @@ const DateRangePicker = React.forwardRef<
 					id={contentId}
 					align='start'
 					className={cn('w-auto p-0', contentClassName)}
-					onOpenAutoFocus={focusCalendarDay}
+					onOpenAutoFocus={keepFocusForContent}
 				>
 					<Calendar
 						autoFocus
