@@ -59,6 +59,13 @@
   --nui-ai-foreground: 263 70% 50%;
   --nui-ai-subtle: 270 100% 98%;
   --nui-ai-border: 276 70% 86%;
+  /* Tailwind の amber-500 */
+  --nui-ai-uncertain: 38 92% 50%;
+  /* Tailwind の amber-700 */
+  --nui-ai-uncertain-strong: 26 90% 37%;
+  /* AI のグラデーションの向き。並びと組み立ては、このファイルの最後の
+   * .nui-ai-gradient* で決める。 */
+  --nui-ai-gradient-angle: 135deg;
   --nui-fact: 175 84% 32%;
   --nui-fact-foreground: 176 70% 22%;
   --nui-fact-subtle: 166 76% 97%;
@@ -122,6 +129,12 @@
   --nui-ai-foreground: 258 60% 80%;
   --nui-ai-subtle: 262 22% 15%;
   --nui-ai-border: 262 18% 30%;
+  /* Tailwind の amber-600 を少し暗く（ダークで光りすぎないように） */
+  --nui-ai-uncertain: 32 80% 40%;
+  --nui-ai-uncertain-strong: 26 90% 37%;
+  /* AI のグラデーションの向き。並びと組み立ては、このファイルの最後の
+   * .nui-ai-gradient* で決める。 */
+  --nui-ai-gradient-angle: 135deg;
   --nui-fact: 174 38% 44%;
   --nui-fact-foreground: 172 42% 76%;
   --nui-fact-subtle: 178 24% 13%;
@@ -130,4 +143,33 @@
   --nui-shadow-overlay: 0 4px 16px -2px rgb(0 0 0 / 0.4),
     0 1px 3px rgb(0 0 0 / 0.3);
   --nui-shadow-modal: 0 16px 48px -8px rgb(0 0 0 / 0.55);
+}
+
+/* AI のグラデーション。向き・並び・薄さはここだけで決め、部品はこのクラスを付ける。
+ *
+ * 並びは 赤紫（ai-2）→ 紫（ai-1）→ 青（ai-3）。色相が一方向に流れるので、紫が 2 回
+ * 出ない（ai-1 → ai-2 → ai-3 だと、赤紫から青へ戻る途中でもう一度紫を通る）。
+ *
+ * 変数ではなくクラスにしているのは、色の参照を使う要素の上で解決するため。
+ * :root で linear-gradient(... var(--nui-ai-1) ...) を変数に入れると、その時点で色が
+ * 決まってしまい、使う側が内側の要素で --nui-ai-1〜3 を上書きしても届かない。 */
+.nui-ai-gradient {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-2)), hsl(var(--nui-ai-1)), hsl(var(--nui-ai-3)));
+}
+.nui-ai-gradient-soft {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-2) / 0.1), hsl(var(--nui-ai-1) / 0.1), hsl(var(--nui-ai-3) / 0.1));
+}
+.nui-ai-gradient-faint {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-2) / 0.07), hsl(var(--nui-ai-1) / 0.07), hsl(var(--nui-ai-3) / 0.07));
+}
+/* 確からしさが低い値は、橙から AI の色へ流す。 */
+.nui-ai-gradient-uncertain {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-uncertain)), hsl(var(--nui-ai-2)), hsl(var(--nui-ai-1)));
+}
+/* 白い文字をのせる「要確認」の印。橙を濃くして文字を読めるようにする。 */
+.nui-ai-gradient-uncertain-strong {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-uncertain-strong)), hsl(var(--nui-ai-2)));
+}
+.nui-ai-gradient-uncertain-faint {
+  background-image: linear-gradient(var(--nui-ai-gradient-angle), hsl(var(--nui-ai-uncertain) / 0.09), hsl(var(--nui-ai-2) / 0.06), hsl(var(--nui-ai-1) / 0.06));
 }

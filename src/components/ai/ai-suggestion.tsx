@@ -40,13 +40,13 @@ function AiSuggestion({
 		<section
 			aria-label={title}
 			className={cn(
-				'rounded-lg bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 p-px shadow-ai-2/20 dark:shadow-none shadow-sm',
+				'rounded-lg nui-ai-gradient p-px shadow-ai-2/20 dark:shadow-none shadow-sm',
 				className,
 			)}
 		>
 			<div className='overflow-hidden rounded-[7px] bg-background'>
-				<div className='flex items-start gap-2 bg-gradient-to-r from-ai-1/10 via-ai-2/10 to-ai-3/10 px-3 py-2'>
-					<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-gradient-to-br from-ai-1 via-ai-2 to-ai-3 text-white'>
+				<div className='flex items-start gap-2 nui-ai-gradient-soft px-3 py-2'>
+					<span className='mt-0.5 grid size-5 shrink-0 place-items-center rounded-full nui-ai-gradient text-white'>
 						<Sparkles aria-hidden className='size-3' />
 					</span>
 					<div className='min-w-0'>
@@ -76,7 +76,7 @@ function AiBestMatchBadge({
 	return (
 		<span
 			className={cn(
-				'inline-flex shrink-0 items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 px-1.5 py-px font-medium text-[10px] text-white',
+				'inline-flex shrink-0 items-center gap-0.5 rounded-full nui-ai-gradient px-1.5 py-px font-medium text-[10px] text-white',
 				className,
 			)}
 		>
@@ -87,7 +87,7 @@ function AiBestMatchBadge({
 }
 
 const aiLabelClass =
-	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-ai-border bg-gradient-to-r from-ai-1/10 via-ai-2/10 to-ai-3/10 px-1.5 align-middle font-medium text-[10px] text-ai-foreground leading-4'
+	'inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded-full border border-ai-border nui-ai-gradient-soft px-1.5 align-middle font-medium text-[10px] text-ai-foreground leading-4'
 
 interface AiLabelProps extends React.HTMLAttributes<HTMLSpanElement> {
 	/** 印の文言。既定は「AI」。例: 「AI の判定」「AI の推測」。 */
