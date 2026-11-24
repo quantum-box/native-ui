@@ -1,6 +1,6 @@
 # 一覧の表（DataTable）
 
-API でページを送る一覧の表と、表の中で使う部品。Storybook の `Components/DataTable` に例がある。
+API でページを送る一覧の表と、表の中で使う部品。Storybook の `表/DataTable` に例がある。
 
 | 部品 | 役目 |
 | --- | --- |
@@ -125,7 +125,7 @@ const columns: ColumnDef<Product>[] = [
 
 ## その場で値を直すセル
 
-どのセルも「表示 → 編集 → 保存中 → 保存できた／失敗」の同じ流れの上にある。Storybook の `Components/DataTableInlineEdit` に、種類ごとの状態と、1 つの表でいろいろな列を直す例がある。
+どのセルも「表示 → 編集 → 保存中 → 保存できた／失敗」の同じ流れの上にある。Storybook の `表/DataTableInlineEdit` に、種類ごとの状態と、1 つの表でいろいろな列を直す例がある。
 
 | 部品 | 値 | 例 |
 | --- | --- | --- |
@@ -209,7 +209,7 @@ const columns: ColumnDef<Product>[] = [
 
 記録の部品は表の外（詳細の画面・フォーム・文の中・AI の返事の出典など）でも使える。表の外での使い方は `docs/record.md`。
 
-表のセルに、取引先・商品・店・担当者・請求書など別の業務の記録を出すときは、記録の種類ごとの見た目と動きを `RecordKindProvider` に 1 か所で登録する。どの表に出しても同じ見た目と動きになる。native-ui は種類の名前を知らず、登録された決まりどおりに出すだけ。Storybook の `Components/DataTableRecordCell` に例がある。
+表のセルに、取引先・商品・店・担当者・請求書など別の業務の記録を出すときは、記録の種類ごとの見た目と動きを `RecordKindProvider` に 1 か所で登録する。どの表に出しても同じ見た目と動きになる。native-ui は種類の名前を知らず、登録された決まりどおりに出すだけ。Storybook の `表/DataTableRecordCell` に例がある。
 
 | 部品 | 役目 |
 | --- | --- |

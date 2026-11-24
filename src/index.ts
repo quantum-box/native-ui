@@ -2,13 +2,13 @@ export {
 	type AiConfidence,
 	type AiReasoning,
 	AiReasoningDetails,
-} from './components/ui/ai-reasoning'
+} from './components/ai/ai-reasoning'
 export {
 	AiField,
 	type AiFieldLabels,
 	type AiFieldProps,
 	type AiFieldStatus,
-} from './components/ui/ai-field'
+} from './components/ai/ai-field'
 export {
 	AiBestMatchBadge,
 	type AiBestMatchBadgeProps,
@@ -18,7 +18,7 @@ export {
 	type AiSuggestionProps,
 	AiValue,
 	type AiValueProps,
-} from './components/ui/ai-suggestion'
+} from './components/ai/ai-suggestion'
 export {
 	FactField,
 	type FactFieldProps,
@@ -31,12 +31,12 @@ export {
 	FactSourceDetails,
 	FactValue,
 	type FactValueProps,
-} from './components/ui/fact'
+} from './components/fact/fact'
 export {
 	Badge,
 	type BadgeProps,
 	badgeVariants,
-} from './components/ui/badge'
+} from './components/basics/badge'
 export {
 	Bubble,
 	BubbleContent,
@@ -46,54 +46,54 @@ export {
 	BubbleReactions,
 	type BubbleReactionsProps,
 	bubbleVariants,
-} from './components/ui/bubble'
+} from './components/ai-chat/bubble'
 export {
 	Button,
 	type ButtonProps,
 	buttonVariants,
-} from './components/ui/button'
+} from './components/basics/button'
 export {
 	Combobox,
 	type ComboboxOption,
 	type ComboboxProps,
-} from './components/ui/combobox'
+} from './components/inputs/combobox'
 export {
 	type ApprovalChange,
 	ApprovalRequest,
 	type ApprovalRequestProps,
 	type ApprovalStatus,
-} from './components/ui/chat-approval'
+} from './components/ai-chat/chat-approval'
 export {
 	type ChatSource,
 	CitationMark,
 	type CitationMarkProps,
 	SourceList,
 	type SourceListProps,
-} from './components/ui/chat-citations'
+} from './components/ai-chat/chat-citations'
 export {
 	CodeBlock,
 	type CodeBlockProps,
 	TableBlock,
 	type TableBlockProps,
-} from './components/ui/chat-code-block'
+} from './components/ai-chat/chat-code-block'
 export {
 	CopyButton,
 	type CopyButtonProps,
 	useCopy,
-} from './components/ui/chat-copy'
+} from './components/ai-chat/chat-copy'
 export {
 	ChatEmptyState,
 	type ChatEmptyStateProps,
 	type PromptSuggestion,
 	PromptSuggestions,
 	type PromptSuggestionsProps,
-} from './components/ui/chat-empty-state'
-export { ChatError, type ChatErrorProps } from './components/ui/chat-error'
+} from './components/ai-chat/chat-empty-state'
+export { ChatError, type ChatErrorProps } from './components/ai-chat/chat-error'
 export {
 	MessageActions,
 	type MessageActionsProps,
 	type MessageFeedback,
-} from './components/ui/chat-message-actions'
+} from './components/ai-chat/chat-message-actions'
 export {
 	AttachmentChip,
 	type AttachmentChipProps,
@@ -101,7 +101,7 @@ export {
 	type ChatAttachment,
 	PromptInput,
 	type PromptInputProps,
-} from './components/ui/chat-prompt-input'
+} from './components/ai-chat/chat-prompt-input'
 export {
 	StreamingText,
 	type StreamingTextProps,
@@ -109,21 +109,21 @@ export {
 	type ThinkingBlockProps,
 	ThinkingIndicator,
 	type ThinkingIndicatorProps,
-} from './components/ui/chat-streaming'
+} from './components/ai-chat/chat-streaming'
 export {
 	ToolCall,
 	ToolCallGroup,
 	type ToolCallGroupProps,
 	type ToolCallProps,
 	type ToolCallStatus,
-} from './components/ui/chat-tool-call'
-export { Checkbox } from './components/ui/checkbox'
+} from './components/ai-chat/chat-tool-call'
+export { Checkbox } from './components/inputs/checkbox'
 export {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from './components/ui/collapsible'
-export { DataTable, type DataTableProps } from './components/ui/data-table'
+} from './components/layout/collapsible'
+export { DataTable, type DataTableProps } from './components/table/data-table'
 export {
 	DataTableComputedCell,
 	type DataTableComputedCellProps,
@@ -138,23 +138,23 @@ export {
 	evaluateDataTableFormula,
 	formulaText,
 	roundDataTableNumber,
-} from './components/ui/data-table-computed-cell'
+} from './components/table/data-table-computed-cell'
 export {
 	type DataTableDensity,
 	DataTableDensityProvider,
 	dataTableDensityStyles,
 	useDataTableDensity,
 	useDataTableDensityStyles,
-} from './components/ui/data-table-density'
+} from './components/table/data-table-density'
 export {
 	type DataTableOverflowItem,
 	DataTableOverflowList,
-} from './components/ui/data-table-overflow-list'
+} from './components/table/data-table-overflow-list'
 export {
 	DataTableColumnHeader,
 	type DataTableColumnHeaderProps,
 	type DataTableFilterField,
-} from './components/ui/data-table-column-header'
+} from './components/table/data-table-column-header'
 export {
 	DataTableRecordCell,
 	type DataTableRecordCellProps,
@@ -163,17 +163,17 @@ export {
 	dataTableRecordColumn,
 	type RecordPlaceholder,
 	recordPlaceholder,
-} from './components/ui/data-table-record-cell'
+} from './components/table/data-table-record-cell'
 export {
 	DataTableSelectCell,
 	type DataTableSelectCellProps,
 	type DataTableSelectOption,
 	DataTableValueChip,
-} from './components/ui/data-table-select-cell'
+} from './components/table/data-table-select-cell'
 export {
 	DataTableDateCell,
 	type DataTableDateCellProps,
-} from './components/ui/data-table-date-cell'
+} from './components/table/data-table-date-cell'
 export {
 	DataTableEditableCell,
 	type DataTableEditableCellProps,
@@ -196,11 +196,11 @@ export {
 	DataTableInputEditor,
 	type DataTableInputEditorProps,
 	useDataTableInlineEdit,
-} from './components/ui/data-table-inline-edit'
+} from './components/table/data-table-inline-edit'
 export {
 	DataTableMultiSelectCell,
 	type DataTableMultiSelectCellProps,
-} from './components/ui/data-table-multi-select-cell'
+} from './components/table/data-table-multi-select-cell'
 export {
 	DataTableNumberCell,
 	type DataTableNumberCellProps,
@@ -208,19 +208,19 @@ export {
 	type DataTableNumberRule,
 	formatDataTableNumber,
 	parseDataTableNumber,
-} from './components/ui/data-table-number-cell'
+} from './components/table/data-table-number-cell'
 export {
 	DataTableTextCell,
 	type DataTableTextCellProps,
-} from './components/ui/data-table-text-cell'
+} from './components/table/data-table-text-cell'
 export {
 	DataTableToggleCell,
 	type DataTableToggleCellProps,
-} from './components/ui/data-table-toggle-cell'
+} from './components/table/data-table-toggle-cell'
 export {
 	DataTableViewNotice,
 	type DataTableViewNoticeProps,
-} from './components/ui/data-table-view-notice'
+} from './components/table/data-table-view-notice'
 export {
 	Command,
 	CommandDialog,
@@ -231,7 +231,7 @@ export {
 	CommandList,
 	CommandSeparator,
 	CommandShortcut,
-} from './components/ui/command'
+} from './components/overlays/command'
 export {
 	Dialog,
 	DialogClose,
@@ -243,7 +243,7 @@ export {
 	DialogPortal,
 	DialogTitle,
 	DialogTrigger,
-} from './components/ui/dialog'
+} from './components/overlays/dialog'
 export {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -260,16 +260,16 @@ export {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from './components/ui/dropdown-menu'
+} from './components/overlays/dropdown-menu'
 export {
 	HoverPeek,
 	type HoverPeekTriggerProps,
-} from './components/ui/hover-peek'
+} from './components/overlays/hover-peek'
 export {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
-} from './components/ui/hover-card'
+} from './components/overlays/hover-card'
 export {
 	type AnyRecordKindDefinition,
 	defineRecordKind,
@@ -295,7 +295,7 @@ export {
 	recordToneStyle,
 	useRecordKind,
 	useRecordSystem,
-} from './components/ui/record'
+} from './components/record/record'
 export {
 	defineLinkedWorkKind,
 	type LinkedWork,
@@ -316,19 +316,19 @@ export {
 	UnlinkWorkDialog,
 	type UnlinkWorkDialogProps,
 	WorkOrigin,
-} from './components/ui/linked-work'
+} from './components/record/linked-work'
 export {
 	RecordList,
 	type RecordListItem,
 	type RecordListProps,
-} from './components/ui/record-list'
+} from './components/record/record-list'
 export {
 	RecordPicker,
 	type RecordPickerProps,
 	recordKeywords,
 	useRecordCandidates,
 	useRecordPickerChrome,
-} from './components/ui/record-picker'
+} from './components/record/record-picker'
 export {
 	Form,
 	FormControl,
@@ -338,32 +338,32 @@ export {
 	FormLabel,
 	FormMessage,
 	useFormField,
-} from './components/ui/form'
+} from './components/inputs/form'
 export {
 	clampFloatingPanelSize,
 	FloatingPanel,
 	type FloatingPanelLabels,
 	type FloatingPanelProps,
 	type FloatingPanelSize,
-} from './components/ui/floating-panel'
-export { Input, type InputProps } from './components/ui/input'
-export { Kbd, type KbdProps } from './components/ui/kbd'
-export { Label } from './components/ui/label'
+} from './components/app-frame/floating-panel'
+export { Input, type InputProps } from './components/inputs/input'
+export { Kbd, type KbdProps } from './components/basics/kbd'
+export { Label } from './components/basics/label'
 export {
 	type DesktopWindowTabOpenClickEvent,
 	isDesktopWindowTabOpenClick,
-} from './components/ui/desktop-window-tab-open-click'
+} from './components/app-frame/desktop-window-tab-open-click'
 export {
 	type MacOSWindowTab,
 	MacOSWindowTabs,
 	type MacOSWindowTabsProps,
-} from './components/ui/macos-window-tabs'
+} from './components/app-frame/macos-window-tabs'
 export {
 	type MacOSWebLinkCopyKind,
 	type MacOSWebLinkCopyResult,
 	MacOSWebLinkCopyShortcut,
 	type MacOSWebLinkCopyShortcutProps,
-} from './components/ui/macos-web-link-copy-shortcut'
+} from './components/app-frame/macos-web-link-copy-shortcut'
 export {
 	Message,
 	MessageAvatar,
@@ -372,7 +372,7 @@ export {
 	MessageGroup,
 	MessageHeader,
 	type MessageProps,
-} from './components/ui/message'
+} from './components/ai-chat/message'
 export {
 	MessageScroller,
 	MessageScrollerButton,
@@ -384,13 +384,13 @@ export {
 	type MessageScrollerProviderProps,
 	MessageScrollerViewport,
 	useMessageScroller,
-} from './components/ui/message-scroller'
+} from './components/ai-chat/message-scroller'
 export {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,
 	PopoverTrigger,
-} from './components/ui/popover'
+} from './components/overlays/popover'
 export {
 	Select,
 	SelectContent,
@@ -402,8 +402,8 @@ export {
 	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
-} from './components/ui/select'
-export { Separator } from './components/ui/separator'
+} from './components/inputs/select'
+export { Separator } from './components/basics/separator'
 export {
 	DetailSheet,
 	type DetailSheetProps,
@@ -420,7 +420,7 @@ export {
 	SheetTitle,
 	SheetTrigger,
 	type SheetWidth,
-} from './components/ui/sheet'
+} from './components/overlays/sheet'
 export {
 	Sidebar,
 	SidebarAccount,
@@ -439,21 +439,21 @@ export {
 	type SidebarProps,
 	SidebarSection,
 	SidebarSectionLabel,
-} from './components/ui/sidebar'
+} from './components/app-frame/sidebar'
 export {
 	StatusBar,
 	type StatusBarItemDefinition,
 	statusBarItemClass,
 	type StatusBarLabels,
 	type StatusBarProps,
-} from './components/ui/status-bar'
+} from './components/app-frame/status-bar'
 export {
 	parseStatusBarLayout,
 	reorderStatusBarLayout,
 	type StatusBarLayoutItem,
 	type StatusBarSide,
-} from './components/ui/status-bar-layout'
-export { Switch } from './components/ui/switch'
+} from './components/app-frame/status-bar-layout'
+export { Switch } from './components/inputs/switch'
 export {
 	Table,
 	TableBody,
@@ -462,8 +462,13 @@ export {
 	TableHead,
 	TableHeader,
 	TableRow,
-} from './components/ui/table'
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+} from './components/table/table'
+export {
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from './components/layout/tabs'
 export {
 	Trace,
 	TraceCollapsible,
@@ -474,16 +479,16 @@ export {
 	TraceLine,
 	type TraceLineProps,
 	TraceTitle,
-} from './components/ui/trace'
+} from './components/ai-chat/trace'
 export {
 	Toaster,
 	type ToasterProps,
 	toast,
-} from './components/ui/toast'
+} from './components/overlays/toast'
 export {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from './components/ui/tooltip'
+} from './components/overlays/tooltip'
 export { cn } from './lib/utils'

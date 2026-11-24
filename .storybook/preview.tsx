@@ -28,6 +28,25 @@ const preview: Preview = {
 	decorators: [withTheme],
 	parameters: {
 		layout: 'centered',
+		options: {
+			// 左の一覧の 1 段目（見出し）の並び。部品の置き場（src/components/<見出し>）と同じ順。
+			// 見出しの中の部品は、名前の順に並べる
+			storySort: {
+				order: [
+					'基本',
+					'入力',
+					'重なる物',
+					'並べる・見せる',
+					'表',
+					'記録',
+					'AI',
+					'AI チャット',
+					'データ基盤の値',
+					'画面の枠',
+				],
+				method: 'alphabetical',
+			},
+		},
 		controls: {
 			matchers: {
 				color: /(background|color)$/i,
