@@ -18,7 +18,9 @@ const buttonVariants = cva(
 				ghost:
 					'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70',
 				destructive:
-					'bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80',
+					// 地の赤は destructive-strong（白い文字と 4.5:1 以上）。使う側が bg-destructive で
+					// 探せるよう、class の名前は bg-destructive のまま、この要素の中だけ赤を差し替える
+					'bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 [--color-destructive:var(--color-destructive-strong)] [--nui-destructive:var(--nui-destructive-strong)]',
 				link: 'text-primary underline-offset-4 hover:underline',
 			},
 			size: {

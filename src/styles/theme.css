@@ -61,6 +61,7 @@
 	--color-secondary-foreground: hsl(var(--nui-foreground));
 	--color-destructive: hsl(var(--nui-destructive));
 	--color-destructive-foreground: hsl(var(--nui-destructive-foreground));
+	--color-destructive-strong: hsl(var(--nui-destructive-strong));
 	--color-success: hsl(var(--nui-success));
 	--color-warning: hsl(var(--nui-warning));
 	--color-muted: hsl(var(--nui-muted));

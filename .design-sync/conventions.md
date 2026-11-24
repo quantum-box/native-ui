@@ -28,7 +28,8 @@ border: 1px solid hsl(var(--nui-border));
 | `--nui-primary` / `--nui-primary-foreground` | アクセント（Linear風インディゴ）— 主要アクション専用 |
 | `--nui-selected` | 選択中の行・項目の背景 |
 | `--nui-popover` / `--nui-popover-foreground` | フローティングサーフェス |
-| `--nui-destructive` / `--nui-success` / `--nui-warning` | ステータス |
+| `--nui-destructive` / `--nui-success` / `--nui-warning` | ステータス（`--nui-destructive` は文字・枠・薄い地の赤） |
+| `--nui-destructive-strong` | 白い文字をのせる赤の地（destructive の Button）。白い文字と 4.5:1 以上 |
 | `--nui-radius-sm/md/lg/xl` | 4/6/8/12px — バッジ / コントロール / ポップオーバー / モーダル |
 | `--nui-shadow-overlay` / `--nui-shadow-modal` | level-1 / level-2 エレベーション |
 | `--nui-duration-fast/base/slow`, `--nui-ease-out` | 100/150/250ms のモーション |

@@ -50,6 +50,8 @@ const preset = {
 				destructive: {
 					DEFAULT: 'hsl(var(--nui-destructive) / <alpha-value>)',
 					foreground: 'hsl(var(--nui-destructive-foreground) / <alpha-value>)',
+					// 白い文字をのせる地（destructive の Button）
+					strong: 'hsl(var(--nui-destructive-strong) / <alpha-value>)',
 				},
 				success: 'hsl(var(--nui-success) / <alpha-value>)',
 				warning: 'hsl(var(--nui-warning) / <alpha-value>)',
