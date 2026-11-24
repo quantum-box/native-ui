@@ -3,6 +3,7 @@
 import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 
+import { Slot } from '../../lib/slot'
 import { cn } from '../../lib/utils'
 import { Button, type ButtonProps } from '../basics/button'
 import { Input, type InputProps } from './input'
@@ -24,33 +25,44 @@ import { Textarea, type TextareaProps } from './textarea'
  * - align が block-start・block-end の物があると、縦に並ぶ（欄の上や下に帯が付く）。
  */
 
-const InputGroup = React.forwardRef<
-	HTMLDivElement,
-	React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-	<div
-		ref={ref}
-		data-slot='input-group'
-		role='group'
-		className={cn(
-			'group/input-group relative flex h-7 w-full min-w-0 items-center rounded-md border border-input bg-background text-sm text-foreground transition-colors duration-fast',
-			// 中の欄にフォーカスがあるとき
-			'has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/25',
-			// 誤り
-			'has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/25',
-			// 無効
-			'has-[[data-slot=input-group-control]:disabled]:opacity-50',
-			// 読むだけ
-			'has-[[data-slot=input-group-control]:read-only]:bg-surface',
-			// 上や下に帯があるとき・長い文の欄のときは、縦に並べて高さを中身に任せる
-			'has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:items-stretch has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:items-stretch has-[>textarea]:h-auto',
-			// 横に付く物がある側は、欄の余白を詰める
-			'has-[>[data-align=inline-end]]:[&>input]:pr-1 has-[>[data-align=inline-start]]:[&>input]:pl-1',
-			className,
-		)}
-		{...props}
-	/>
-))
+export interface InputGroupProps extends React.HTMLAttributes<HTMLElement> {
+	/**
+	 * true なら、子の要素（form など）を囲みとして使う。
+	 * 送る欄のように、囲みそのものを <form> にしたいときに使う
+	 */
+	asChild?: boolean
+}
+
+const InputGroup = React.forwardRef<HTMLDivElement, InputGroupProps>(
+	({ className, asChild = false, ...props }, ref) => {
+		const Comp = asChild ? Slot : 'div'
+		return (
+			<Comp
+				ref={ref}
+				data-slot='input-group'
+				// 子の要素を使うときは、その要素の役割（form など）をそのまま残す
+				role={asChild ? undefined : 'group'}
+				className={cn(
+					'group/input-group relative flex h-7 w-full min-w-0 items-center rounded-md border border-input bg-background text-sm text-foreground transition-colors duration-fast',
+					// 中の欄にフォーカスがあるとき
+					'has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-ring/25',
+					// 誤り
+					'has-[[data-slot=input-group-control][aria-invalid=true]]:border-destructive has-[[data-slot=input-group-control][aria-invalid=true]]:ring-destructive/25',
+					// 無効
+					'has-[[data-slot=input-group-control]:disabled]:opacity-50',
+					// 読むだけ
+					'has-[[data-slot=input-group-control]:read-only]:bg-surface',
+					// 上や下に帯があるとき・長い文の欄のときは、縦に並べて高さを中身に任せる
+					'has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:items-stretch has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:items-stretch has-[>textarea]:h-auto',
+					// 横に付く物がある側は、欄の余白を詰める
+					'has-[>[data-align=inline-end]]:[&>input]:pr-1 has-[>[data-align=inline-start]]:[&>input]:pl-1',
+					className,
+				)}
+				{...props}
+			/>
+		)
+	},
+)
 InputGroup.displayName = 'InputGroup'
 
 const inputGroupAddonVariants = cva(
@@ -81,7 +93,6 @@ export interface InputGroupAddonProps
 /** 欄に付ける印・文字・ボタンの置き場。押すと（ボタン以外なら）中の欄にフォーカスが移る */
 const InputGroupAddon = React.forwardRef<HTMLDivElement, InputGroupAddonProps>(
 	({ className, align = 'inline-start', onClick, ...props }, ref) => (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: 押すと欄に移るだけ。キーボードでは欄へ直接移れる
 		<div
 			ref={ref}
 			role='group'

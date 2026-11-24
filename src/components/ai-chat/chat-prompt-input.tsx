@@ -13,6 +13,11 @@ import * as React from 'react'
 
 import { cn } from '../../lib/utils'
 import { Button } from '../basics/button'
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupTextarea,
+} from '../inputs/input-group'
 
 /*
  * AI に問いを送る欄と、添付の小さな一覧。
@@ -240,39 +245,9 @@ function PromptInput({
 		if (!controlled) setInner(next)
 		onValueChange?.(next)
 	}
-	const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 	const fileRef = React.useRef<HTMLInputElement>(null)
 	const [dragging, setDragging] = React.useState(false)
 	const countId = React.useId()
-
-	// 出たときに欄へ入れるようにする。
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 出たときだけ
-	React.useEffect(() => {
-		if (autoFocus) textareaRef.current?.focus()
-	}, [])
-
-	// 中身に合わせて高さを変える（上限を超えたら欄の中でスクロール）。
-	// 欄の幅が変わったとき（出た直後や窓の大きさを変えたとき）も測り直す。
-	const fitHeight = React.useCallback(() => {
-		const textarea = textareaRef.current
-		if (!textarea) return
-		textarea.style.height = 'auto'
-		textarea.style.height = `${textarea.scrollHeight}px`
-	}, [])
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 中身が変わるたびに測り直す
-	React.useLayoutEffect(fitHeight, [value, fitHeight])
-	React.useEffect(() => {
-		const textarea = textareaRef.current
-		if (!textarea || typeof ResizeObserver === 'undefined') return
-		let width = textarea.clientWidth
-		const observer = new ResizeObserver(() => {
-			if (textarea.clientWidth === width) return
-			width = textarea.clientWidth
-			fitHeight()
-		})
-		observer.observe(textarea)
-		return () => observer.disconnect()
-	}, [fitHeight])
 
 	const tooLong = maxLength !== undefined && value.length > maxLength
 	const uploading = attachments.some(a => a.status === 'uploading')
@@ -297,9 +272,11 @@ function PromptInput({
 	}
 
 	return (
-		<form
+		// 枠と輪は InputGroup が持つ。囲みそのものを送るための <form> にする
+		<InputGroup
+			asChild
 			className={cn(
-				'grid gap-2 rounded-lg border border-input bg-background p-2 shadow-sm transition-colors duration-fast focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25',
+				'grid h-auto items-stretch gap-2 rounded-lg p-2 shadow-sm focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25',
 				dragging && 'border-ring border-dashed bg-selected/40',
 				disabled && 'opacity-60',
 				className,
@@ -325,117 +302,125 @@ function PromptInput({
 				submit()
 			}}
 		>
-			<AttachmentList
-				attachments={attachments}
-				onOpen={onOpenAttachment}
-				onRemove={onRemoveAttachment}
-			/>
-			<textarea
-				aria-describedby={maxLength !== undefined ? countId : undefined}
-				aria-invalid={tooLong || undefined}
-				aria-label={label}
-				className='max-h-48 min-h-[2.25rem] w-full resize-none bg-transparent px-1.5 py-1 text-sm leading-relaxed placeholder:text-subtle-foreground focus-visible:outline-none'
-				disabled={disabled}
-				onChange={event => setValue(event.target.value)}
-				onKeyDown={event => {
-					// 変換を決める Enter では送らない。
-					if (event.nativeEvent.isComposing || event.keyCode === 229) return
-					if (event.key === 'Enter' && !event.shiftKey) {
+			<form>
+				<AttachmentList
+					attachments={attachments}
+					onOpen={onOpenAttachment}
+					onRemove={onRemoveAttachment}
+				/>
+				<InputGroupTextarea
+					aria-describedby={maxLength !== undefined ? countId : undefined}
+					aria-invalid={tooLong || undefined}
+					aria-label={label}
+					autoFocus={autoFocus}
+					className='max-h-48 min-h-[2.25rem] w-full px-1.5 py-1'
+					disabled={disabled}
+					onChange={event => setValue(event.target.value)}
+					onKeyDown={event => {
+						// 変換を決める Enter では送らない。
+						if (event.nativeEvent.isComposing || event.keyCode === 229) return
+						if (event.key === 'Enter' && !event.shiftKey) {
+							event.preventDefault()
+							submit()
+						}
+					}}
+					onPaste={event => {
+						if (!onAddFiles || event.clipboardData.files.length === 0) return
 						event.preventDefault()
-						submit()
-					}
-				}}
-				onPaste={event => {
-					if (!onAddFiles || event.clipboardData.files.length === 0) return
-					event.preventDefault()
-					addFiles(event.clipboardData.files)
-				}}
-				placeholder={placeholder}
-				ref={textareaRef}
-				rows={1}
-				value={value}
-			/>
-			<div className='flex items-center gap-1'>
-				{onAddFiles ? (
-					<>
-						<input
-							accept={accept}
-							className='hidden'
-							multiple
-							onChange={event => {
-								addFiles(event.target.files)
-								event.target.value = ''
-							}}
-							ref={fileRef}
-							tabIndex={-1}
-							type='file'
-						/>
-						<Button
-							aria-label='ファイルを添付'
-							disabled={disabled || full}
-							onClick={() => fileRef.current?.click()}
-							size='icon'
-							title={
-								full ? `添付は ${maxAttachments} つまでです` : 'ファイルを添付'
-							}
-							type='button'
-							variant='ghost'
+						addFiles(event.clipboardData.files)
+					}}
+					placeholder={placeholder}
+					minRows={1}
+					value={value}
+				/>
+				<InputGroupAddon
+					align='block-end'
+					// 帯の余白を押すと欄に移る。見た目は前の並び（余白なし・ふつうの文字色）のまま
+					className='order-none cursor-auto select-auto justify-start gap-1 p-0 text-foreground'
+				>
+					{onAddFiles ? (
+						<>
+							<input
+								accept={accept}
+								className='hidden'
+								multiple
+								onChange={event => {
+									addFiles(event.target.files)
+									event.target.value = ''
+								}}
+								ref={fileRef}
+								tabIndex={-1}
+								type='file'
+							/>
+							<Button
+								aria-label='ファイルを添付'
+								disabled={disabled || full}
+								onClick={() => fileRef.current?.click()}
+								size='icon'
+								title={
+									full
+										? `添付は ${maxAttachments} つまでです`
+										: 'ファイルを添付'
+								}
+								type='button'
+								variant='ghost'
+							>
+								<Paperclip aria-hidden />
+							</Button>
+						</>
+					) : null}
+					{toolbar}
+					<span className='flex-1' />
+					{maxLength !== undefined ? (
+						<span
+							className={cn(
+								'text-xs tabular-nums',
+								tooLong ? 'text-destructive' : 'text-muted-foreground',
+							)}
+							id={countId}
 						>
-							<Paperclip aria-hidden />
-						</Button>
-					</>
-				) : null}
-				{toolbar}
-				<span className='flex-1' />
-				{maxLength !== undefined ? (
-					<span
-						className={cn(
-							'text-xs tabular-nums',
-							tooLong ? 'text-destructive' : 'text-muted-foreground',
-						)}
-						id={countId}
-					>
-						{value.length.toLocaleString('ja-JP')} /{' '}
-						{maxLength.toLocaleString('ja-JP')}
-						<span className='sr-only'>
-							{tooLong ? ' 文字。長すぎるので送れません' : ' 文字'}
+							{value.length.toLocaleString('ja-JP')} /{' '}
+							{maxLength.toLocaleString('ja-JP')}
+							<span className='sr-only'>
+								{tooLong ? ' 文字。長すぎるので送れません' : ' 文字'}
+							</span>
 						</span>
-					</span>
+					) : null}
+					{showStop ? (
+						<Button
+							aria-label={stopLabel}
+							onClick={onStop}
+							size='icon'
+							title={stopLabel}
+							type='button'
+							variant='secondary'
+						>
+							<Square aria-hidden className='fill-current' />
+						</Button>
+					) : (
+						<Button
+							aria-label={submitLabel}
+							disabled={!canSubmit}
+							size='icon'
+							title={submitLabel}
+							type='submit'
+							variant='primary'
+						>
+							{busy ? (
+								<Loader2 aria-hidden className='animate-spin' />
+							) : (
+								<ArrowUp aria-hidden />
+							)}
+						</Button>
+					)}
+				</InputGroupAddon>
+				{dragging ? (
+					<p className='text-center text-muted-foreground text-xs'>
+						ここに置くと添付します
+					</p>
 				) : null}
-				{showStop ? (
-					<Button
-						aria-label={stopLabel}
-						onClick={onStop}
-						size='icon'
-						title={stopLabel}
-						type='button'
-						variant='secondary'
-					>
-						<Square aria-hidden className='fill-current' />
-					</Button>
-				) : (
-					<Button
-						aria-label={submitLabel}
-						disabled={!canSubmit}
-						size='icon'
-						title={submitLabel}
-						type='submit'
-						variant='primary'
-					>
-						{busy ? (
-							<Loader2 aria-hidden className='animate-spin' />
-						) : (
-							<ArrowUp aria-hidden />
-						)}
-					</Button>
-				)}
-			</div>
-			{dragging ? (
-				<p className='text-center text-muted-foreground text-xs'>
-					ここに置くと添付します
-				</p>
-			) : null}
-		</form>
+			</form>
+		</InputGroup>
 	)
 }
 

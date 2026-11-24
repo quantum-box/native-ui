@@ -126,7 +126,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 		}, [autoResize, minRows, maxRows])
 
 		// 中身が変わるたび（外で持つ形）と、出たときに測る
-		// biome-ignore lint/correctness/useExhaustiveDependencies: 中身が変わるたびに測り直す
 		React.useLayoutEffect(resize, [resize, value])
 
 		// フォームの「元に戻す」は onChange を出さずに値を戻すので、

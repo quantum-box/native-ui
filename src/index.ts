@@ -349,6 +349,7 @@ export {
 export { Input, type InputProps } from './components/inputs/input'
 export {
 	InputGroup,
+	type InputGroupProps,
 	InputGroupAddon,
 	type InputGroupAddonProps,
 	InputGroupButton,

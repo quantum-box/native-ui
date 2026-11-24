@@ -27,6 +27,12 @@ interface SelectCompat {
 	present: boolean
 	labels: Map<string, React.ReactNode>
 	register: (value: string, label: React.ReactNode) => void
+	/** 閉じているあいだの項目の写しを置く入れ物（頭の文字で選ぶときに読む） */
+	collectorRef: React.MutableRefObject<DocumentFragment | null>
+	/** 閉じたままの Trigger で打った文字。選んだら true */
+	typeahead: (key: string) => boolean
+	/** 頭の文字を打っている途中なら true（空白を文字として扱う） */
+	typing: () => boolean
 }
 const SelectCompatContext = React.createContext<SelectCompat | null>(null)
 /** 閉じているあいだに、項目の文字だけを集めるときは true */
@@ -51,6 +57,33 @@ export interface SelectProps {
 /** 閉じてから、一覧を必ず外すまでの時間（閉じる動きよりずっと長く取る） */
 const CLOSE_FALLBACK_MS = 1000
 
+/** 打った文字を、続けて打った物として扱う時間（Radix と同じ 1 秒） */
+const TYPEAHEAD_RESET_MS = 1000
+
+/**
+ * Radix と同じやり方で、打った文字に合う次の項目を探す。
+ * - 同じ文字を続けて打つと（"aaa"）、その文字で始まる項目を順に回る
+ * - 今の項目から先を探し、端まで来たら頭へ戻る
+ */
+export function nextTypeaheadMatch(
+	items: { value: string; text: string }[],
+	search: string,
+	current: string | undefined,
+) {
+	const repeated =
+		search.length > 1 && Array.from(search).every(char => char === search[0])
+	const normalized = (repeated ? search[0] : search)?.toLowerCase() ?? ''
+	const currentIndex = items.findIndex(item => item.value === current)
+	const start = Math.max(currentIndex, 0)
+	let wrapped = [...items.slice(start), ...items.slice(0, start)]
+	if (normalized.length === 1)
+		wrapped = wrapped.filter(item => item.value !== current)
+	const next = wrapped.find(item =>
+		item.text.trim().toLowerCase().startsWith(normalized),
+	)
+	return next && next.value !== current ? next.value : undefined
+}
+
 /** Radix と同じく、空の文字は「選んでいない」 */
 const toBase = (value: string | undefined) =>
 	value === undefined ? undefined : value === '' ? null : value
@@ -68,6 +101,17 @@ function Select({
 }: SelectProps) {
 	const [innerOpen, setInnerOpen] = React.useState(defaultOpen ?? false)
 	const isOpen = open ?? innerOpen
+	// 閉じたままの Trigger で頭の文字を打って選べるよう、値はいつもここで持つ
+	// （外で持つ形なら、外の値に従う）
+	const [innerValue, setInnerValue] = React.useState(defaultValue ?? '')
+	const currentValue = value ?? innerValue
+	const changeValue = React.useCallback(
+		(next: string) => {
+			setInnerValue(next)
+			onValueChange?.(next)
+		},
+		[onValueChange],
+	)
 	// base-ui は一度開いた一覧を、閉じたあとも見えない形で DOM に残す。
 	// 残った一覧を画面の読み上げや検索が拾ってしまうので、閉じる動きが
 	// 終わったら一覧ごと外す。開いたら、その描画のうちに描き直す
@@ -93,15 +137,59 @@ function Select({
 		},
 		[],
 	)
+	// 閉じたままの Trigger で打った文字から、次の項目を選ぶ（Radix と同じ動き）。
+	// base-ui は閉じた一覧が DOM に無いと探せないので、閉じているあいだの写しから探す
+	const collectorRef = React.useRef<DocumentFragment | null>(null)
+	const search = React.useRef({ text: '', timer: 0 })
+	const valueRef = React.useRef(currentValue)
+	valueRef.current = currentValue
+	const typeahead = React.useCallback(
+		(key: string) => {
+			const fragment = collectorRef.current
+			if (!fragment) return false
+			window.clearTimeout(search.current.timer)
+			search.current.text += key
+			search.current.timer = window.setTimeout(() => {
+				search.current.text = ''
+			}, TYPEAHEAD_RESET_MS)
+			const items = Array.from(
+				fragment.querySelectorAll<HTMLElement>('[data-select-item]'),
+			)
+				.filter(el => !el.hasAttribute('data-disabled'))
+				.map(el => ({
+					value: el.dataset.selectItem ?? '',
+					text: el.textContent ?? '',
+				}))
+			const next = nextTypeaheadMatch(
+				items,
+				search.current.text,
+				valueRef.current || undefined,
+			)
+			if (next === undefined) return false
+			changeValue(next)
+			return true
+		},
+		[changeValue],
+	)
+	/** 打ち始めの空白は「開く」。打っている途中の空白は文字として扱う */
+	const typing = React.useCallback(() => search.current.text !== '', [])
+	React.useEffect(() => () => window.clearTimeout(search.current.timer), [])
 	const compat = React.useMemo(
-		() => ({ open: isOpen, present: isOpen || present, labels, register }),
-		[isOpen, present, labels, register],
+		() => ({
+			open: isOpen,
+			present: isOpen || present,
+			labels,
+			register,
+			collectorRef,
+			typeahead,
+			typing,
+		}),
+		[isOpen, present, labels, register, typeahead, typing],
 	)
 	return (
 		<SelectPrimitive.Root
-			value={toBase(value)}
-			defaultValue={toBase(defaultValue)}
-			onValueChange={(next: string | null) => onValueChange?.(next ?? '')}
+			value={toBase(currentValue)}
+			onValueChange={(next: string | null) => changeValue(next ?? '')}
 			open={open}
 			defaultOpen={defaultOpen}
 			onOpenChange={(next: boolean) => {
@@ -168,36 +256,59 @@ SelectValue.displayName = 'SelectValue'
 const SelectTrigger = React.forwardRef<
 	HTMLButtonElement,
 	React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ className, children, asChild, ...props }, ref) => (
-	<SelectPrimitive.Trigger
-		ref={ref}
-		className={cn(
-			'flex h-7 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-2 text-sm text-foreground transition-colors duration-fast placeholder:text-subtle-foreground hover:bg-muted/50 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
-			className,
-		)}
-		render={compatRender(
-			'button',
-			asChild,
-			children,
-			(state: { open: boolean; placeholder: boolean; disabled?: boolean }) => ({
-				...openState(state),
-				'data-placeholder': state.placeholder ? '' : undefined,
-				'data-disabled': state.disabled ? '' : undefined,
-			}),
-		)}
-		{...props}
-	>
-		{asChild ? undefined : (
-			<>
-				{children}
-				<ChevronDown
-					aria-hidden
-					className='size-3.5 shrink-0 text-subtle-foreground'
-				/>
-			</>
-		)}
-	</SelectPrimitive.Trigger>
-))
+>(({ className, children, asChild, onKeyDown, ...props }, ref) => {
+	const compat = React.useContext(SelectCompatContext)
+	return (
+		<SelectPrimitive.Trigger
+			ref={ref}
+			onKeyDown={(event: React.KeyboardEvent<HTMLButtonElement>) => {
+				onKeyDown?.(event)
+				if (event.defaultPrevented || !compat || compat.open) return
+				// 閉じたまま頭の文字を打つと、合う項目を選ぶ（Radix と同じ）。
+				// 打ち始めの空白は、これまでどおり一覧を開く
+				if (
+					event.key.length !== 1 ||
+					event.ctrlKey ||
+					event.metaKey ||
+					event.altKey
+				)
+					return
+				if (event.key === ' ' && !compat.typing()) return
+				event.preventDefault()
+				compat.typeahead(event.key)
+			}}
+			className={cn(
+				'flex h-7 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-2 text-sm text-foreground transition-colors duration-fast placeholder:text-subtle-foreground hover:bg-muted/50 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+				className,
+			)}
+			render={compatRender(
+				'button',
+				asChild,
+				children,
+				(state: {
+					open: boolean
+					placeholder: boolean
+					disabled?: boolean
+				}) => ({
+					...openState(state),
+					'data-placeholder': state.placeholder ? '' : undefined,
+					'data-disabled': state.disabled ? '' : undefined,
+				}),
+			)}
+			{...props}
+		>
+			{asChild ? undefined : (
+				<>
+					{children}
+					<ChevronDown
+						aria-hidden
+						className='size-3.5 shrink-0 text-subtle-foreground'
+					/>
+				</>
+			)}
+		</SelectPrimitive.Trigger>
+	)
+})
 SelectTrigger.displayName = 'SelectTrigger'
 
 const SelectScrollUpButton = React.forwardRef<
@@ -236,12 +347,22 @@ SelectScrollDownButton.displayName = 'SelectScrollDownButton'
 
 /** 閉じているあいだ、項目を DOM の外に描いて文字を集める（Radix と同じやり方） */
 function SelectCollector({ children }: { children?: React.ReactNode }) {
+	const compat = React.useContext(SelectCompatContext)
 	// Radix と同じく、描いた後（ブラウザの中）で初めて DOM の外の入れ物を作る。
 	// はじめの描画ではポータルを出さないので、サーバーや renderToStaticMarkup でも描ける
 	const [fragment, setFragment] = React.useState<DocumentFragment | null>(null)
 	React.useEffect(() => {
 		setFragment(document.createDocumentFragment())
 	}, [])
+	// 閉じたまま頭の文字で選ぶとき、ここに描いた項目の写しを読む
+	const collectorRef = compat?.collectorRef
+	React.useEffect(() => {
+		if (!collectorRef) return
+		collectorRef.current = fragment
+		return () => {
+			if (collectorRef.current === fragment) collectorRef.current = null
+		}
+	}, [collectorRef, fragment])
 	if (!fragment) return null
 	return createPortal(
 		<CollectContext.Provider value>
@@ -377,7 +498,7 @@ export interface SelectItemProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
-	({ className, children, value, textValue, ...props }, ref) => {
+	({ className, children, value, textValue, disabled, ...props }, ref) => {
 		const compat = React.useContext(SelectCompatContext)
 		const collecting = React.useContext(CollectContext)
 		const register = compat?.register
@@ -386,9 +507,19 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
 		React.useLayoutEffect(() => {
 			register?.(value, children)
 		}, [register, value, children])
-		if (collecting) return null
+		// 閉じているあいだは、頭の文字で選ぶための写しだけを描く（DOM の外なので見えない）
+		if (collecting)
+			return (
+				<span
+					data-select-item={value}
+					data-disabled={disabled ? '' : undefined}
+				>
+					{textValue ?? children}
+				</span>
+			)
 		return (
 			<SelectPrimitive.Item
+				disabled={disabled}
 				ref={ref}
 				value={value}
 				label={textValue}
