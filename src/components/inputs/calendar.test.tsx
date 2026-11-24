@@ -537,6 +537,54 @@ describe('DatePicker', () => {
 		expect(data.has('to')).toBe(false)
 	})
 
+	it('form を渡すと、離れた所のフォームでも値を送れる', async () => {
+		await render(
+			<>
+				<form id='editor' />
+				<DatePicker
+					today={TODAY}
+					form='editor'
+					name='dueDate'
+					defaultValue='2026-11-18'
+				/>
+				<DateRangePicker
+					today={TODAY}
+					form='editor'
+					names={['from', 'to']}
+					defaultValue={{ from: '2026-11-01', to: '2026-11-30' }}
+				/>
+			</>,
+		)
+		const data = new FormData(document.querySelector('form') as HTMLFormElement)
+		expect(data.get('dueDate')).toBe('2026-11-18')
+		expect(data.get('from')).toBe('2026-11-01')
+		expect(data.get('to')).toBe('2026-11-30')
+	})
+
+	it('開いているあいだに使えなく・読むだけになったら、閉じて値を変えられない', async () => {
+		for (const lock of [{ disabled: true }, { readOnly: true }]) {
+			const onValueChange = vi.fn()
+			const view = (props: { disabled?: boolean; readOnly?: boolean }) => (
+				<DatePicker
+					today={TODAY}
+					defaultValue='2026-11-18'
+					defaultOpen
+					onValueChange={onValueChange}
+					{...props}
+				/>
+			)
+			const el = await render(view({}))
+			await act(wait)
+			expect(document.querySelector('[data-slot="calendar"]')).not.toBeNull()
+			await act(async () => root?.render(view(lock)))
+			await act(() => wait(300))
+			expect(document.querySelector('[data-slot="calendar"]')).toBeNull()
+			expect(onValueChange).not.toHaveBeenCalled()
+			await act(async () => root?.unmount())
+			el.remove()
+		}
+	})
+
 	it('disabled と readOnly では開けない', async () => {
 		await render(
 			<>
@@ -633,6 +681,18 @@ describe('DateRangePicker', () => {
 		await click(day('2026-11-20'))
 		expect(onValueChange).not.toHaveBeenCalled()
 		expect(document.body.textContent).toContain('終わりの日を選んでください')
+	})
+
+	it('開いているあいだに使えなくなったら、閉じる', async () => {
+		const view = (disabled: boolean) => (
+			<DateRangePicker today={TODAY} defaultOpen disabled={disabled} />
+		)
+		await render(view(false))
+		await act(wait)
+		expect(document.querySelector('[data-slot="calendar"]')).not.toBeNull()
+		await act(async () => root?.render(view(true)))
+		await act(() => wait(300))
+		expect(document.querySelector('[data-slot="calendar"]')).toBeNull()
 	})
 
 	it('names を渡すと、はじめと終わりをフォームで送れる', async () => {

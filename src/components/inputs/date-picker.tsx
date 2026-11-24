@@ -115,6 +115,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 			className,
 			contentClassName,
 			name,
+			form,
 			placeholder = '年/月/日',
 			disabled,
 			readOnly,
@@ -133,7 +134,9 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 		const value = isDateString(raw) ? raw : ''
 
 		const [innerOpen, setInnerOpen] = React.useState(defaultOpen)
-		const open = openProp ?? innerOpen
+		const canEdit = !disabled && !readOnly
+		// 使えない・読むだけになったら、開いていても閉じる（開いたまま値を変えられないように）
+		const open = (openProp ?? innerOpen) && canEdit
 		const setOpen = (next: boolean) => {
 			setInnerOpen(next)
 			onOpenChange?.(next)
@@ -166,8 +169,6 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 			else setDraft(null)
 		}
 
-		const canEdit = !disabled && !readOnly
-
 		return (
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverAnchor asChild>
@@ -182,6 +183,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 							readOnly={readOnly}
 							required={required}
 							className='tabular-nums'
+							form={form}
 							{...inputProps}
 							value={text}
 							onChange={event => setDraft(event.target.value)}
@@ -222,6 +224,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 							// 使えない欄の値は、ブラウザの入力欄と同じく送らない
 							<input
 								type='hidden'
+								form={form}
 								name={name}
 								value={value}
 								disabled={disabled}
@@ -363,6 +366,7 @@ const DateRangePicker = React.forwardRef<
 			className,
 			contentClassName,
 			disabled,
+			form,
 			...buttonProps
 		},
 		ref,
@@ -381,7 +385,8 @@ const DateRangePicker = React.forwardRef<
 		const [draft, setDraft] = React.useState<DateRange | null>(null)
 
 		const [innerOpen, setInnerOpen] = React.useState(defaultOpen)
-		const open = openProp ?? innerOpen
+		// 使えなくなったら、開いていても閉じる
+		const open = (openProp ?? innerOpen) && !disabled
 		const setOpen = (next: boolean) => {
 			if (!next) setDraft(null)
 			setInnerOpen(next)
@@ -416,6 +421,7 @@ const DateRangePicker = React.forwardRef<
 							'flex h-7 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-2 text-sm text-foreground transition-colors duration-fast hover:bg-muted/50 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus:ring-destructive/25',
 							className,
 						)}
+						form={form}
 						{...buttonProps}
 					>
 						<span
@@ -435,12 +441,14 @@ const DateRangePicker = React.forwardRef<
 					<>
 						<input
 							type='hidden'
+							form={form}
 							name={names[0]}
 							value={value.from}
 							disabled={disabled}
 						/>
 						<input
 							type='hidden'
+							form={form}
 							name={names[1]}
 							value={value.to}
 							disabled={disabled}
