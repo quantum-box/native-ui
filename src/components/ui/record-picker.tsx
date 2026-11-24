@@ -25,6 +25,7 @@ import {
 	type RecordKindDefinition,
 	RecordSystemBand,
 	recordToneStyle,
+	spaceLatin,
 	useRecordKind,
 	useRecordSystem,
 } from './record'
@@ -77,9 +78,11 @@ export function useRecordPickerChrome(kind: string) {
 	const system = useRecordSystem(definition)
 	const external = system?.external ? system : null
 	return {
-		searchPlaceholder: external
-			? `${external.name}の${definition.name}を検索…`
-			: `${definition.name}を検索…`,
+		searchPlaceholder: spaceLatin(
+			external
+				? `${external.name}の${definition.name}を検索…`
+				: `${definition.name}を検索…`,
+		),
 		style: external ? recordToneStyle(external.tone) : undefined,
 		className: external
 			? 'border-l-[3px] border-l-[hsl(var(--record-tone))]'
@@ -96,7 +99,7 @@ export function useRecordPickerChrome(kind: string) {
 					</>
 				}
 			>
-				{definition.name}から選ぶ
+				{spaceLatin(`${definition.name}から選ぶ`)}
 			</RecordSystemBand>
 		) : null,
 		footer: definition.pickerActions?.length ? (
@@ -127,6 +130,12 @@ export type RecordPickerProps<T = unknown> = {
 	/** 何も選んでいないときの文言。既定は「{名前}を選ぶ」。 */
 	placeholder?: string
 	disabled?: boolean
+	/** 候補に続きがあるとき true。候補の下に「続きを読む」を出す。 */
+	hasMore?: boolean
+	/** 続きを読んでいるとき true。 */
+	loadingMore?: boolean
+	/** 「続きを読む」で呼ばれる。 */
+	onLoadMore?: () => void
 	id?: string
 	name?: string
 	'aria-label'?: string
@@ -149,6 +158,9 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 		allowEmpty = false,
 		placeholder,
 		disabled,
+		hasMore = false,
+		loadingMore = false,
+		onLoadMore,
 		className,
 		...aria
 	}: RecordPickerProps<T>,
@@ -181,7 +193,7 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 				/>
 				{id === currentId ? (
 					<Check
-						aria-label={`選んでいる${definition.name}`}
+						aria-label={spaceLatin(`選んでいる${definition.name}`)}
 						className='ml-auto'
 					/>
 				) : null}
@@ -212,7 +224,7 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 							/>
 						) : (
 							<span className='truncate text-subtle-foreground'>
-								{placeholder ?? `${definition.name}を選ぶ`}
+								{placeholder ?? spaceLatin(`${definition.name}を選ぶ`)}
 							</span>
 						)}
 					</span>
@@ -230,16 +242,18 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 					'w-[var(--radix-popover-trigger-width)] min-w-64 max-w-[calc(100vw-24px)] overflow-hidden p-0',
 					chrome.className,
 				)}
-				aria-label={`${definition.name}を選ぶ`}
+				aria-label={spaceLatin(`${definition.name}を選ぶ`)}
 			>
 				{chrome.header}
 				<Command value={currentId || undefined}>
 					<CommandInput
-						aria-label={`${definition.name}を検索`}
+						aria-label={spaceLatin(`${definition.name}を検索`)}
 						placeholder={chrome.searchPlaceholder}
 					/>
-					<CommandList aria-label={`${definition.name}の候補`}>
-						<CommandEmpty>一致する{definition.name}はありません。</CommandEmpty>
+					<CommandList aria-label={spaceLatin(`${definition.name}の候補`)}>
+						<CommandEmpty>
+							{spaceLatin(`一致する${definition.name}はありません。`)}
+						</CommandEmpty>
 						<CommandGroup>
 							{allowEmpty ? (
 								<CommandItem value='' onSelect={() => pick(null)}>
@@ -253,6 +267,16 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 								</CommandItem>
 							) : null}
 							{items}
+							{hasMore && onLoadMore ? (
+								<CommandItem
+									value='__more'
+									disabled={loadingMore}
+									onSelect={onLoadMore}
+									className='justify-center text-muted-foreground'
+								>
+									{loadingMore ? '読んでいます…' : '続きを読む'}
+								</CommandItem>
+							) : null}
 						</CommandGroup>
 					</CommandList>
 				</Command>

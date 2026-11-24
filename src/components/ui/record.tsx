@@ -224,7 +224,7 @@ export function useRecordKind<T = unknown>(kind: string) {
 }
 
 /** 記録の名前を出す（決まりどおり）。 */
-export function recordKindText<T>(
+function recordKindTextRaw<T>(
 	definition: RecordKindDefinition<T>,
 	status: Exclude<RecordStatus, 'ready'>,
 ) {
@@ -237,6 +237,14 @@ export function recordKindText<T>(
 			definition.unavailableText ?? `${definition.name}を読み込めませんでした`
 		)
 	return definition.loadingText ?? `${definition.name}を読み込んでいます`
+}
+
+/** 消えた・見る権限が無い・読めない・読み込み中の文言（種類の決まりどおり。英字と日本語の間は空ける）。 */
+export function recordKindText<T>(
+	definition: RecordKindDefinition<T>,
+	status: Exclude<RecordStatus, 'ready'>,
+) {
+	return spaceLatin(recordKindTextRaw(definition, status))
 }
 
 export type RecordChipProps<T = unknown> = {
@@ -271,7 +279,29 @@ function isPlainLeftClick(event: MouseEvent) {
 }
 
 /** 押したとき、⌘・Ctrl などを押していなければアプリの方法で移る。 */
+/**
+ * 英字・数字と日本語が隣り合う所に空白を入れる（例「LinearのIssueを検索」→「Linear の Issue を検索」）。
+ * 種類やシステムの名前から文を作るときに使う。
+ */
+export function spaceLatin(text: string) {
+	return text
+		.replace(/([A-Za-z0-9])(?=[\u3040-\u30ff\u4e00-\u9fff])/g, '$1 ')
+		.replace(/([\u3040-\u30ff\u4e00-\u9fff])(?=[A-Za-z0-9])/g, '$1 ')
+}
+
+/** 外のサービスの場所（http・https）か。外の場所は新しいタブで開き、アプリの画面の移動は使わない。 */
+export function isExternalHref(href: string) {
+	return /^https?:\/\//.test(href)
+}
+
 function linkProps(href: string, navigate?: (href: string) => void) {
+	if (isExternalHref(href))
+		return {
+			href,
+			target: '_blank',
+			rel: 'noreferrer noopener',
+			onClick: (event: MouseEvent) => event.stopPropagation(),
+		}
 	return {
 		href,
 		onClick: (event: MouseEvent) => {
@@ -292,7 +322,9 @@ export function recordOpenLabel(
 ) {
 	return (
 		definition.openLabel ??
-		(system?.external ? `${system.name}で開く` : `${definition.name}を開く`)
+		spaceLatin(
+			system?.external ? `${system.name}で開く` : `${definition.name}を開く`,
+		)
 	)
 }
 
