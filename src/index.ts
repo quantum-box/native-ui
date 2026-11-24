@@ -10,6 +10,12 @@ export {
 	type AiFieldStatus,
 } from './components/ai/ai-field'
 export {
+	AiSelect,
+	type AiSelectProps,
+	AiSelectTrigger,
+	type AiSelectTriggerProps,
+} from './components/ai/ai-select'
+export {
 	AiBestMatchBadge,
 	type AiBestMatchBadgeProps,
 	AiLabel,

@@ -100,6 +100,22 @@ export const 出典の詳しい中身: Story = {
 	),
 }
 
+/** 値に URL のような切れ目の無い長い文字があっても、枠の中で折り返す。見出しの列はつぶれない。 */
+export const 出典の長い文字: Story = {
+	render: () => (
+		<div className='w-64 rounded-lg border border-border bg-popover p-3 shadow-overlay'>
+			<FactSourceDetails
+				source={{
+					name: 'JAN商品カタログ',
+					basis:
+						'店の自社ブランドから探した商品／Open Database License (ODbL) 1.0 https://opendatacommons.org/licenses/odbl/1-0/ の下で提供',
+					url: 'https://world.openfoodfacts.org/',
+				}}
+			/>
+		</div>
+	),
+}
+
 const FIELD_STATES: Array<{
 	status: FactFieldStatus
 	title: string

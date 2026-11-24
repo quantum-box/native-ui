@@ -46,18 +46,22 @@ function FactSourceDetails({
 				<Database aria-hidden className='size-3.5' />
 				データ基盤の値
 			</p>
-			<dl className='grid grid-cols-[auto_1fr] gap-x-3 gap-y-1'>
-				<dt className='text-muted-foreground'>出典</dt>
+			{/*
+			 * 値に URL のような切れ目の無い長い文字があっても、枠からはみ出さず、
+			 * 見出しの列もつぶれないようにする（見出しは折り返さず、値は途中で折り返す）。
+			 */}
+			<dl className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 [&>dd]:[overflow-wrap:anywhere] [&>dt]:whitespace-nowrap [&>dt]:text-muted-foreground'>
+				<dt>出典</dt>
 				<dd>{source.name}</dd>
 				{source.asOf ? (
 					<>
-						<dt className='text-muted-foreground'>時点</dt>
+						<dt>時点</dt>
 						<dd>{source.asOf}</dd>
 					</>
 				) : null}
 				{source.basis ? (
 					<>
-						<dt className='text-muted-foreground'>基にした値</dt>
+						<dt>基にした値</dt>
 						<dd>{source.basis}</dd>
 					</>
 				) : null}

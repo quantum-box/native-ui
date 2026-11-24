@@ -218,7 +218,7 @@ pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 | `layout/` | 並べる・見せる | Tabs・Collapsible・DescriptionList（名前と値の並び） |
 | `table/` | 表 | Table・DataTable と表のセル（その場で直すセル・記録のセル・計算した値のセル・密度） |
 | `record/` | 記録 | 別の業務の記録（取引先・商品・店・担当者など）の見せ方。表の外でも使う物（RecordChip・RecordCard・RecordPicker など） |
-| `ai/` | AI | AiField（AI が入れた入力欄）・AiReasoning（判断の中身）・AiSuggestion（候補） |
+| `ai/` | AI | AiField（AI が入れた入力欄）・AiSelect（AI が選んだ選択欄）・AiReasoning（判断の中身）・AiSuggestion（候補） |
 | `ai-chat/` | AI チャット | Message・Bubble・MessageScroller・Trace・Chat*（送る欄・道具の記録・実行の前の確かめ など） |
 | `fact/` | データ基盤の値 | FactLabel・FactValue・FactField・FactPanel・AiValue（文の中の印） |
 | `app-frame/` | 画面の枠 | Sidebar・StatusBar・FloatingPanel・macOS の窓とタブ |
