@@ -256,6 +256,7 @@ describe('表のセルに記録を出す', () => {
 			<DataTableRecordCell
 				kind='customer'
 				records={[ACME, recordPlaceholder('forbidden', 'c9'), BETA]}
+				max={2}
 			/>,
 		)
 		expect(document.querySelectorAll('a')).toHaveLength(1)

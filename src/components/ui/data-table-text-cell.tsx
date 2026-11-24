@@ -10,6 +10,8 @@ export type DataTableTextCellProps = Omit<
 > & {
 	/** セルを押す所の読み上げ名（例「商品Aの品名を変更」）。 */
 	ariaLabel: string
+	/** 何の値か（例「品目名」）。失敗の知らせに使う。 */
+	label?: string
 	/** 空を許さない。 */
 	required?: boolean
 	/** 入れられる文字の数。 */
@@ -26,6 +28,7 @@ export type DataTableTextCellProps = Omit<
  */
 export function DataTableTextCell({
 	ariaLabel,
+	label,
 	required = false,
 	maxLength,
 	placeholder,
@@ -38,6 +41,8 @@ export function DataTableTextCell({
 			{...options}
 			ariaLabel={ariaLabel}
 			className={className}
+			label={label}
+			formatValue={value => value}
 			renderValue={value =>
 				value ? (
 					value
@@ -49,7 +54,7 @@ export function DataTableTextCell({
 				<DataTableInputEditor
 					edit={edit}
 					aria-label={ariaLabel}
-					initialText={edit.value}
+					initialText={edit.editValue}
 					maxLength={maxLength}
 					placeholder={placeholder}
 					parse={text => {

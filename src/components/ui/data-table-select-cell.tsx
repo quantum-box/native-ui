@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { type CSSProperties, type ReactNode, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 
@@ -14,10 +14,12 @@ import {
 } from './command'
 import {
 	type DataTableInlineEditOptions,
-	DataTableInlineEditError,
-	DataTableInlineEditStatusIcon,
+	DataTableInlineEditShell,
+	DataTableInlineEditTrigger,
+	dataTableInlineEditCellClassName,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
+import { useDataTableDensity } from './data-table-density'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 export type DataTableSelectOption = {
@@ -72,9 +74,15 @@ export function DataTableSelectCell({
 	...rest
 }: DataTableSelectCellProps) {
 	const edit = useDataTableInlineEdit({ ...rest, formatError })
+	const density = useDataTableDensity()
 	const committedValue = rest.value
 	const disabled = edit.disabled
 	const [activeOption, setActiveOption] = useState(committedValue)
+	// 開いたときは、今の値（「直す」で戻ったときは失敗した値）を選んだ状態にする。
+	const editValue = edit.editValue
+	useEffect(() => {
+		if (edit.editing) setActiveOption(editValue)
+	}, [edit.editing, editValue])
 	const value = edit.value
 	const valueLabel =
 		options.find(option => option.value === value)?.label ?? (value || '未設定')
@@ -85,35 +93,42 @@ export function DataTableSelectCell({
 	}
 	if (!options.length)
 		return (
-			<div className='flex min-h-[52px] items-center gap-2 whitespace-nowrap px-5 py-2'>
+			<div
+				className={cn(
+					dataTableInlineEditCellClassName(density),
+					'whitespace-nowrap',
+				)}
+			>
 				{renderValue(valueLabel, value)}
 				{!disabled ? emptyOptionsAction : null}
 			</div>
 		)
 
 	return (
-		<div className='min-w-0'>
+		<DataTableInlineEditShell
+			edit={edit}
+			label={label}
+			formatValue={item =>
+				options.find(option => option.value === item)?.label ?? item
+			}
+		>
 			<Popover
 				open={edit.editing}
 				onOpenChange={nextOpen => {
 					if (!nextOpen) return edit.cancel()
-					if (edit.startEditing()) setActiveOption(committedValue)
+					edit.startEditing()
 				}}
 			>
 				<PopoverTrigger asChild>
-					<button
-						type='button'
+					<DataTableInlineEditTrigger
 						aria-label={ariaLabel}
-						aria-busy={edit.saving}
-						aria-disabled={disabled || edit.saving}
+						status={edit.status}
+						error={edit.error}
+						saving={edit.saving}
 						disabled={disabled}
-						className='flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50 data-[state=open]:bg-selected data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring'
 					>
 						{renderValue(valueLabel, value)}
-						<span className='ml-auto'>
-							<DataTableInlineEditStatusIcon status={edit.status} />
-						</span>
-					</button>
+					</DataTableInlineEditTrigger>
 				</PopoverTrigger>
 				<PopoverContent
 					align='start'
@@ -156,8 +171,7 @@ export function DataTableSelectCell({
 					{pickerFooter}
 				</PopoverContent>
 			</Popover>
-			<DataTableInlineEditError error={edit.error} />
-		</div>
+		</DataTableInlineEditShell>
 	)
 }
 
