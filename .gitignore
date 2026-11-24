@@ -15,5 +15,6 @@ ds-bundle/
 # misc
 .DS_Store
 
-# 本物のブラウザで動かす検査が撮る写し
-__screenshots__/
+# 本物のブラウザで動かす検査の結果と写し
+e2e/.results/
+playwright-report/

@@ -46,7 +46,7 @@
     "ts": "tsc --noEmit --incremental",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "test:browser": "playwright test",
     "storybook": "storybook dev -p 6006",
     "build": "storybook build",
     "build:lib": "tsup",
@@ -86,15 +86,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9",
+    "@playwright/test": "1.65.1",
     "@storybook/react-vite": "^9.1.20",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.0.3",
-    "@vitest/browser": "^3.2.7",
     "@vitest/coverage-v8": "^3.2.7",
     "autoprefixer": "^10.5.2",
     "jsdom": "^31.0.1",
-    "playwright": "1.58.2",
     "postcss": "^8.5.18",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -103,6 +102,6 @@
     "tsup": "^8.5.1",
     "typescript": "~5.6.2",
     "vite": "^7.3.6",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.4"
   }
 }
