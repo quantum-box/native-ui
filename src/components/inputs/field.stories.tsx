@@ -1,0 +1,108 @@
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+import { Button } from '../basics/button'
+import { Field, FieldGroup } from './field'
+import { Input } from './input'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from './select'
+import { Textarea } from './textarea'
+
+/**
+ * 欄（Field）と、欄を横に並べる箱（FieldGroup）。
+ *
+ * 同じ行の欄は、ラベルの長さ・説明の有る無し・エラーの有る無しが違っても、入力欄の
+ * 上端がそろう。入力欄は欄の箱より広がらず、箱の外へはみ出さない。
+ */
+const meta = {
+	title: '入力/Field',
+	id: 'field',
+	component: Field,
+	args: { label: '名前', children: <Input /> },
+} satisfies Meta<typeof Field>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const ひとつ: Story = {
+	render: () => (
+		<div className='w-72'>
+			<Field label='名前' description='お客様に見せる名前です。' required>
+				<Input placeholder='山田 太郎' />
+			</Field>
+		</div>
+	),
+}
+
+const units = (
+	<Select defaultValue='g'>
+		<SelectTrigger aria-label='単位' className='w-16 shrink-0'>
+			<SelectValue />
+		</SelectTrigger>
+		<SelectContent>
+			<SelectItem value='g'>g</SelectItem>
+			<SelectItem value='ml'>ml</SelectItem>
+			<SelectItem value='個'>個</SelectItem>
+		</SelectContent>
+	</Select>
+)
+
+/** 説明の有る欄・無い欄・長いラベル・エラーが同じ行に並んでも、入力欄の上端がそろう。 */
+export const 横に並べる: Story = {
+	render: () => (
+		<form className='max-w-4xl rounded-md border border-border p-4'>
+			<FieldGroup className='sm:grid-cols-2 lg:grid-cols-5'>
+				<Field className='sm:col-span-2' label='商品名' required>
+					<Input defaultValue='有機トマト' />
+				</Field>
+				<Field label='内容量' required>
+					<div className='flex gap-2'>
+						<Input aria-label='内容量' defaultValue='500' inputMode='decimal' />
+						{units}
+					</div>
+				</Field>
+				<Field description='1パックに何個入りか' label='入数'>
+					<Input inputMode='numeric' />
+				</Field>
+				<Field error='13 桁の数字で入れてください。' label='JANコード'>
+					<Input defaultValue='4901' inputMode='numeric' />
+				</Field>
+				<Field label='とても長い名前の欄で、狭い幅ではラベルが折り返す'>
+					<Input />
+				</Field>
+				<Field label='メモ'>
+					<Textarea minRows={2} />
+				</Field>
+			</FieldGroup>
+			<div className='mt-4 flex justify-end'>
+				<Button type='submit'>保存</Button>
+			</div>
+		</form>
+	),
+}
+
+/** 狭い箱（右の詳細など）に入れても、入力欄もボタンも右へはみ出さない。 */
+export const 狭い箱: Story = {
+	render: () => (
+		<form className='w-72 overflow-hidden rounded-md border border-border p-3'>
+			<FieldGroup className='grid-cols-3'>
+				<Field label='内容量'>
+					<div className='flex gap-2'>
+						<Input defaultValue='500' />
+						{units}
+					</div>
+				</Field>
+				<Field description='1パックに何個入りか' label='入数'>
+					<Input />
+				</Field>
+				<Field label='JANコード'>
+					<Input defaultValue='4901234567890' />
+				</Field>
+			</FieldGroup>
+		</form>
+	),
+}
