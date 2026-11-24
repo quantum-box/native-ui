@@ -414,6 +414,40 @@ describe('Command（cmdk と同じ動き）', () => {
 		expect(activeAtSelect).toBeDefined()
 	})
 
+	it('一覧と入力欄に id を渡しても、読み上げの結びつきはその id を使う', async () => {
+		await render(
+			<Command label='商品を探す'>
+				<CommandInput id='my-input' />
+				<CommandList id='my-list'>
+					<CommandItem value='a'>Alpha</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		expect(document.getElementById('my-list')?.getAttribute('role')).toBe(
+			'listbox',
+		)
+		expect(input().id).toBe('my-input')
+		expect(input().getAttribute('aria-controls')).toBe('my-list')
+		expect(document.querySelector('[cmdk-label]')?.getAttribute('for')).toBe(
+			'my-input',
+		)
+		const label = document.querySelector('[cmdk-label]') as HTMLElement
+		expect(input().getAttribute('aria-labelledby')).toBe(label.id)
+	})
+
+	it('label を渡さなければ、入力欄は無いラベルを指さない（aria-label が効く）', async () => {
+		await render(
+			<Command>
+				<CommandInput aria-label='取引先を探す' />
+				<CommandList>
+					<CommandItem value='a'>Alpha</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		expect(input().hasAttribute('aria-labelledby')).toBe(false)
+		expect(input().getAttribute('aria-label')).toBe('取引先を探す')
+	})
+
 	it('forceMount の項目は、合わなくても出す', async () => {
 		await render(
 			<Command>

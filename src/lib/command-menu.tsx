@@ -78,7 +78,11 @@ interface CommandContext {
 	visibleCount: number
 	filtering: boolean
 	listId: string
-	labelId: string
+	/** 使う側が CommandList・CommandInput に id を渡したら、それを使う */
+	setCustomListId: (id: string | undefined) => void
+	setCustomInputId: (id: string | undefined) => void
+	/** label を渡したときだけ（見えないラベルがあるときだけ）、入力欄から指す */
+	labelId: string | undefined
 	inputId: string
 	activeDomId: string | undefined
 	listRef: React.MutableRefObject<HTMLDivElement | null>
@@ -194,9 +198,11 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 
 		const listRef = React.useRef<HTMLDivElement | null>(null)
 		const base = React.useId()
-		const listId = `${base}-list`
-		const labelId = `${base}-label`
-		const inputId = `${base}-input`
+		const [customListId, setCustomListId] = React.useState<string>()
+		const [customInputId, setCustomInputId] = React.useState<string>()
+		const listId = customListId ?? `${base}-list`
+		const labelId = label ? `${base}-label` : undefined
+		const inputId = customInputId ?? `${base}-input`
 
 		/** 見えていて選べる項目を、画面の並び（近い順）で */
 		const ordered = React.useCallback(() => {
@@ -328,6 +334,8 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 			visibleCount,
 			filtering,
 			listId,
+			setCustomListId,
+			setCustomInputId,
 			labelId,
 			inputId,
 			activeDomId,
@@ -389,8 +397,14 @@ export interface CommandInputProps
 }
 
 const Input = React.forwardRef<HTMLInputElement, CommandInputProps>(
-	({ value, onValueChange, onChange, ...props }, ref) => {
+	({ value, onValueChange, onChange, id: idProp, ...props }, ref) => {
 		const command = useCommand('CommandInput')
+		// 渡された id を、見えないラベルの htmlFor にも使う
+		const { setCustomInputId } = command
+		React.useLayoutEffect(() => {
+			setCustomInputId(idProp)
+			return () => setCustomInputId(undefined)
+		}, [idProp, setCustomInputId])
 		const { setSearch } = command
 		// 外で持つ形なら、外の値を検索の文字にする
 		React.useLayoutEffect(() => {
@@ -409,7 +423,7 @@ const Input = React.forwardRef<HTMLInputElement, CommandInputProps>(
 				aria-controls={command.listId}
 				aria-labelledby={command.labelId}
 				aria-activedescendant={command.activeDomId}
-				id={command.inputId}
+				id={idProp ?? command.inputId}
 				type='text'
 				{...props}
 				value={value ?? command.search}
@@ -427,8 +441,14 @@ Input.displayName = 'CommandInput'
 const List = React.forwardRef<
 	HTMLDivElement,
 	React.HTMLAttributes<HTMLDivElement> & { label?: string }
->(({ children, label, ...props }, ref) => {
+>(({ children, label, id: idProp, ...props }, ref) => {
 	const command = useCommand('CommandList')
+	// 渡された id を、入力欄の aria-controls にも使う
+	const { setCustomListId } = command
+	React.useLayoutEffect(() => {
+		setCustomListId(idProp)
+		return () => setCustomListId(undefined)
+	}, [idProp, setCustomListId])
 	const { listRef } = command
 	const setRefs = React.useCallback(
 		(node: HTMLDivElement | null) => {
@@ -446,7 +466,7 @@ const List = React.forwardRef<
 			role='listbox'
 			tabIndex={-1}
 			aria-label={label}
-			id={command.listId}
+			id={idProp ?? command.listId}
 			{...props}
 		>
 			{/* 近い順に並べる（CSS の order）ために、縦に並べる */}
