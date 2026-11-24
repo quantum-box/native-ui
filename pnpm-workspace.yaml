@@ -6,3 +6,7 @@ overrides:
   # GHSA-g7r4-m6w7-qqqr: dev-server file read on Windows, patched in 0.28.1.
   # tsup pins ^0.27, so force the patched line until it catches up.
   'esbuild@<0.28.1': '>=0.28.1'
+  # GHSA-3g3m-2fjr-6pw4: AbortSignal cancellation bypass, patched in 14.0.2.
+  # Storybook 10's react-docgen-typescript plugin pins ^13, so force the
+  # patched line until it catches up.
+  'glob@>=9.0.0 <14.0.2': '>=14.0.2'
