@@ -54,6 +54,7 @@ import {
  */
 const meta = {
 	title: '表/DataTableRecordCell',
+	id: 'data-table-record-cell',
 	parameters: { layout: 'padded' },
 	decorators: [
 		Story => {

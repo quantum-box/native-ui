@@ -55,6 +55,7 @@ import {
  */
 const meta = {
 	title: '表/DataTableInlineEdit',
+	id: 'data-table-inline-edit',
 	parameters: { layout: 'padded' },
 } satisfies Meta
 

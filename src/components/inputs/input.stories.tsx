@@ -5,6 +5,7 @@ import { Label } from '../basics/label'
 
 const meta = {
 	title: '入力/Input',
+	id: 'input',
 	component: Input,
 	args: {
 		placeholder: 'Search issues…',

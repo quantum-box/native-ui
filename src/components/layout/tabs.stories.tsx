@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
 const meta = {
 	title: '並べる・見せる/Tabs',
+	id: 'tabs',
 	component: Tabs,
 } satisfies Meta<typeof Tabs>
 

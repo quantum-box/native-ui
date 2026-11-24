@@ -14,6 +14,7 @@ import { Label } from '../basics/label'
  */
 const meta = {
 	title: 'AI/AiReasoning',
+	id: 'ai-reasoning',
 	component: AiReasoningDetails,
 	args: { reasoning: {} },
 } satisfies Meta<typeof AiReasoningDetails>

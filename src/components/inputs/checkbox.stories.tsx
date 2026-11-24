@@ -5,6 +5,7 @@ import { Label } from '../basics/label'
 
 const meta = {
 	title: '入力/Checkbox',
+	id: 'checkbox',
 	component: Checkbox,
 } satisfies Meta<typeof Checkbox>
 

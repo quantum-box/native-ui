@@ -64,6 +64,7 @@ const ExampleForm = () => {
 
 const meta = {
 	title: '入力/Form',
+	id: 'form',
 	component: ExampleForm,
 } satisfies Meta<typeof ExampleForm>
 

@@ -42,6 +42,7 @@ import {
  */
 const meta = {
 	title: '記録/Record',
+	id: 'record',
 	parameters: { layout: 'padded' },
 	decorators: [
 		Story => {

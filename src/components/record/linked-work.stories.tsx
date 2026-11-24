@@ -254,6 +254,7 @@ const MANY_KINDS: LinkWorkKindOption[] = [
  */
 const meta = {
 	title: '記録/LinkedWork',
+	id: 'linked-work',
 	parameters: { layout: 'padded' },
 	decorators: [
 		Story => (

@@ -19,6 +19,7 @@ import {
  */
 const meta = {
 	title: 'AI チャット/MessageScroller',
+	id: 'message-scroller',
 	component: MessageScrollerProvider,
 } satisfies Meta<typeof MessageScrollerProvider>
 

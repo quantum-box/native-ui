@@ -14,6 +14,7 @@ import {
 
 const meta = {
 	title: '重なる物/DropdownMenu',
+	id: 'dropdown-menu',
 	component: DropdownMenu,
 } satisfies Meta<typeof DropdownMenu>
 

@@ -11,6 +11,7 @@ import { MessageActions, type MessageFeedback } from './chat-message-actions'
 /** 返事のまわりの小さな部品。出典・発言ごとの操作・問いの候補・コードと表・失敗。 */
 const meta = {
 	title: 'AI チャット/ChatParts',
+	id: 'chat-parts',
 } satisfies Meta
 
 export default meta

@@ -5,6 +5,7 @@ import { type MacOSWindowTab, MacOSWindowTabs } from './macos-window-tabs'
 
 const meta: Meta<typeof MacOSWindowTabs> = {
 	title: '画面の枠/MacOSWindowTabs',
+	id: 'macos-window-tabs',
 	component: MacOSWindowTabs,
 	parameters: {
 		layout: 'fullscreen',
