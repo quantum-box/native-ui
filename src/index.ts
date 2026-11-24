@@ -282,6 +282,8 @@ export {
 	type RecordKindDefinition,
 	RecordKindProvider,
 	type RecordKindProviderProps,
+	RecordLink,
+	RecordMention,
 	type RecordStatus,
 	RecordSystemBand,
 	type RecordSystemDefinition,
@@ -292,6 +294,18 @@ export {
 	useRecordKind,
 	useRecordSystem,
 } from './components/record/record'
+export {
+	RecordList,
+	type RecordListItem,
+	type RecordListProps,
+} from './components/record/record-list'
+export {
+	RecordPicker,
+	type RecordPickerProps,
+	recordKeywords,
+	useRecordCandidates,
+	useRecordPickerChrome,
+} from './components/record/record-picker'
 export {
 	Form,
 	FormControl,

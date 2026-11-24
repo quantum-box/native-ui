@@ -74,6 +74,8 @@ export function DataTableOverflowList({
 		if (!box || typeof ResizeObserver === 'undefined') return
 		const observer = new ResizeObserver(() => fit())
 		observer.observe(box)
+		// 中身（名前の長さなど）が変わると測るための並びの幅が変わるので、それも見て測り直す。
+		if (measure.current) observer.observe(measure.current)
 		return () => observer.disconnect()
 	}, [fit])
 

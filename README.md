@@ -4,6 +4,7 @@ Linear / Notion のようなネイティブアプリらしい UI を実現する
 
 - デザインシステム仕様: [docs/design-system.md](./docs/design-system.md)
 - 一覧の表（DataTable）の使い方: [docs/data-table.md](./docs/data-table.md)
+- 記録の部品（表の外でも使う）の使い方: [docs/record.md](./docs/record.md)
 - Tauri macOSタブ実装ガイド: [docs/tauri-macos-tabs.md](./docs/tauri-macos-tabs.md)
 - Tauri macOS Webリンクコピーガイド: [docs/tauri-macos-web-link-copy.md](./docs/tauri-macos-web-link-copy.md)
 - トークン実装: `src/styles/tokens.css`（`--nui-*` CSS 変数）

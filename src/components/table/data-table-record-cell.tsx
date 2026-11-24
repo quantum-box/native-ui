@@ -1,5 +1,4 @@
 import type { ColumnDef, ColumnMeta } from '@tanstack/react-table'
-import { ArrowUpRight } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '../../lib/utils'
@@ -9,16 +8,13 @@ import {
 	type DataTableSelectOption,
 } from './data-table-select-cell'
 import { DataTableOverflowList } from './data-table-overflow-list'
-import { Popover, PopoverContent, PopoverTrigger } from '../overlays/popover'
 import {
-	RecordActionButton,
-	RecordChip,
-	type RecordStatus,
-	RecordSystemBand,
-	recordToneStyle,
-	useRecordKind,
-	useRecordSystem,
-} from '../record/record'
+	recordKeywords,
+	useRecordCandidates,
+	useRecordPickerChrome,
+} from '../record/record-picker'
+import { Popover, PopoverContent, PopoverTrigger } from '../overlays/popover'
+import { RecordChip, type RecordStatus, useRecordKind } from '../record/record'
 
 const PLACEHOLDER = Symbol('record-placeholder')
 
@@ -227,8 +223,6 @@ export type DataTableRecordSelectCellProps<T = unknown> = Omit<
 	validate?: (record: T | null) => string | null
 }
 
-const noCandidates = () => ({ records: [] as const })
-
 /**
  * 表の中でその場で別の記録に付け替えるセル（担当者を変えるなど）。
  * 流れは `DataTableSelectCell` と同じで、候補と見た目は種類の決まりから出す。
@@ -242,18 +236,10 @@ export function DataTableRecordSelectCell<T = unknown>({
 	validate,
 	...rest
 }: DataTableRecordSelectCellProps<T>) {
-	const { definition, navigate } = useRecordKind<T>(kind)
-	const system = useRecordSystem(definition)
-	const external = system?.external ? system : null
-	// 種類ごとに同じフックを呼ぶ。セルの種類を途中で変えるときは key も変える。
-	const fromKind = (definition.useCandidates ?? noCandidates)()
-	const pool = candidates ?? (fromKind.records as readonly T[])
-	const byId = useMemo(() => {
-		const map = new Map<string, T>()
-		for (const item of pool) map.set(definition.getId(item), item)
-		if (record) map.set(definition.getId(record), record)
-		return map
-	}, [definition, pool, record])
+	const { definition } = useRecordKind<T>(kind)
+	// 候補・候補の枠の見た目は、記録を選ぶ欄（RecordPicker）と同じ物を使う。
+	const { byId } = useRecordCandidates(definition, record, candidates)
+	const chrome = useRecordPickerChrome(kind)
 	const options = useMemo(() => {
 		const list: DataTableSelectOption[] = []
 		if (allowEmpty) list.push({ value: '', label: '未設定' })
@@ -261,12 +247,7 @@ export function DataTableRecordSelectCell<T = unknown>({
 			list.push({
 				value: id,
 				label: definition.getLabel(item),
-				keywords: [
-					...(definition.getDescription?.(item)
-						? [definition.getDescription(item) as string]
-						: []),
-					...(definition.getKeywords?.(item) ?? []),
-				],
+				keywords: recordKeywords(definition, item).slice(1),
 			}),
 		)
 		return list
@@ -280,48 +261,11 @@ export function DataTableRecordSelectCell<T = unknown>({
 			options={options}
 			validate={validate ? id => validate(byId.get(id) ?? null) : undefined}
 			onSave={id => onSave(byId.get(id) ?? null)}
-			searchPlaceholder={
-				external
-					? `${external.name}の${definition.name}を検索…`
-					: `${definition.name}を検索…`
-			}
-			pickerStyle={external ? recordToneStyle(external.tone) : undefined}
-			pickerClassName={
-				external
-					? 'w-72 border-l-[3px] border-l-[hsl(var(--record-tone))]'
-					: undefined
-			}
-			pickerHeader={
-				external ? (
-					<RecordSystemBand
-						system={{
-							name: external.name,
-							icon: external.icon ?? definition.icon,
-						}}
-						trailing={
-							<>
-								<span className='sr-only'>別のシステムから選ぶ</span>
-								<ArrowUpRight aria-hidden className='h-3 w-3' />
-							</>
-						}
-					>
-						{definition.name}から選ぶ
-					</RecordSystemBand>
-				) : undefined
-			}
-			pickerFooter={
-				definition.pickerActions?.length ? (
-					<div className='flex flex-wrap gap-1 border-border border-t p-1.5'>
-						{definition.pickerActions.map(action => (
-							<RecordActionButton
-								key={action.label}
-								action={action}
-								navigate={navigate}
-							/>
-						))}
-					</div>
-				) : undefined
-			}
+			searchPlaceholder={chrome.searchPlaceholder}
+			pickerStyle={chrome.style}
+			pickerClassName={cn(chrome.cellWidth, chrome.className)}
+			pickerHeader={chrome.header ?? undefined}
+			pickerFooter={chrome.footer ?? undefined}
 			renderValue={(_, id) => {
 				const item = byId.get(id)
 				return item ? (
