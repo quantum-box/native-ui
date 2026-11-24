@@ -407,10 +407,15 @@ export function radixLoopTab(event: React.KeyboardEvent<HTMLElement>) {
 }
 
 /**
- * 開いたときのフォーカスを Radix と同じにする。中の最初の操作できる物（リンクは除く）へ
- * 置き、文字の入力欄なら中の文字を選ぶ。無ければ中身そのものへ置く。
+ * 開いたときのフォーカスを決める。中の最初の操作できる物（リンクと、部品が自分で付ける
+ * 右上の × は除く）へ置き、文字の入力欄なら中の文字を選ぶ。無ければ中身そのものへ置く。
+ * × を除くのは、開いた直後に Enter や Space を押して、そのまま閉じてしまわないため。
+ * Tab では × にも止まる。
  * `onOpenAutoFocus` で `preventDefault()` されたら動かさない。
  */
+/** Dialog・Sheet が自分で付ける右上の × の印。開いたときのフォーカスの先から外す。 */
+export const CORNER_CLOSE_ATTR = 'data-corner-close'
+
 export function useRadixOpenFocus<T extends HTMLElement>(
 	onOpenAutoFocus: ((event: Event) => void) | undefined,
 	forwardedRef: React.ForwardedRef<T>,
@@ -435,9 +440,9 @@ export function useRadixOpenFocus<T extends HTMLElement>(
 		const container = popupRef.current
 		if (!container) return true
 		const before = document.activeElement
-		// Radix と同じく、はじめはリンクには置かない
+		// Radix と同じく、はじめはリンクには置かない。右上の × にも置かない
 		const candidates = radixTabbables(container).filter(
-			el => el.tagName !== 'A',
+			el => el.tagName !== 'A' && !el.hasAttribute(CORNER_CLOSE_ATTR),
 		)
 		for (const candidate of candidates) {
 			candidate.focus({ preventScroll: true })
