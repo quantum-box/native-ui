@@ -93,7 +93,7 @@ function ChatEmptyState({
 				className,
 			)}
 		>
-			<span className='grid size-10 place-items-center rounded-full bg-[image:var(--nui-ai-gradient)] text-white [&_svg]:size-5'>
+			<span className='grid size-10 place-items-center rounded-full nui-ai-gradient text-white [&_svg]:size-5'>
 				{icon ?? <Sparkles aria-hidden />}
 			</span>
 			<div className='grid gap-1'>

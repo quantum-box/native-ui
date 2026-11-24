@@ -132,7 +132,7 @@ function AiField({
 			case 'filled':
 			case 'filling':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-[image:var(--nui-ai-gradient)] px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full nui-ai-gradient px-1.5 text-white'>
 						<Sparkles
 							aria-hidden
 							className={cn(
@@ -145,7 +145,7 @@ function AiField({
 				)
 			case 'uncertain':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-[image:var(--nui-ai-gradient-uncertain-strong)] px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full nui-ai-gradient-uncertain-strong px-1.5 text-white'>
 						<Sparkles aria-hidden className='size-2.5' />
 						{text.uncertain}
 					</span>
@@ -178,11 +178,11 @@ function AiField({
 				className={cn(
 					'rounded-[7px] p-px',
 					(status === 'filled' || status === 'filling') &&
-						'bg-[image:var(--nui-ai-gradient)] shadow-ai-2/15 dark:shadow-none shadow-sm',
+						'nui-ai-gradient shadow-ai-2/15 dark:shadow-none shadow-sm',
 					status === 'filling' &&
 						'motion-safe:animate-trace-shimmer motion-safe:bg-[length:200%_100%]',
 					status === 'uncertain' &&
-						'bg-[image:var(--nui-ai-gradient-uncertain)] shadow-amber-500/15 shadow-sm dark:shadow-none',
+						'nui-ai-gradient-uncertain shadow-amber-500/15 shadow-sm dark:shadow-none',
 					status === 'confirmed' && 'bg-ai-1/35',
 				)}
 			>
@@ -191,9 +191,9 @@ function AiField({
 						className={cn(
 							'rounded-md',
 							(status === 'filled' || status === 'filling') &&
-								'bg-[image:var(--nui-ai-gradient-faint)]',
+								'nui-ai-gradient-faint',
 							status === 'uncertain' &&
-								'bg-[image:var(--nui-ai-gradient-uncertain-faint)]',
+								'nui-ai-gradient-uncertain-faint',
 						)}
 					>
 						{field}
