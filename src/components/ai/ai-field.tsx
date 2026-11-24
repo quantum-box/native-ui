@@ -132,7 +132,7 @@ function AiField({
 			case 'filled':
 			case 'filling':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full bg-[image:var(--nui-ai-gradient)] px-1.5 text-white'>
 						<Sparkles
 							aria-hidden
 							className={cn(
@@ -145,7 +145,7 @@ function AiField({
 				)
 			case 'uncertain':
 				return (
-					<span className='inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-amber-700 to-ai-2 px-1.5 text-white'>
+					<span className='inline-flex items-center gap-0.5 rounded-full bg-[image:var(--nui-ai-gradient-uncertain-strong)] px-1.5 text-white'>
 						<Sparkles aria-hidden className='size-2.5' />
 						{text.uncertain}
 					</span>
@@ -178,11 +178,11 @@ function AiField({
 				className={cn(
 					'rounded-[7px] p-px',
 					(status === 'filled' || status === 'filling') &&
-						'bg-gradient-to-r from-ai-1 via-ai-2 to-ai-3 shadow-ai-2/15 dark:shadow-none shadow-sm',
+						'bg-[image:var(--nui-ai-gradient)] shadow-ai-2/15 dark:shadow-none shadow-sm',
 					status === 'filling' &&
 						'motion-safe:animate-trace-shimmer motion-safe:bg-[length:200%_100%]',
 					status === 'uncertain' &&
-						'bg-gradient-to-r from-amber-500 via-ai-2 to-ai-1 shadow-amber-500/15 shadow-sm dark:from-amber-600/80 dark:shadow-none',
+						'bg-[image:var(--nui-ai-gradient-uncertain)] shadow-amber-500/15 shadow-sm dark:shadow-none',
 					status === 'confirmed' && 'bg-ai-1/35',
 				)}
 			>
@@ -191,9 +191,9 @@ function AiField({
 						className={cn(
 							'rounded-md',
 							(status === 'filled' || status === 'filling') &&
-								'bg-gradient-to-r from-ai-1/[0.07] via-ai-2/[0.07] to-ai-3/[0.07]',
+								'bg-[image:var(--nui-ai-gradient-faint)]',
 							status === 'uncertain' &&
-								'bg-gradient-to-r from-amber-500/[0.09] via-ai-2/[0.06] to-ai-1/[0.06]',
+								'bg-[image:var(--nui-ai-gradient-uncertain-faint)]',
 						)}
 					>
 						{field}

@@ -74,7 +74,7 @@ colors:
 - `background` はページ全体、`surface` はサイドバー・ツールバー・カード等の面
 - hover は `muted`、選択状態は `selected`（アクセント淡色）で区別する
 - `success` / `warning` はステータス表示専用。ボタン等のアクションには使わない
-- AI の印（札・枠・地）のグラデーションは、どれも `from-ai-1 via-ai-2 to-ai-3` の 3 色。使う側が `--nui-ai-1`〜`--nui-ai-3` を上書きすると、どの AI の部品も同じように色が変わる（例: 3 色目を自分の製品の色にする。ライトとダークで別の値を書く）
+- AI の印（札・枠・地）のグラデーションは、`tokens.css` の `--nui-ai-gradient`（薄い地は `-soft`・`-faint`、要確認は `-uncertain`）を `bg-[image:var(--nui-ai-gradient)]` で使う。向きは 135° の斜め（`--nui-ai-gradient-angle`）、並びは 赤紫（ai-2）→ 紫（ai-1）→ 青（ai-3）。色相が一方向に流れるので、紫が 2 回出ない。部品の中で `from-ai-* via-ai-* to-ai-*` を並べ直さない。使う側が `--nui-ai-1`〜`--nui-ai-3` を上書きすると、どの AI の部品も同じように色が変わる（例: 3 色目を自分の製品の色にする。ライトとダークで別の値を書く）
 
 ### タイポグラフィ
 
