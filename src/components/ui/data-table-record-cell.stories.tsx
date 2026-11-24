@@ -364,6 +364,7 @@ const orderColumns: ColumnDef<Order>[] = [
 		header: '商品',
 		kind: 'product',
 		get: order => order.products,
+		meta: { maxWidth: 260 },
 	}),
 	dataTableRecordColumn<Order, Shop>({
 		id: 'shop',

@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 
 import { cn } from '../../lib/utils'
 import { Button } from './button'
@@ -13,14 +13,15 @@ import {
 } from './command'
 import {
 	type DataTableInlineEditOptions,
-	DataTableInlineEditError,
-	DataTableInlineEditStatusIcon,
+	DataTableInlineEditShell,
+	DataTableInlineEditTrigger,
 	useDataTableInlineEdit,
 } from './data-table-inline-edit'
 import {
 	type DataTableSelectOption,
 	DataTableValueChip,
 } from './data-table-select-cell'
+import { DataTableOverflowList } from './data-table-overflow-list'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 export type DataTableMultiSelectCellProps = Omit<
@@ -61,6 +62,14 @@ export function DataTableMultiSelectCell({
 	const edit = useDataTableInlineEdit({ ...rest, equals: sameSet })
 	const [draft, setDraft] = useState<readonly string[]>([])
 	const cancelled = useRef(false)
+	// 開いたときは、今の値（「直す」で戻ったときは失敗した値）から始める。
+	const editValue = edit.editValue
+	useEffect(() => {
+		if (edit.editing) {
+			cancelled.current = false
+			setDraft(editValue)
+		}
+	}, [edit.editing, editValue])
 	const labelOf = (value: string) =>
 		options.find(option => option.value === value)?.label ?? value
 
@@ -76,15 +85,20 @@ export function DataTableMultiSelectCell({
 	}
 
 	return (
-		<div className={cn('min-w-0', className)}>
+		<DataTableInlineEditShell
+			// 選んでいる間の確かめの理由は、候補の枠の中に出す（吹き出しは重ねない）。
+			edit={{ ...edit, error: edit.editing ? null : edit.error }}
+			label={label}
+			formatValue={values =>
+				values.length ? values.map(labelOf).join('、') : '未設定'
+			}
+			className={className}
+		>
 			<Popover
 				open={edit.editing}
 				onOpenChange={open => {
 					if (open) {
-						if (edit.startEditing()) {
-							cancelled.current = false
-							setDraft(edit.value)
-						}
+						if (edit.startEditing()) cancelled.current = false
 					} else if (cancelled.current) {
 						edit.cancel()
 					} else {
@@ -93,27 +107,33 @@ export function DataTableMultiSelectCell({
 				}}
 			>
 				<PopoverTrigger asChild>
-					<button
-						type='button'
+					<DataTableInlineEditTrigger
 						aria-label={ariaLabel}
-						aria-busy={edit.saving}
-						aria-disabled={edit.disabled || edit.saving}
+						status={edit.status}
+						error={edit.editing ? null : edit.error}
+						saving={edit.saving}
 						disabled={edit.disabled}
-						className='flex min-h-[52px] w-full items-center gap-2 px-5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent data-[state=open]:bg-selected data-[state=open]:ring-2 data-[state=open]:ring-inset data-[state=open]:ring-ring'
 					>
-						<span className='flex min-w-0 flex-1 flex-wrap gap-1'>
-							{edit.value.length ? (
-								edit.value.map(value => (
-									<span key={value} className='min-w-0'>
-										{renderValue(labelOf(value), value)}
+						{edit.value.length ? (
+							<DataTableOverflowList
+								className='gap-x-1'
+								items={edit.value.map(value => ({
+									key: value,
+									node: renderValue(labelOf(value), value),
+								}))}
+								renderMore={hidden => (
+									<span
+										className='text-muted-foreground text-xs'
+										title={edit.value.map(labelOf).join('、')}
+									>
+										+{hidden}
 									</span>
-								))
-							) : (
-								<span className='text-muted-foreground'>{emptyLabel}</span>
-							)}
-						</span>
-						<DataTableInlineEditStatusIcon status={edit.status} />
-					</button>
+								)}
+							/>
+						) : (
+							<span className='text-muted-foreground'>{emptyLabel}</span>
+						)}
+					</DataTableInlineEditTrigger>
 				</PopoverTrigger>
 				<PopoverContent
 					align='start'
@@ -192,7 +212,6 @@ export function DataTableMultiSelectCell({
 					) : null}
 				</PopoverContent>
 			</Popover>
-			{edit.editing ? null : <DataTableInlineEditError error={edit.error} />}
-		</div>
+		</DataTableInlineEditShell>
 	)
 }

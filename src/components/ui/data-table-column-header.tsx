@@ -8,7 +8,9 @@ import {
 } from 'lucide-react'
 import { useId, useState } from 'react'
 
+import { cn } from '../../lib/utils'
 import { Button } from './button'
+import { useDataTableDensityStyles } from './data-table-density'
 import { Input } from './input'
 import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
@@ -58,6 +60,7 @@ export function DataTableColumnHeader({
 	onOpenChange,
 }: DataTableColumnHeaderProps) {
 	const id = useId()
+	const size = useDataTableDensityStyles()
 	const [open, setOpen] = useState(false)
 	const [draft, setDraft] = useState<Record<string, string>>({})
 	const [error, setError] = useState<string | null>(null)
@@ -96,7 +99,11 @@ export function DataTableColumnHeader({
 				<button
 					type='button'
 					aria-label={`${label}列のメニュー`}
-					className='flex h-[38px] w-full whitespace-nowrap items-center gap-2 px-5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+					className={cn(
+						'flex w-full items-center gap-2 whitespace-nowrap text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+						size.row,
+						size.x,
+					)}
 				>
 					{label}
 					{sorted ? (

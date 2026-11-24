@@ -171,7 +171,7 @@ describe('表の中で値を選ぶセル', () => {
 		await act(async () => reject(new Error('save failed')))
 		expect(button('商品Aの公開状態を変更').textContent).toContain('下書き')
 		expect(document.querySelector('[role=alert]')?.textContent).toBe(
-			'再試行してください',
+			'公開状態を「公開中」にできませんでした。 再試行してください 「下書き」のままです。',
 		)
 		await selectPublished()
 		expect(save).toHaveBeenCalledTimes(2)
