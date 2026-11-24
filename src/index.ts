@@ -53,10 +53,37 @@ export {
 	buttonVariants,
 } from './components/basics/button'
 export {
+	Calendar,
+	type CalendarLabels,
+	type CalendarProps,
+	type CalendarRangeProps,
+	type CalendarSingleProps,
+	type DateRange,
+	calendarLabels,
+} from './components/inputs/calendar'
+export {
 	Combobox,
 	type ComboboxOption,
 	type ComboboxProps,
 } from './components/inputs/combobox'
+export {
+	DatePicker,
+	type DatePickerLabels,
+	type DatePickerProps,
+	DateRangePicker,
+	type DateRangePickerLabels,
+	type DateRangePickerProps,
+	datePickerLabels,
+	dateRangePickerLabels,
+} from './components/inputs/date-picker'
+export {
+	addDays,
+	addMonths,
+	isDateString,
+	parseDateText,
+	todayString,
+	weekdayOf,
+} from './lib/calendar-date'
 export {
 	type ApprovalChange,
 	ApprovalRequest,
