@@ -471,7 +471,7 @@ export {
 	readSidebarLayoutPreference,
 	useSidebarLayout,
 	writeSidebarLayoutPreference,
-} from './components/ui/sidebar-layout'
+} from './components/app-frame/sidebar-layout'
 export {
 	StatusBar,
 	type StatusBarItemDefinition,
