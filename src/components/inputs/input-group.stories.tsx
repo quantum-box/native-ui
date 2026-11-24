@@ -197,3 +197,21 @@ export const 送る欄: Story = {
 		)
 	},
 }
+
+/** rows を渡すと、それが最小の行数になる（Field の rows={wide ? 4 : 2} と同じ書き方） */
+export const 行数を決める: Story = {
+	render: () => (
+		<div className='w-96'>
+			<InputGroup>
+				<InputGroupTextarea
+					aria-label='依頼'
+					rows={4}
+					placeholder='4 行から始まる'
+				/>
+				<InputGroupAddon align='block-end'>
+					<span className='ml-auto text-xs'>⌘Enter で送信</span>
+				</InputGroupAddon>
+			</InputGroup>
+		</div>
+	),
+}

@@ -113,3 +113,14 @@ test('class で高さの上限（max-h-*）を決めた欄も、そこで止ま�
 	await expect(textarea).toHaveValue('')
 	await expect.poll(() => height(textarea)).toBeLessThan(100)
 })
+
+test('囲みの中の長い文の欄も、rows を渡すとそれが最小の行数になる', async ({
+	page,
+}) => {
+	await page.goto(story('入力-inputgroup--行数を決める'))
+	const textarea = page.getByRole('textbox', { name: '依頼' })
+	const line = await lineHeight(textarea)
+	const empty = await height(textarea)
+	expect(empty).toBeGreaterThanOrEqual(line * 4)
+	expect(empty).toBeLessThan(line * 5)
+})

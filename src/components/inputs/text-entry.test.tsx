@@ -131,6 +131,44 @@ describe('Textarea', () => {
 	})
 })
 
+describe('Textarea の伸び縮みと、フォームの「元に戻す」', () => {
+	it('伸び縮みをやめると、この部品が書いた高さとスクロールの指定を消す', async () => {
+		function Toggle({ autoResize }: { autoResize: boolean }) {
+			return <Textarea autoResize={autoResize} rows={4} defaultValue='あ' />
+		}
+		const el = await render(<Toggle autoResize />)
+		const textarea = el.querySelector('textarea') as HTMLTextAreaElement
+		expect(textarea.style.height).not.toBe('')
+		expect(textarea.style.overflowY).not.toBe('')
+
+		await act(async () => root?.render(<Toggle autoResize={false} />))
+		expect(textarea.style.height).toBe('')
+		expect(textarea.style.overflowY).toBe('')
+		expect(textarea.rows).toBe(4)
+	})
+
+	it('フォームを元に戻すと、文字数と目安を超えた印も戻る', async () => {
+		const el = await render(
+			<form>
+				<Textarea defaultValue='はじめ' showCount softLimit={5} />
+				<button type='reset'>元に戻す</button>
+			</form>,
+		)
+		const textarea = el.querySelector('textarea') as HTMLTextAreaElement
+		await type(textarea, 'とても長い文に書きかえた')
+		expect(el.textContent).toContain('12 / 5')
+		expect(textarea.getAttribute('aria-invalid')).toBe('true')
+
+		await act(async () => {
+			;(el.querySelector('form') as HTMLFormElement).reset()
+			await new Promise(r => setTimeout(r, 10))
+		})
+		expect(textarea.value).toBe('はじめ')
+		expect(el.textContent).toContain('3 / 5')
+		expect(textarea.getAttribute('aria-invalid')).toBeNull()
+	})
+})
+
 describe('InputGroup', () => {
 	it('Field と同じ書き方（align・size・variant）で組み立てられる', async () => {
 		const el = await render(

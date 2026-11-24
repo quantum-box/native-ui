@@ -191,11 +191,13 @@ InputGroupInput.displayName = 'InputGroupInput'
 
 /** 囲みの中の長い文の欄。中身は native-ui の Textarea（枠と輪は囲みが持つ） */
 const InputGroupTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-	({ className, minRows = 2, ...props }, ref) => (
+	({ className, minRows, rows, ...props }, ref) => (
 		<Textarea
 			ref={ref}
 			data-slot='input-group-control'
-			minRows={minRows}
+			rows={rows}
+			// 囲みの中は、何も渡されなければ 2 行から。rows を渡せばそれが最小
+			minRows={minRows ?? (rows === undefined ? 2 : undefined)}
 			className={cn(
 				'flex-auto resize-none rounded-none border-0 bg-transparent px-2 py-1.5 shadow-none focus-visible:ring-0 read-only:bg-transparent',
 				className,

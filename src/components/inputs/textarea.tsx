@@ -113,13 +113,39 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 			ariaInvalid === 'true'
 
 		const resize = React.useCallback(() => {
-			if (autoResize && innerRef.current)
-				fitHeight(innerRef.current, minRows, maxRows)
+			const textarea = innerRef.current
+			if (!textarea) return
+			if (autoResize) {
+				fitHeight(textarea, minRows, maxRows)
+				return
+			}
+			// 伸び縮みをやめたら、この部品が書いた高さとスクロールの指定を消し、
+			// ふつうの textarea（rows で高さが決まる）に戻す
+			textarea.style.height = ''
+			textarea.style.overflowY = ''
 		}, [autoResize, minRows, maxRows])
 
 		// 中身が変わるたび（外で持つ形）と、出たときに測る
 		// biome-ignore lint/correctness/useExhaustiveDependencies: 中身が変わるたびに測り直す
 		React.useLayoutEffect(resize, [resize, value])
+
+		// フォームの「元に戻す」は onChange を出さずに値を戻すので、
+		// 戻ったあとの値で、文字数と高さを測り直す
+		React.useEffect(() => {
+			const form = innerRef.current?.form
+			if (!form) return
+			const onReset = () => {
+				// reset の知らせは値が戻る前に来るので、戻ってから読む
+				window.setTimeout(() => {
+					const textarea = innerRef.current
+					if (!textarea) return
+					setInnerLength(textarea.value.length)
+					resize()
+				}, 0)
+			}
+			form.addEventListener('reset', onReset)
+			return () => form.removeEventListener('reset', onReset)
+		}, [resize])
 
 		// 欄の幅が変わると折り返しが変わるので、測り直す
 		React.useEffect(() => {
