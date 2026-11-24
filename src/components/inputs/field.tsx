@@ -184,4 +184,105 @@ const FieldActions = React.forwardRef<
 ))
 FieldActions.displayName = 'FieldActions'
 
-export { Field, FieldActions, FieldGroup }
+export interface InlineFieldProps
+	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+	/** 欄の名前。 */
+	label: React.ReactNode
+	/** 入力欄。1 つの要素。 */
+	children: React.ReactNode
+	/** 入力欄の id。省くと作る。入力欄を div などで包んで渡すときは、中の入力欄にこの id を付ける。 */
+	controlId?: string
+	/** 入力欄の後ろに置く物（「枚」「人」などの単位や、小さいチェック）。 */
+	suffix?: React.ReactNode
+	/** 小さい文字で詰めて出す（表の行の中、絞り込みの帯）。 */
+	dense?: boolean
+	/**
+	 * 名前の列の幅（CSS の長さ。例 `12rem`）。渡すと名前の列の幅がそろう
+	 * （設定の行を縦に何行も並べるとき）。狭い画面では名前を上、入力欄を下に積む。
+	 */
+	labelWidth?: string
+}
+
+/**
+ * 横 1 行の欄。名前を左、入力欄を右に置く（「対象月 [　　]」「写真 [ 3 ] 枚」）。
+ * 絞り込みの帯や、表の行の中の小さい欄に使う。縦に並べる欄は Field。
+ *
+ * 入力欄には id を付けて名前と結び付ける（付いていればそのまま使う）。欄は縮められ、
+ * 入力欄が箱の外へはみ出さない。
+ */
+const InlineField = React.forwardRef<HTMLDivElement, InlineFieldProps>(
+	(
+		{
+			label,
+			children,
+			controlId,
+			suffix,
+			dense = false,
+			labelWidth,
+			className,
+			style,
+			...props
+		},
+		ref,
+	) => {
+		const generated = React.useId()
+		const only = React.Children.count(children) === 1
+		const child =
+			only && React.isValidElement<ControlProps>(children) ? children : null
+		const id = controlId ?? child?.props.id ?? `${generated}-control`
+		// 入力欄を並べる箱（div など）には id を付けない（中の入力欄の id と重なる）
+		const container =
+			typeof child?.type === 'string' && CONTAINERS.has(child.type)
+		const control =
+			child && !container ? React.cloneElement(child, { id }) : children
+		return (
+			<div
+				ref={ref}
+				data-slot='inline-field'
+				className={cn(
+					'min-w-0',
+					labelWidth
+						? 'grid gap-x-3 gap-y-1 sm:grid-cols-[var(--inline-field-label)_minmax(0,1fr)] sm:items-center'
+						: ['flex items-center', dense ? 'gap-1.5' : 'gap-2'],
+					dense ? 'text-xs' : 'text-sm',
+					className,
+				)}
+				style={
+					labelWidth
+						? ({
+								'--inline-field-label': labelWidth,
+								...style,
+							} as React.CSSProperties)
+						: style
+				}
+				{...props}
+			>
+				<Label
+					htmlFor={id}
+					className={cn(
+						'shrink-0 font-normal leading-snug text-muted-foreground',
+						dense ? 'text-xs' : 'text-sm',
+					)}
+				>
+					{label}
+				</Label>
+				{suffix == null ? (
+					control
+				) : (
+					<div
+						className={cn(
+							'flex min-w-0 items-center',
+							dense ? 'gap-1.5' : 'gap-2',
+						)}
+					>
+						{control}
+						<span className='shrink-0'>{suffix}</span>
+					</div>
+				)}
+			</div>
+		)
+	},
+)
+InlineField.displayName = 'InlineField'
+
+export { Field, FieldActions, FieldGroup, InlineField }

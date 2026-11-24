@@ -110,3 +110,34 @@ test('findLayoutProblems は、内の箱に収まっていても外の狭い箱�
 	expect(problems[0]?.kind).toBe('overflow')
 	expect(problems[0]?.detail).toContain('div の右端から 300px')
 })
+
+for (const width of [320, 820, 1280]) {
+	test(`横 1 行の欄: 幅 ${width}px で、入力欄が箱の外へはみ出さない`, async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width, height: 900 })
+		await page.goto(story('field--横1行の欄'))
+		const forms = page.locator('form')
+		await expect(forms).toHaveCount(3)
+		for (const form of await forms.all()) {
+			expect(await form.evaluate(findLayoutProblems)).toEqual([])
+		}
+	})
+}
+
+test('横 1 行の欄: 名前を押すと入力欄に移り、名前の列の幅がそろう', async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 1280, height: 900 })
+	await page.goto(story('field--横1行の欄'))
+	await page.getByText('対象月').click()
+	await expect(page.getByLabel('対象月')).toBeFocused()
+	const lefts = await page
+		.locator('form')
+		.nth(1)
+		.locator('input')
+		.evaluateAll(inputs =>
+			inputs.map(input => Math.round(input.getBoundingClientRect().left)),
+		)
+	expect(new Set(lefts).size).toBe(1)
+})

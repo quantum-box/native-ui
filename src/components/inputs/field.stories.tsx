@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { Button } from '../basics/button'
-import { Field, FieldActions, FieldGroup } from './field'
+import { Field, FieldActions, FieldGroup, InlineField } from './field'
 import { Input } from './input'
 import {
 	Select,
@@ -185,5 +185,40 @@ export const ボタンと並べる: Story = {
 			</Field>
 			<Button type='submit'>表示</Button>
 		</form>
+	),
+}
+
+/**
+ * 横 1 行の欄（InlineField）。名前を左、入力欄を右に置く。絞り込みの帯や、表の行の中の
+ * 小さい欄に使う。単位は `suffix`、名前の列の幅をそろえるときは `labelWidth`。
+ */
+export const 横1行の欄: Story = {
+	render: () => (
+		<div className='grid max-w-xl gap-4'>
+			<form className='flex flex-wrap items-center gap-4 rounded-md border border-border p-3'>
+				<InlineField label='対象月'>
+					<Input className='w-40' type='month' />
+				</InlineField>
+				<InlineField label='写真' suffix='枚'>
+					<Input className='w-20' defaultValue={3} type='number' />
+				</InlineField>
+				<InlineField dense label='販売数' suffix='件'>
+					<Input className='h-7 w-16 text-right' inputMode='numeric' />
+				</InlineField>
+			</form>
+			<form className='grid gap-2 rounded-md border border-border p-3'>
+				<InlineField label='日付の列' labelWidth='12rem'>
+					<Input defaultValue='取引日' />
+				</InlineField>
+				<InlineField label='金額の列（とても長い名前）' labelWidth='12rem'>
+					<Input defaultValue='金額' />
+				</InlineField>
+			</form>
+			<form className='w-40 overflow-hidden rounded-md border border-border p-2'>
+				<InlineField label='店舗・レジ'>
+					<Input className='min-w-0 flex-1' defaultValue='本店 / 1 番レジ' />
+				</InlineField>
+			</form>
+		</div>
 	),
 }

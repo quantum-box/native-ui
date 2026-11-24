@@ -379,7 +379,15 @@ export {
 	FieldGroup,
 	type FieldGroupProps,
 	type FieldProps,
+	InlineField,
+	type InlineFieldProps,
 } from './components/inputs/field'
+export {
+	DescriptionItem,
+	type DescriptionItemProps,
+	DescriptionList,
+	type DescriptionListProps,
+} from './components/layout/description-list'
 export { Input, type InputProps } from './components/inputs/input'
 export {
 	InputGroup,
