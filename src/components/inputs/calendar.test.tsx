@@ -640,12 +640,32 @@ describe('DatePicker', () => {
 		expect(new FormData(form).get('dueDate')).toBe('2026-12-05')
 		expect(new FormData(form).get('from')).toBe('2026-11-10')
 
-		await act(async () => form.reset())
+		await act(async () => {
+			form.reset()
+			await wait()
+		})
 		expect(input().value).toBe('2026/11/18')
 		const data = new FormData(form)
 		expect(data.get('dueDate')).toBe('2026-11-18')
 		expect(data.get('from')).toBe('2026-11-01')
 		expect(data.get('to')).toBe('2026-11-30')
+	})
+
+	it('reset が取り消されたら、値はそのまま', async () => {
+		await render(
+			<form onReset={event => event.preventDefault()}>
+				<DatePicker today={TODAY} name='dueDate' defaultValue='2026-11-18' />
+			</form>,
+		)
+		const form = document.querySelector('form') as HTMLFormElement
+		await type(input(), '12/5')
+		await blur(input())
+		await act(async () => {
+			form.reset()
+			await wait()
+		})
+		expect(input().value).toBe('2026/12/05')
+		expect(new FormData(form).get('dueDate')).toBe('2026-12-05')
 	})
 
 	it('disabled と readOnly では開けない', async () => {

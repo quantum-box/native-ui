@@ -70,7 +70,13 @@ function useFormReset(
 	React.useEffect(() => {
 		const form = ref.current?.form
 		if (!form) return
-		const handle = () => latest.current()
+		// reset は取り消せる（onReset で preventDefault）。このリスナーは React の onReset より
+		// 先に呼ばれるので、イベントが配り終わるのを待ってから、取り消されていないときだけ戻す
+		const handle = (event: Event) => {
+			setTimeout(() => {
+				if (!event.defaultPrevented) latest.current()
+			}, 0)
+		}
 		form.addEventListener('reset', handle)
 		return () => form.removeEventListener('reset', handle)
 	})
