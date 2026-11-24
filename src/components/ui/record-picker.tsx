@@ -280,6 +280,8 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 								{hasMore && onLoadMore ? (
 									<CommandItem
 										value='__more'
+										// 探している間も出す（候補は読んだ分しか探せないので、続きを読めるようにする）。
+										forceMount
 										disabled={loadingMore}
 										onSelect={onLoadMore}
 										className='justify-center text-muted-foreground'

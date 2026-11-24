@@ -12,6 +12,7 @@ import {
 	type ReactNode,
 	useEffect,
 	useId,
+	useRef,
 	useState,
 } from 'react'
 
@@ -848,20 +849,46 @@ export function LinkWorkDialog({
 	const [error, setError] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
 
-	// 開くたびに初めから。
+	// 開いたときだけ初めから（kinds が同じ中身の新しい配列でも、開いている間は選んだ物を消さない）。
+	const wasOpen = useRef(false)
+	useEffect(() => {
+		if (open && !wasOpen.current) {
+			const first = kinds[0]
+			setKind(first?.kind ?? '')
+			setSource(first?.sources?.[0]?.id ?? null)
+			setRecord(null)
+			setRelation('executes')
+			setError(null)
+		}
+		wasOpen.current = open
+	}, [open, kinds])
+	// 開いている間に種類やどこからの中身が本当に変わったときだけ、無くなった物を選び直す。
+	const kindKeys = kinds.map(entry => entry.kind).join('\n')
+	const sourceKeys = sources.map(entry => entry.id).join('\n')
 	useEffect(() => {
 		if (!open) return
-		const first = kinds[0]
-		setKind(first?.kind ?? '')
-		setSource(first?.sources?.[0]?.id ?? null)
-		setRecord(null)
-		setRelation('executes')
-		setError(null)
-	}, [open, kinds])
+		const option = kinds.find(entry => entry.kind === kind)
+		if (!option) {
+			const first = kinds[0]
+			setKind(first?.kind ?? '')
+			setSource(first?.sources?.[0]?.id ?? null)
+			setRecord(null)
+			return
+		}
+		const list = option.sources ?? []
+		if (list.length && !list.some(entry => entry.id === source)) {
+			setSource(list[0].id)
+			setRecord(null)
+		}
+		// 中身（キーの並び）が変わったときだけ見る（配列の作り直しでは動かさない）。
+	}, [open, kindKeys, sourceKeys])
 	// 種類・どこからが変わったら、使う側に候補を読み直してもらう。
+	// 呼ぶ関数は最新の物を使い、関数が作り直されただけでは呼ばない（読み直しの繰り返しを防ぐ）。
+	const selectionChange = useRef(onSelectionChange)
+	selectionChange.current = onSelectionChange
 	useEffect(() => {
-		if (open && kind) onSelectionChange?.({ kind, source })
-	}, [open, kind, source, onSelectionChange])
+		if (open && kind) selectionChange.current?.({ kind, source })
+	}, [open, kind, source])
 
 	const showKinds = kinds.length > 1
 	const showSources = sources.length > 1

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { type ReactNode, act } from 'react'
+import { type ReactNode, act, useState } from 'react'
 import { type Root, createRoot } from 'react-dom/client'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
@@ -302,6 +302,87 @@ describe('結ぶ手順', () => {
 			record: COM931,
 			relation: 'references',
 		})
+	})
+})
+
+describe('結ぶ手順（使う側が描き直したとき）', () => {
+	it('kinds や関数が作り直されても、選んだ物を消さず、読み直しも繰り返さない。探している間も「続きを読む」が出る', async () => {
+		const loads: string[] = []
+		let rerender: () => void = () => {}
+		function Owner() {
+			const [, setCount] = useState(0)
+			rerender = () => setCount(count => count + 1)
+			return (
+				<LinkWorkDialog
+					open
+					onOpenChange={vi.fn()}
+					// わざと毎回新しい配列と関数を渡す。
+					kinds={[
+						{
+							kind: 'linear.issue',
+							label: 'Linear の Issue',
+							sources: [
+								{ id: 'com', label: 'COM' },
+								{ id: 'plt', label: 'PLT' },
+							],
+						},
+					]}
+					candidates={[COM929, COM931]}
+					hasMore
+					onLoadMore={vi.fn()}
+					onSelectionChange={selection => {
+						loads.push(`${selection.kind}:${selection.source}`)
+					}}
+					onSubmit={vi.fn()}
+				/>
+			)
+		}
+		await render(<Owner />)
+		const plt = Array.from(document.querySelectorAll('label')).find(
+			label => label.textContent === 'PLT',
+		)
+		await act(async () => plt?.click())
+		await act(async () => button('Linear の Issue を選ぶ').click())
+		const search = document.querySelector('[cmdk-input]') as HTMLInputElement
+		await act(async () => {
+			Object.getOwnPropertyDescriptor(
+				HTMLInputElement.prototype,
+				'value',
+			)?.set?.call(search, 'COM-999')
+			search.dispatchEvent(new Event('input', { bubbles: true }))
+		})
+		expect(
+			Array.from(document.querySelectorAll('[role=option]')).map(
+				node => node.textContent,
+			),
+		).toContain('続きを読む')
+		const option = Array.from(
+			document.querySelectorAll<HTMLElement>('[role=option]'),
+		).find(node => node.textContent?.includes('続きを読む'))
+		expect(option).toBeTruthy()
+		// 候補を選ぶ（探す文字を消してから）。
+		await act(async () => {
+			Object.getOwnPropertyDescriptor(
+				HTMLInputElement.prototype,
+				'value',
+			)?.set?.call(search, '')
+			search.dispatchEvent(new Event('input', { bubbles: true }))
+		})
+		const com931 = Array.from(
+			document.querySelectorAll<HTMLElement>('[role=option]'),
+		).find(node => node.textContent?.includes('COM-931'))
+		await act(async () => com931?.click())
+		expect(loads).toEqual(['linear.issue:com', 'linear.issue:plt'])
+		await act(async () => rerender())
+		await act(async () => rerender())
+		const checked = Array.from(
+			document.querySelectorAll<HTMLInputElement>('input[type=radio]'),
+		).find(
+			input => input.checked && input.closest('label')?.textContent === 'PLT',
+		)
+		expect(checked).toBeTruthy()
+		expect(button('Linear の Issue を選ぶ').textContent).toContain('COM-931')
+		expect(loads).toEqual(['linear.issue:com', 'linear.issue:plt'])
 	})
 })
 
