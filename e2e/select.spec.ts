@@ -97,3 +97,86 @@ test('選んで閉じたあとの写しは、開く前と同じ（一覧がう�
 	})
 	expect(after.equals(before)).toBe(true)
 })
+
+/** 閉じる動きを 3 秒に延ばす。閉じかけの一覧が、確かに画面に残っている間を作る */
+async function slowCloseAnimation(page: Page) {
+	await page.addStyleTag({
+		content: '[data-closed] { animation-duration: 3s !important; }',
+	})
+}
+
+/** 待たずに数える（役割での検索は、読み上げから外れた物を数えない） */
+const countNow = (page: Page, name: string | RegExp) =>
+	page.getByRole('option', { name, exact: typeof name === 'string' }).count()
+
+// Field の在庫移動の画面と同じく、選んだらすぐ次の Select を開く。
+// 閉じる動きの間は閉じかけの一覧が画面に残るが、読み上げや役割での検索には
+// 出てこず、押すこともできないことを確かめる
+test('選んですぐ次の Select を開いても、閉じかけの一覧は検索に出ない', async ({
+	page,
+}) => {
+	await page.goto(story('入力-form--select-in-form'))
+	await slowCloseAnimation(page)
+	const from = page.getByRole('combobox', { name: '移動元' })
+	const to = page.getByRole('combobox', { name: '移動先' })
+
+	await from.click()
+	await page.getByRole('option', { name: '倉庫 1', exact: true }).click()
+	await to.click()
+	await expect(page.getByRole('listbox')).toHaveCount(1)
+
+	// 閉じかけの一覧は、まだ画面（DOM）にある
+	expect(await page.locator('[role="listbox"]').count()).toBe(2)
+	// それでも、役割での検索では、開いた一覧の項目しか出てこない
+	expect(await countNow(page, '移動先倉庫 1')).toBe(1)
+	await page.getByRole('option', { name: '移動先倉庫 1' }).click()
+
+	await expect(from).toHaveText('倉庫 1')
+	await expect(to).toHaveText('移動先倉庫 1')
+	await expect(page.getByTestId('values')).toHaveText(
+		'移動元: warehouse / 移動先: destination',
+	)
+})
+
+test('閉じる動きの終わりが伝わらなくても、閉じてから 1 秒ほどで一覧を外す', async ({
+	page,
+}) => {
+	await page.goto(story('入力-form--select-in-form'))
+	await slowCloseAnimation(page)
+	const from = page.getByRole('combobox', { name: '移動元' })
+
+	await from.click()
+	await page.getByRole('option', { name: '店舗拠点 1' }).click()
+	// 閉じる動き（3 秒）が終わる前に、逃げ道で外れる
+	await expect(page.locator('[role="listbox"]')).toHaveCount(0, {
+		timeout: 2000,
+	})
+	await expect(from).toHaveText('店舗拠点 1')
+})
+
+test('FormControl の中で react-hook-form が値を持つ Select も、閉じた一覧が残らない', async ({
+	page,
+}) => {
+	await page.goto(story('入力-form--select-in-form'))
+	const from = page.getByRole('combobox', { name: '移動元' })
+	const to = page.getByRole('combobox', { name: '移動先' })
+
+	await from.click()
+	await page.getByRole('option', { name: '倉庫 1', exact: true }).click()
+	await expectNoList(page)
+	await to.click()
+	await page.getByRole('option', { name: '移動先倉庫 1' }).click()
+	await expectNoList(page)
+	await expect(page.getByTestId('values')).toHaveText(
+		'移動元: warehouse / 移動先: destination',
+	)
+
+	// もう一度開いても、一覧はひとつだけで、選んだ項目に印が付く
+	await from.click()
+	await expect(page.getByRole('listbox')).toHaveCount(1)
+	await expect(
+		page.getByRole('option', { name: '倉庫 1', exact: true }),
+	).toHaveAttribute('aria-selected', 'true')
+	await page.keyboard.press('Escape')
+	await expectNoList(page)
+})

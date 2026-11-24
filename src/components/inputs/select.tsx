@@ -48,6 +48,9 @@ export interface SelectProps {
 	children?: React.ReactNode
 }
 
+/** 閉じてから、一覧を必ず外すまでの時間（閉じる動きよりずっと長く取る） */
+const CLOSE_FALLBACK_MS = 1000
+
 /** Radix と同じく、空の文字は「選んでいない」 */
 const toBase = (value: string | undefined) =>
 	value === undefined ? undefined : value === '' ? null : value
@@ -70,6 +73,12 @@ function Select({
 	// 終わったら一覧ごと外す。開いたら、その描画のうちに描き直す
 	const [present, setPresent] = React.useState(isOpen)
 	if (isOpen && !present) setPresent(true)
+	// 閉じる動きの終わりが伝わらないときの逃げ道。閉じてから一定の時間が経ったら外す
+	React.useEffect(() => {
+		if (isOpen || !present) return
+		const timer = window.setTimeout(() => setPresent(false), CLOSE_FALLBACK_MS)
+		return () => window.clearTimeout(timer)
+	}, [isOpen, present])
 	const [labels, setLabels] = React.useState(
 		() => new Map<string, React.ReactNode>(),
 	)
@@ -270,6 +279,7 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
 		ref,
 	) => {
 		const compat = React.useContext(SelectCompatContext)
+		const closing = !!compat && !compat.open
 		return (
 			<>
 				{compat && !compat.open ? (
@@ -282,7 +292,12 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
 							className={cn(
 								'z-50',
 								hideWhenDetached && 'data-[anchor-hidden]:invisible',
+								closing && 'pointer-events-none',
 							)}
+							// 閉じる動きの間（約 150ms）も一覧は画面に残る。そのすきに別の
+							// Select を開いても、読み上げや役割での検索が閉じかけの一覧を
+							// 拾わないよう、閉じたらすぐ読み上げから外し、押せなくする
+							aria-hidden={closing || undefined}
 							{...positionerCompat({
 								side,
 								sideOffset,
