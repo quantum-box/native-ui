@@ -103,6 +103,40 @@ test('選べない日は押しても選ばれず、開いたままになる', as
 	await expect(input).toHaveValue('2026/11/27')
 })
 
+test('今日以前は選べない: 今日と前の日は選べず、明日からは選べる。「今日」も押せない', async ({
+	page,
+}) => {
+	await page.goto(story('date-picker--今日以前は選べない'))
+	const input = page.getByRole('textbox', { name: '予約の日' })
+	await expect(page.locator('[data-slot="calendar"]')).toBeVisible()
+	await expect(page.locator('[data-date="2026-11-24"]')).toHaveAttribute(
+		'aria-disabled',
+		'true',
+	)
+	await expect(page.locator('[data-date="2026-11-23"]')).toHaveAttribute(
+		'aria-disabled',
+		'true',
+	)
+	await expect(
+		page.getByRole('button', { name: '今日', exact: true }),
+	).toBeDisabled()
+	await expect(page.getByRole('button', { name: '前の月' })).toBeDisabled()
+	// はじめのフォーカスは、選べるいちばん早い日（明日）
+	await expect(page.locator('[data-date="2026-11-25"]')).toBeFocused()
+
+	await page.locator('[data-date="2026-11-24"]').click({ force: true })
+	await expect(page.locator('[data-slot="calendar"]')).toBeVisible()
+	await expect(input).toHaveValue('')
+
+	await page.locator('[data-date="2026-11-25"]').click()
+	await expect(input).toHaveValue('2026/11/25')
+
+	// 手で今日を打っても、元の値に戻る
+	await input.fill('2026/11/24')
+	await page.keyboard.press('Tab')
+	await expect(input).toHaveValue('2026/11/25')
+})
+
 test('期間: はじめを押してマウスを動かすと帯が伸び、終わりを押すと閉じる', async ({
 	page,
 }) => {

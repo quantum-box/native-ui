@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
 
-import { weekdayOf } from '../../lib/calendar-date'
+import { addDays, weekdayOf } from '../../lib/calendar-date'
 import { Calendar, type DateRange } from './calendar'
 
 /**
@@ -87,6 +87,17 @@ export const 選べない日: Story = {
 			min='2026-11-09'
 			max='2026-12-11'
 			isDateDisabled={date => weekdayOf(date) === 0 || weekdayOf(date) === 6}
+		/>
+	),
+}
+
+/** 今日とそれより前の日は選べない。`min` に明日を渡す（`min` はその日を含むので、今日ではなく明日） */
+export const 今日以前は選べない: Story = {
+	render: args => (
+		<Calendar
+			today={args.today}
+			className={frame}
+			min={addDays(args.today ?? '2026-11-24', 1)}
 		/>
 	),
 }

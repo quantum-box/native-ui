@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import * as React from 'react'
 
-import { weekdayOf } from '../../lib/calendar-date'
+import { addDays, weekdayOf } from '../../lib/calendar-date'
 import type { DateRange } from './calendar'
 import { DatePicker, DateRangePicker } from './date-picker'
 import { Field, FieldGroup } from './field'
@@ -91,6 +91,23 @@ export const 選べない日: Story = {
 				defaultValue='2026-11-26'
 				min='2026-11-24'
 				isDateDisabled={date => weekdayOf(date) === 0 || weekdayOf(date) === 6}
+				defaultOpen
+			/>
+		</div>
+	),
+}
+
+/**
+ * 今日とそれより前の日は選べない（明日からの予約など）。`min` に明日を渡す。
+ * 下の「今日」のボタンも押せなくなり、今日や前の日を手で打っても元の値に戻る
+ */
+export const 今日以前は選べない: Story = {
+	render: args => (
+		<div className='h-80 w-56'>
+			<DatePicker
+				today={args.today}
+				aria-label='予約の日'
+				min={addDays(args.today ?? '2026-11-24', 1)}
 				defaultOpen
 			/>
 		</div>
