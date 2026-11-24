@@ -7,7 +7,7 @@ const story = (id: string) =>
 	`/iframe.html?id=${encodeURIComponent(id)}&viewMode=story&globals=theme:light`
 
 test('触れて少し待つと出て、離れると消え、何も残らない', async ({ page }) => {
-	await page.goto(story('重なる物-hovercard--default'))
+	await page.goto(story('hover-card--default'))
 	const trigger = page.getByRole('link', { name: '山田商店' })
 	const card = page.getByText('取引先 C-0001・渋谷区')
 
@@ -32,7 +32,7 @@ test('触れて少し待つと出て、離れると消え、何も残らない',
 })
 
 test('キーボードでフォーカスしても出る', async ({ page }) => {
-	await page.goto(story('重なる物-hovercard--default'))
+	await page.goto(story('hover-card--default'))
 	const trigger = page.getByRole('link', { name: '山田商店' })
 	await trigger.focus()
 	await expect(trigger).toBeFocused()

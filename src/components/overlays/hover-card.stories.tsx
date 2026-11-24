@@ -7,6 +7,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from './hover-card'
  * 触れて 0.7 秒で出て、離れて 0.3 秒で消える（Radix の HoverCard と同じ）。
  */
 const meta = {
+	id: 'hover-card',
 	title: '重なる物/HoverCard',
 	component: HoverCard,
 } satisfies Meta<typeof HoverCard>
