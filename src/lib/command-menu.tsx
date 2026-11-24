@@ -1,0 +1,597 @@
+'use client'
+
+import * as React from 'react'
+
+/*
+ * 検索して選ぶ一覧（Command）の中身。以前は cmdk を使っていたが、cmdk は自分の中で
+ * Radix の Dialog を読むので、同じ使い方のまま自前で書いた。
+ *
+ * cmdk と同じにしたこと:
+ * - 使い方: Command（value・onValueChange・shouldFilter・filter・loop・label）、
+ *   Input（value・onValueChange）、List、Empty、Group（heading・forceMount）、
+ *   Item（value・keywords・onSelect・disabled・forceMount）、Separator（alwaysRender）
+ * - 属性: cmdk-root・cmdk-input・cmdk-list・cmdk-item・cmdk-group・cmdk-group-heading・
+ *   cmdk-group-items・cmdk-empty・cmdk-separator、項目の data-selected・data-disabled・data-value
+ * - 動き: 打った文字で絞り、近い順に並べる。絞るたびに先頭を選ぶ。↑↓・Home・End・Enter、
+ *   Ctrl+N/P・Ctrl+J/K。指を乗せると選ぶ。合う項目の無い Group は隠す。検索中は Separator を隠す
+ * - 読み上げ: 入力欄は combobox（aria-activedescendant で選んだ項目を指す）、一覧は listbox、
+ *   項目は option
+ */
+
+/** 打った文字と、項目の値・キーワードの近さ（0 なら合わない、1 がいちばん近い） */
+export function commandScore(
+	value: string,
+	search: string,
+	keywords: readonly string[] = [],
+): number {
+	const query = search.trim().toLowerCase()
+	if (!query) return 1
+	const one = (text: string) => {
+		const target = text.trim().toLowerCase()
+		if (!target) return 0
+		if (target === query) return 1
+		if (target.startsWith(query)) return 0.9
+		const index = target.indexOf(query)
+		if (index >= 0) {
+			// 言葉の頭（空白・記号の後）で合うほうを高く、後ろで合うほど少し低く
+			const wordStart = /[\s\-_./:()（）・、,]/.test(target[index - 1] ?? '')
+			return (wordStart ? 0.8 : 0.7) - Math.min(index, 50) * 0.001
+		}
+		// 文字が順に入っていれば、離れているほど低く
+		let position = -1
+		let gaps = 0
+		for (const char of query) {
+			const next = target.indexOf(char, position + 1)
+			if (next < 0) return 0
+			if (position >= 0) gaps += next - position - 1
+			position = next
+		}
+		return Math.max(0.05, 0.4 - gaps * 0.02)
+	}
+	let best = one(value)
+	for (const keyword of keywords) best = Math.max(best, one(keyword) * 0.99)
+	return best
+}
+
+type Filter = (value: string, search: string, keywords?: string[]) => number
+
+interface ItemInfo {
+	value: string
+	keywords: string[]
+	disabled: boolean
+	forceMount: boolean
+	groupId: string | undefined
+	onSelect: ((value: string) => void) | undefined
+	domId: string
+}
+
+interface CommandContext {
+	search: string
+	setSearch: (search: string) => void
+	active: string | undefined
+	setActive: (value: string) => void
+	register: (id: string, info: ItemInfo) => () => void
+	scoreOf: (id: string) => number
+	groupVisible: (groupId: string) => boolean
+	/** 群の中でいちばん近い項目の近さ */
+	groupBest: (groupId: string) => number
+	visibleCount: number
+	filtering: boolean
+	listId: string
+	labelId: string
+	inputId: string
+	activeDomId: string | undefined
+	listRef: React.MutableRefObject<HTMLDivElement | null>
+}
+
+const Context = React.createContext<CommandContext | null>(null)
+const GroupContext = React.createContext<string | undefined>(undefined)
+
+function useCommand(part: string) {
+	const context = React.useContext(Context)
+	if (!context) throw new Error(`${part} は Command の中で使ってください。`)
+	return context
+}
+
+export interface CommandRootProps
+	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'defaultValue'> {
+	/** 選んでいる（↑↓で動く）項目の値 */
+	value?: string
+	defaultValue?: string
+	onValueChange?: (value: string) => void
+	/** false なら絞らず並べ替えない（使う側が絞るとき） */
+	shouldFilter?: boolean
+	/** 近さの決め方。0 なら隠す。大きいほど上に並ぶ */
+	filter?: Filter
+	/** 端で↑↓を押すと反対の端へ回る */
+	loop?: boolean
+	/** Ctrl+J/K でも動く（既定 true） */
+	vimBindings?: boolean
+	/** 読み上げ用の名前（見えないラベル） */
+	label?: string
+}
+
+const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
+	(
+		{
+			value,
+			defaultValue,
+			onValueChange,
+			shouldFilter = true,
+			filter,
+			loop = false,
+			vimBindings = true,
+			label,
+			children,
+			onKeyDown,
+			...props
+		},
+		ref,
+	) => {
+		const [search, setSearchState] = React.useState('')
+		const [innerActive, setInnerActive] = React.useState(defaultValue)
+		const active = value ?? innerActive
+		const setActive = React.useCallback(
+			(next: string) => {
+				setInnerActive(next)
+				onValueChange?.(next)
+			},
+			[onValueChange],
+		)
+		const registry = React.useRef(new Map<string, ItemInfo>())
+		const [version, setVersion] = React.useState(0)
+		const register = React.useCallback((id: string, info: ItemInfo) => {
+			registry.current.set(id, info)
+			setVersion(v => v + 1)
+			return () => {
+				registry.current.delete(id)
+				setVersion(v => v + 1)
+			}
+		}, [])
+
+		const filtering = shouldFilter && search.trim() !== ''
+		// 項目ごとの近さ（絞らないときはどれも 1）
+		const scores = React.useMemo(() => {
+			const map = new Map<string, number>()
+			for (const [id, info] of registry.current) {
+				const score = !filtering
+					? 1
+					: filter
+						? filter(info.value, search, info.keywords)
+						: commandScore(info.value, search, info.keywords)
+				map.set(id, score)
+			}
+			return map
+		}, [version, search, filtering, filter])
+		const scoreOf = React.useCallback(
+			(id: string) => scores.get(id) ?? 0,
+			[scores],
+		)
+		const visibleCount = [...scores.values()].filter(score => score > 0).length
+		const groupBest = React.useCallback(
+			(groupId: string) => {
+				let best = 0
+				for (const [id, info] of registry.current)
+					if (info.groupId === groupId)
+						best = Math.max(best, scores.get(id) ?? 0)
+				return best
+			},
+			[scores],
+		)
+		const groupVisible = React.useCallback(
+			(groupId: string) => groupBest(groupId) > 0,
+			[groupBest],
+		)
+
+		const listRef = React.useRef<HTMLDivElement | null>(null)
+		const base = React.useId()
+		const listId = `${base}-list`
+		const labelId = `${base}-label`
+		const inputId = `${base}-input`
+
+		/** 見えていて選べる項目を、画面の並び（近い順）で */
+		const ordered = React.useCallback(() => {
+			const list = listRef.current
+			if (!list) return []
+			const byDomId = new Map<string, { id: string; info: ItemInfo }>()
+			for (const [id, info] of registry.current)
+				byDomId.set(info.domId, { id, info })
+			const items = Array.from(
+				list.querySelectorAll<HTMLElement>('[cmdk-item]'),
+			)
+				.map(el => byDomId.get(el.id))
+				.filter(
+					(entry): entry is { id: string; info: ItemInfo } =>
+						!!entry && !entry.info.disabled,
+				)
+			if (!filtering) return items
+			// 同じ近さなら書いた順のまま（並べ替えは安定）
+			const groupBest = new Map<string | undefined, number>()
+			for (const { id, info } of items)
+				groupBest.set(
+					info.groupId,
+					Math.max(groupBest.get(info.groupId) ?? 0, scoreOf(id)),
+				)
+			return [...items].sort(
+				(a, b) =>
+					(groupBest.get(b.info.groupId) ?? 0) -
+						(groupBest.get(a.info.groupId) ?? 0) ||
+					scoreOf(b.id) - scoreOf(a.id),
+			)
+		}, [filtering, scoreOf])
+
+		// 打った文字が変わったら先頭を選ぶ。選んでいる項目が消えたときも先頭を選ぶ
+		const lastSearch = React.useRef<string | null>(null)
+		React.useLayoutEffect(() => {
+			const items = ordered()
+			const searchChanged = lastSearch.current !== search
+			lastSearch.current = search
+			const stillThere = items.some(({ info }) => info.value === active)
+			if (searchChanged || !stillThere) {
+				const first = items[0]?.info.value
+				if (first !== undefined && first !== active) setActive(first)
+			}
+		}, [search, scores, ordered, active, setActive])
+
+		const activeDomId = React.useMemo(() => {
+			for (const info of registry.current.values())
+				if (info.value === active && !info.disabled) return info.domId
+			return undefined
+		}, [active, version])
+
+		// 選んだ項目が見えるようにスクロールする
+		React.useLayoutEffect(() => {
+			if (!activeDomId) return
+			const el = listRef.current?.ownerDocument.getElementById(activeDomId)
+			el?.scrollIntoView?.({ block: 'nearest' })
+		}, [activeDomId])
+
+		const move = (step: 1 | -1 | 'first' | 'last') => {
+			const items = ordered()
+			if (!items.length) return
+			const index = items.findIndex(({ info }) => info.value === active)
+			let next: number
+			if (step === 'first') next = 0
+			else if (step === 'last') next = items.length - 1
+			else if (index < 0) next = step === 1 ? 0 : items.length - 1
+			else {
+				next = index + step
+				if (next < 0) next = loop ? items.length - 1 : 0
+				if (next >= items.length) next = loop ? 0 : items.length - 1
+			}
+			const target = items[next]
+			if (target) setActive(target.info.value)
+		}
+
+		const context: CommandContext = {
+			search,
+			setSearch: setSearchState,
+			active,
+			setActive,
+			register,
+			scoreOf,
+			groupVisible,
+			groupBest,
+			visibleCount,
+			filtering,
+			listId,
+			labelId,
+			inputId,
+			activeDomId,
+			listRef,
+		}
+
+		return (
+			<div
+				ref={ref}
+				tabIndex={-1}
+				cmdk-root=''
+				{...props}
+				onKeyDown={event => {
+					onKeyDown?.(event)
+					if (event.defaultPrevented) return
+					const { key, ctrlKey } = event
+					if (event.nativeEvent.isComposing || event.keyCode === 229) return
+					const down =
+						key === 'ArrowDown' ||
+						(ctrlKey && (key === 'n' || (vimBindings && key === 'j')))
+					const up =
+						key === 'ArrowUp' ||
+						(ctrlKey && (key === 'p' || (vimBindings && key === 'k')))
+					if (down || up) {
+						event.preventDefault()
+						move(down ? 1 : -1)
+					} else if (key === 'Home' || key === 'End') {
+						event.preventDefault()
+						move(key === 'Home' ? 'first' : 'last')
+					} else if (key === 'Enter') {
+						const target = ordered().find(({ info }) => info.value === active)
+						if (!target) return
+						event.preventDefault()
+						target.info.onSelect?.(target.info.value)
+					}
+				}}
+			>
+				{label ? (
+					<label
+						cmdk-label=''
+						htmlFor={inputId}
+						id={labelId}
+						className='sr-only'
+					>
+						{label}
+					</label>
+				) : null}
+				<Context.Provider value={context}>{children}</Context.Provider>
+			</div>
+		)
+	},
+)
+Root.displayName = 'Command'
+
+export interface CommandInputProps
+	extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'type'> {
+	value?: string
+	onValueChange?: (search: string) => void
+}
+
+const Input = React.forwardRef<HTMLInputElement, CommandInputProps>(
+	({ value, onValueChange, onChange, ...props }, ref) => {
+		const command = useCommand('CommandInput')
+		const { setSearch } = command
+		// 外で持つ形なら、外の値を検索の文字にする
+		React.useLayoutEffect(() => {
+			if (value !== undefined) setSearch(value)
+		}, [value, setSearch])
+		return (
+			<input
+				ref={ref}
+				cmdk-input=''
+				autoComplete='off'
+				autoCorrect='off'
+				spellCheck={false}
+				aria-autocomplete='list'
+				role='combobox'
+				aria-expanded
+				aria-controls={command.listId}
+				aria-labelledby={command.labelId}
+				aria-activedescendant={command.activeDomId}
+				id={command.inputId}
+				type='text'
+				{...props}
+				value={value ?? command.search}
+				onChange={event => {
+					onChange?.(event)
+					if (value === undefined) setSearch(event.target.value)
+					onValueChange?.(event.target.value)
+				}}
+			/>
+		)
+	},
+)
+Input.displayName = 'CommandInput'
+
+const List = React.forwardRef<
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement> & { label?: string }
+>(({ children, label, ...props }, ref) => {
+	const command = useCommand('CommandList')
+	const { listRef } = command
+	const setRefs = React.useCallback(
+		(node: HTMLDivElement | null) => {
+			listRef.current = node
+			if (typeof ref === 'function') ref(node)
+			else if (ref)
+				(ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+		},
+		[ref, listRef],
+	)
+	return (
+		<div
+			ref={setRefs}
+			cmdk-list=''
+			role='listbox'
+			tabIndex={-1}
+			aria-label={label}
+			id={command.listId}
+			{...props}
+		>
+			{/* 近い順に並べる（CSS の order）ために、縦に並べる */}
+			<div
+				cmdk-list-sizer=''
+				style={{ display: 'flex', flexDirection: 'column' }}
+			>
+				{children}
+			</div>
+		</div>
+	)
+})
+List.displayName = 'CommandList'
+
+const Empty = React.forwardRef<
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => {
+	const command = useCommand('CommandEmpty')
+	if (command.visibleCount > 0) return null
+	return <div ref={ref} cmdk-empty='' role='presentation' {...props} />
+})
+Empty.displayName = 'CommandEmpty'
+
+export interface CommandGroupProps
+	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'value'> {
+	heading?: React.ReactNode
+	value?: string
+	/** 合う項目が無くても出す */
+	forceMount?: boolean
+}
+
+const Group = React.forwardRef<HTMLDivElement, CommandGroupProps>(
+	({ heading, value, forceMount, children, style, ...props }, ref) => {
+		const command = useCommand('CommandGroup')
+		const id = React.useId()
+		const headingId = `${id}-heading`
+		const visible = forceMount || command.groupVisible(id)
+		return (
+			<div
+				ref={ref}
+				cmdk-group=''
+				role='presentation'
+				data-value={value}
+				hidden={visible ? undefined : true}
+				// 検索中は、中のいちばん近い項目ほど上に並べる
+				style={{
+					...style,
+					order: command.filtering
+						? -Math.round(command.groupBest(id) * 1000)
+						: undefined,
+				}}
+				{...props}
+			>
+				{heading ? (
+					<div cmdk-group-heading='' aria-hidden id={headingId}>
+						{heading}
+					</div>
+				) : null}
+				<div
+					cmdk-group-items=''
+					role='group'
+					aria-labelledby={heading ? headingId : undefined}
+					style={{ display: 'flex', flexDirection: 'column' }}
+				>
+					<GroupContext.Provider value={id}>{children}</GroupContext.Provider>
+				</div>
+			</div>
+		)
+	},
+)
+Group.displayName = 'CommandGroup'
+
+const Separator = React.forwardRef<
+	HTMLDivElement,
+	React.HTMLAttributes<HTMLDivElement> & { alwaysRender?: boolean }
+>(({ alwaysRender, ...props }, ref) => {
+	const command = useCommand('CommandSeparator')
+	if (!alwaysRender && command.search.trim() !== '') return null
+	return (
+		// 区切りは押せない物で、フォーカスも当てない（cmdk と同じ）
+		// biome-ignore lint/a11y/useFocusableInteractive: 区切りに移る必要は無い
+		<div ref={ref} cmdk-separator='' role='separator' {...props} />
+	)
+})
+Separator.displayName = 'CommandSeparator'
+
+export interface CommandItemProps
+	extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect' | 'value'> {
+	/** 項目の値。省くと中の文字 */
+	value?: string
+	/** 値のほかに、検索で合わせる言葉 */
+	keywords?: string[]
+	onSelect?: (value: string) => void
+	disabled?: boolean
+	/** 検索で合わなくても出す */
+	forceMount?: boolean
+}
+
+const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
+	(
+		{
+			value: valueProp,
+			keywords,
+			onSelect,
+			disabled = false,
+			forceMount = false,
+			children,
+			style,
+			onPointerMove,
+			onClick,
+			...props
+		},
+		ref,
+	) => {
+		const command = useCommand('CommandItem')
+		const groupId = React.useContext(GroupContext)
+		const id = React.useId()
+		const domId = `${id}-item`
+		const elementRef = React.useRef<HTMLDivElement | null>(null)
+		const [textValue, setTextValue] = React.useState('')
+		const value = (valueProp ?? textValue).trim()
+		const onSelectRef = React.useRef(onSelect)
+		onSelectRef.current = onSelect
+		const keywordsKey = JSON.stringify(keywords ?? [])
+		const { register } = command
+
+		// 値を省いたときは、中の文字を値にする
+		React.useLayoutEffect(() => {
+			// 隠れているあいだは、覚えた文字のままにする
+			if (valueProp === undefined && elementRef.current)
+				setTextValue(elementRef.current.textContent ?? '')
+		})
+		React.useLayoutEffect(
+			() =>
+				register(id, {
+					value,
+					keywords: keywords ?? [],
+					disabled,
+					forceMount,
+					groupId,
+					onSelect: next => onSelectRef.current?.(next),
+					domId,
+				}),
+			[register, id, value, keywordsKey, disabled, forceMount, groupId, domId],
+		)
+
+		const score = command.scoreOf(id)
+		const selected = command.active === value && !disabled
+		// 値を中の文字から取るときは、一度描かないと文字が分からないので、隠さずに描く
+		const known = valueProp !== undefined || textValue !== ''
+		if (known && !forceMount && score <= 0) return null
+
+		const setRefs = (node: HTMLDivElement | null) => {
+			elementRef.current = node
+			if (typeof ref === 'function') ref(node)
+			else if (ref)
+				(ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+		}
+		return (
+			// フォーカスは検索の欄に残し、aria-activedescendant でこの項目を指す（cmdk と同じ）
+			// biome-ignore lint/a11y/useFocusableInteractive: 項目にはフォーカスを移さない
+			<div
+				ref={setRefs}
+				cmdk-item=''
+				role='option'
+				id={domId}
+				aria-disabled={disabled || undefined}
+				aria-selected={selected}
+				data-disabled={disabled}
+				data-selected={selected}
+				data-value={value}
+				style={{
+					...style,
+					order: command.filtering ? -Math.round(score * 1000) : undefined,
+				}}
+				{...props}
+				onPointerMove={event => {
+					onPointerMove?.(event)
+					if (!disabled && !selected) command.setActive(value)
+				}}
+				onClick={event => {
+					onClick?.(event)
+					if (!disabled) onSelectRef.current?.(value)
+				}}
+			>
+				{children}
+			</div>
+		)
+	},
+)
+Item.displayName = 'CommandItem'
+
+export const CommandMenu = Object.assign(Root, {
+	Input,
+	List,
+	Empty,
+	Group,
+	Separator,
+	Item,
+})
