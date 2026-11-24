@@ -350,6 +350,7 @@ export { Field, FieldGroup, type FieldProps } from './components/inputs/field'
 export { Input, type InputProps } from './components/inputs/input'
 export {
 	InputGroup,
+	type InputGroupProps,
 	InputGroupAddon,
 	type InputGroupAddonProps,
 	InputGroupButton,

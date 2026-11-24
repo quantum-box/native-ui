@@ -180,3 +180,27 @@ test('FormControl の中で react-hook-form が値を持つ Select も、閉じ�
 	await page.keyboard.press('Escape')
 	await expectNoList(page)
 })
+
+test('閉じたまま頭の文字を打つと、一覧を開かずに合う項目を選ぶ', async ({
+	page,
+}) => {
+	await page.goto(story('select--default'))
+	const trigger = page.getByRole('combobox')
+	await trigger.focus()
+
+	await page.keyboard.press('d')
+	await expect(trigger).toHaveText('Done')
+	await expect(page.getByRole('listbox')).toHaveCount(0)
+
+	// 1 秒たつと、打った文字を忘れて新しく探す
+	await page.waitForTimeout(1100)
+	await page.keyboard.type('in')
+	await expect(trigger).toHaveText('In progress')
+	await expect(page.getByRole('listbox')).toHaveCount(0)
+
+	// 開くと、選んだ項目に印が付いている
+	await page.keyboard.press('Enter')
+	await expect(
+		page.getByRole('option', { name: 'In progress' }),
+	).toHaveAttribute('aria-selected', 'true')
+})
