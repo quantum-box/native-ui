@@ -55,3 +55,23 @@ export const Default: Story = {
 		</Command>
 	),
 }
+
+/** 近さが同じ群が並ぶとき（「a」で探すと、果物と野菜のどちらも先頭で合う物がある） */
+export const 近さが同じ群: Story = {
+	render: () => (
+		<Command className='w-80 rounded-lg border border-border shadow-overlay'>
+			<CommandInput placeholder='探す' />
+			<CommandList>
+				<CommandEmpty>見つかりません</CommandEmpty>
+				<CommandGroup heading='果物'>
+					<CommandItem value='apple'>apple</CommandItem>
+					<CommandItem value='pear'>pear</CommandItem>
+				</CommandGroup>
+				<CommandGroup heading='ほか'>
+					<CommandItem value='apricot'>apricot</CommandItem>
+					<CommandItem value='banana'>banana</CommandItem>
+				</CommandGroup>
+			</CommandList>
+		</Command>
+	),
+}

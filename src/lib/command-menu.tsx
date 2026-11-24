@@ -178,8 +178,14 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 			},
 			[scores],
 		)
+		// 合う項目があるか、forceMount の項目（「続きを読む」など）があれば群を出す
 		const groupVisible = React.useCallback(
-			(groupId: string) => groupBest(groupId) > 0,
+			(groupId: string) => {
+				if (groupBest(groupId) > 0) return true
+				for (const info of registry.current.values())
+					if (info.groupId === groupId && info.forceMount) return true
+				return false
+			},
 			[groupBest],
 		)
 
@@ -205,19 +211,38 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 						!!entry && !entry.info.disabled,
 				)
 			if (!filtering) return items
-			// 同じ近さなら書いた順のまま（並べ替えは安定）
-			const groupBest = new Map<string | undefined, number>()
-			for (const { id, info } of items)
-				groupBest.set(
-					info.groupId,
-					Math.max(groupBest.get(info.groupId) ?? 0, scoreOf(id)),
+			// 画面の並び（CSS の order）と同じ決まりで並べる:
+			// 1. 一覧の直下の単位（群、または群に入っていない項目）を、近さ（群なら中の
+			//    いちばん近い項目の近さ）の順に。同じ近さなら書いた順
+			// 2. 群の中の項目を、近さの順に。同じ近さなら書いた順
+			// 近さは CSS の order と同じく 1000 倍して丸めた値で比べる
+			const rank = (score: number) => Math.round(score * 1000)
+			const unitOf = (entry: { id: string; info: ItemInfo }) =>
+				entry.info.groupId ?? `item:${entry.id}`
+			const unitScore = new Map<string, number>()
+			const unitIndex = new Map<string, number>()
+			items.forEach((entry, index) => {
+				const unit = unitOf(entry)
+				unitScore.set(
+					unit,
+					Math.max(unitScore.get(unit) ?? 0, rank(scoreOf(entry.id))),
 				)
-			return [...items].sort(
-				(a, b) =>
-					(groupBest.get(b.info.groupId) ?? 0) -
-						(groupBest.get(a.info.groupId) ?? 0) ||
-					scoreOf(b.id) - scoreOf(a.id),
-			)
+				if (!unitIndex.has(unit)) unitIndex.set(unit, index)
+			})
+			const position = new Map(items.map((entry, index) => [entry, index]))
+			return [...items].sort((a, b) => {
+				const unitA = unitOf(a)
+				const unitB = unitOf(b)
+				if (unitA !== unitB)
+					return (
+						(unitScore.get(unitB) ?? 0) - (unitScore.get(unitA) ?? 0) ||
+						(unitIndex.get(unitA) ?? 0) - (unitIndex.get(unitB) ?? 0)
+					)
+				return (
+					rank(scoreOf(b.id)) - rank(scoreOf(a.id)) ||
+					(position.get(a) ?? 0) - (position.get(b) ?? 0)
+				)
+			})
 		}, [filtering, scoreOf])
 
 		// 打った文字が変わったら先頭を選ぶ。選んでいる項目が消えたときも先頭を選ぶ

@@ -284,6 +284,26 @@ describe('Command（cmdk と同じ動き）', () => {
 		expect(onSelect).toHaveBeenLastCalledWith('田中商会')
 	})
 
+	it('群の中の forceMount の項目は、ほかが合わなくても群ごと出す', async () => {
+		await render(
+			<Command>
+				<CommandInput />
+				<CommandList>
+					<CommandGroup heading='候補'>
+						<CommandItem value='a'>Alpha</CommandItem>
+						<CommandItem value='__more' forceMount>
+							続きを読む
+						</CommandItem>
+					</CommandGroup>
+				</CommandList>
+			</Command>,
+		)
+		await type('zzz')
+		const group = document.querySelector('[cmdk-group]') as HTMLElement
+		expect(group.hidden).toBe(false)
+		expect(shown()).toEqual(['続きを読む'])
+	})
+
 	it('forceMount の項目は、合わなくても出す', async () => {
 		await render(
 			<Command>

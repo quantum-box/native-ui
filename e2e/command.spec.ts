@@ -22,11 +22,19 @@ const onScreen = (page: Page) =>
 const selected = (page: Page) =>
 	page.locator('[cmdk-item][data-selected="true"]').textContent()
 
-for (const search of ['', 'i', 'set', 'se']) {
-	test(`「${search}」で絞ると、画面の並びと ↓ で動く順が同じ`, async ({
+for (const [id, search] of [
+	['command--default', ''],
+	['command--default', 'i'],
+	['command--default', 'set'],
+	['command--default', 'se'],
+	// 近さが同じ群は、群ごとにまとまって並ぶ（群をまたいで行き来しない）
+	['command--近さが同じ群', 'a'],
+	['command--近さが同じ群', 'p'],
+] as const) {
+	test(`${id} を「${search}」で絞ると、画面の並びと ↓ で動く順が同じ`, async ({
 		page,
 	}) => {
-		await page.goto(story('command--default'))
+		await page.goto(story(id))
 		const input = page.getByRole('combobox')
 		await input.fill(search)
 		const order = await onScreen(page)
