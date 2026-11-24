@@ -139,9 +139,35 @@ pnpm build     # Storybook build（Cloud App デプロイが使用）
 pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 ```
 
+## 部品の置き場
+
+部品は種類ごとに `src/components/<置き場>/` に置く。Storybook の左の一覧も同じ分け方で、
+1 段目は日本語の見出し、2 段目は import する名前（英語。`Button`・`AiField` など）にそろえる。
+見出しの並びは `.storybook/preview.tsx` の `storySort` で決める。
+
+| 置き場 | Storybook の見出し | 置く物 |
+| --- | --- | --- |
+| `basics/` | 基本 | Button・Badge・Label・Separator・Kbd |
+| `inputs/` | 入力 | Input・Checkbox・Switch・Select・Combobox・Form（これから足す Textarea・カレンダーもここ） |
+| `overlays/` | 重なる物 | Dialog・Sheet・Popover・Tooltip・DropdownMenu・Command・Toast・HoverCard・HoverPeek |
+| `layout/` | 並べる・見せる | Tabs・Collapsible |
+| `table/` | 表 | Table・DataTable と表のセル（その場で直すセル・記録のセル・計算した値のセル・密度）・記録の見せ方（record） |
+| `ai/` | AI | AiField（AI が入れた入力欄）・AiReasoning（判断の中身）・AiSuggestion（候補） |
+| `ai-chat/` | AI チャット | Message・Bubble・MessageScroller・Trace・Chat*（送る欄・道具の記録・実行の前の確かめ など） |
+| `fact/` | データ基盤の値 | FactLabel・FactValue・FactField・FactPanel・AiValue（文の中の印） |
+| `app-frame/` | 画面の枠 | Sidebar・StatusBar・FloatingPanel・macOS の窓とタブ |
+
+新しい部品を足すときの決まり:
+
+- 上の表で一番近い置き場に置く。どれにも合わないときは、新しい置き場を作る前に相談する。
+- 部品のファイル・story・テストは同じ置き場に並べる（`button.tsx`・`button.stories.tsx`・`base.test.tsx`）。
+- 置き場の中はフォルダを分けない（`../../lib/...` の深さがそろう）。ほかの置き場の部品は `../<置き場>/<部品>` で読む。
+- story の `title` は `'<見出し>/<import する名前>'`（例: `'入力/Checkbox'`）。見出しを足したら `storySort` にも足す。
+- 使う側へは、これまでどおり `src/index.ts` から出す（使う側は置き場を知らなくてよい）。
+
 ## コンポーネント追加ワークフロー
 
-1. `npx shadcn@latest add <component>` でベースを取得する（`components.json` 設定済み）
+1. `npx shadcn@latest add <component>` でベースを取得し、上の「部品の置き場」の決まりに合うフォルダへ動かす（`components.json` 設定済み）
 2. 生成された import を**相対パスに修正**する（`@/lib/utils` → `../../lib/utils`）。
    consumer アプリの `@/` alias と衝突するため、ソース内で `@/` import は使用禁止
 3. デザイントークンに合わせて調整する（高さ h-6/7/8、`text-sm`=13px、`duration-fast` 等）
@@ -156,7 +182,7 @@ pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 
 | プロジェクト内 | ソース |
 |---|---|
-| コンポーネントカード・型定義・使い方ガイド | `src/components/ui/*` + `.design-sync/previews/*`（手書きプレビュー） |
+| コンポーネントカード・型定義・使い方ガイド | `src/components/*/*` + `.design-sync/previews/*`（手書きプレビュー） |
 | コンパイル済みバンドル（実レンダリング用） | `src/index.ts` を esbuild でバンドル |
 | スタイル（トークン込みTailwindコンパイル） | `src/styles/tokens.css` + `src/tailwind-preset.ts` |
 | guidelines（デザインエージェントへの指針） | `docs/*.md` |
