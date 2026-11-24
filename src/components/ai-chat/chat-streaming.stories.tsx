@@ -10,6 +10,7 @@ import {
 /** 返事が届いている途中の見せ方。流れてくる文字・考えている印・考えた筋道。 */
 const meta = {
 	title: 'AI チャット/ChatStreaming',
+	id: 'chat-streaming',
 } satisfies Meta
 
 export default meta

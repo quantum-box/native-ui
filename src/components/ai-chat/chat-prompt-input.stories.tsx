@@ -9,6 +9,7 @@ import { type ChatAttachment, PromptInput } from './chat-prompt-input'
  */
 const meta = {
 	title: 'AI チャット/PromptInput',
+	id: 'chat-prompt-input',
 	parameters: { layout: 'padded' },
 } satisfies Meta
 

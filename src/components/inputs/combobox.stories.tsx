@@ -6,6 +6,7 @@ import { Combobox } from './combobox'
 
 const meta = {
 	title: '入力/Combobox',
+	id: 'combobox',
 	component: Combobox,
 } satisfies Meta<typeof Combobox>
 

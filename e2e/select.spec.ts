@@ -15,7 +15,7 @@ async function expectNoList(page: Page) {
 }
 
 test('選んで閉じたあと、一覧と項目の要素が DOM に残らない', async ({ page }) => {
-	await page.goto(story('入力-select--default'))
+	await page.goto(story('select--default'))
 	const trigger = page.getByRole('combobox')
 
 	await trigger.click()
@@ -29,7 +29,7 @@ test('選んで閉じたあと、一覧と項目の要素が DOM に残らない
 test('もう一度開くと、一覧はひとつだけで、選んだ項目に印が付く', async ({
 	page,
 }) => {
-	await page.goto(story('入力-select--default'))
+	await page.goto(story('select--default'))
 	const trigger = page.getByRole('combobox')
 
 	await trigger.click()
@@ -51,7 +51,7 @@ test('もう一度開くと、一覧はひとつだけで、選んだ項目に�
 test('二つの Select を続けて開いても、一覧はいつもひとつだけ', async ({
 	page,
 }) => {
-	await page.goto(story('入力-select--二つ並べる'))
+	await page.goto(story('select--二つ並べる'))
 
 	await page.getByRole('combobox', { name: '状態' }).click()
 	await page.getByRole('option', { name: '状態: 一つ目' }).click()
@@ -70,7 +70,7 @@ test('二つの Select を続けて開いても、一覧はいつもひとつだ
 test('選んで閉じたあとの写しは、開く前と同じ（一覧がうっすら残らない）', async ({
 	page,
 }, testInfo) => {
-	await page.goto(story('入力-select--二つ並べる'))
+	await page.goto(story('select--二つ並べる'))
 	const below = page.getByTestId('below')
 	const trigger = page.getByRole('combobox', { name: '状態' })
 
@@ -115,7 +115,7 @@ const countNow = (page: Page, name: string | RegExp) =>
 test('選んですぐ次の Select を開いても、閉じかけの一覧は検索に出ない', async ({
 	page,
 }) => {
-	await page.goto(story('入力-form--select-in-form'))
+	await page.goto(story('form--select-in-form'))
 	await slowCloseAnimation(page)
 	const from = page.getByRole('combobox', { name: '移動元' })
 	const to = page.getByRole('combobox', { name: '移動先' })
@@ -141,7 +141,7 @@ test('選んですぐ次の Select を開いても、閉じかけの一覧は検
 test('閉じる動きの終わりが伝わらなくても、閉じてから 1 秒ほどで一覧を外す', async ({
 	page,
 }) => {
-	await page.goto(story('入力-form--select-in-form'))
+	await page.goto(story('form--select-in-form'))
 	await slowCloseAnimation(page)
 	const from = page.getByRole('combobox', { name: '移動元' })
 
@@ -157,7 +157,7 @@ test('閉じる動きの終わりが伝わらなくても、閉じてから 1 �
 test('FormControl の中で react-hook-form が値を持つ Select も、閉じた一覧が残らない', async ({
 	page,
 }) => {
-	await page.goto(story('入力-form--select-in-form'))
+	await page.goto(story('form--select-in-form'))
 	const from = page.getByRole('combobox', { name: '移動元' })
 	const to = page.getByRole('combobox', { name: '移動先' })
 

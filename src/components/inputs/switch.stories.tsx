@@ -5,6 +5,7 @@ import { Switch } from './switch'
 
 const meta = {
 	title: '入力/Switch',
+	id: 'switch',
 	component: Switch,
 } satisfies Meta<typeof Switch>
 

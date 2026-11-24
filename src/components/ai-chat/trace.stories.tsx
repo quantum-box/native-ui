@@ -15,6 +15,7 @@ import {
 /** AI が裏でしたことの経過。押すと中身が開く。動いている途中は文字が光って流れる。 */
 const meta = {
 	title: 'AI チャット/Trace',
+	id: 'trace',
 	component: Trace,
 } satisfies Meta<typeof Trace>
 

@@ -4,6 +4,7 @@ import { Separator } from './separator'
 
 const meta = {
 	title: '基本/Separator',
+	id: 'separator',
 	component: Separator,
 } satisfies Meta<typeof Separator>
 

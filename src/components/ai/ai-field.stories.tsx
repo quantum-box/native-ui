@@ -20,6 +20,7 @@ import {
  */
 const meta = {
 	title: 'AI/AiField',
+	id: 'ai-field',
 	component: AiField,
 } satisfies Meta<typeof AiField>
 

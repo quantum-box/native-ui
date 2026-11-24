@@ -6,6 +6,7 @@ import { Trace } from './trace'
 /** AI が道具を使った記録。押すと渡した物と返ってきた物が開く。 */
 const meta = {
 	title: 'AI チャット/ToolCall',
+	id: 'chat-tool-call',
 } satisfies Meta
 
 export default meta

@@ -13,6 +13,7 @@ import {
 
 const meta = {
 	title: '表/Table',
+	id: 'table',
 	component: Table,
 } satisfies Meta<typeof Table>
 

@@ -9,6 +9,7 @@ import { Textarea } from './textarea'
  */
 const meta = {
 	title: '入力/Textarea',
+	id: 'textarea',
 	component: Textarea,
 } satisfies Meta<typeof Textarea>
 

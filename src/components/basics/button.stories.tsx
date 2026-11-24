@@ -5,6 +5,7 @@ import { Button } from './button'
 
 const meta = {
 	title: '基本/Button',
+	id: 'button',
 	component: Button,
 	args: {
 		children: 'Button',

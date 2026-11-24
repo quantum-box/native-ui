@@ -8,6 +8,7 @@ import { StatusBar, statusBarItemClass } from './status-bar'
 
 const meta = {
 	title: '画面の枠/StatusBar',
+	id: 'status-bar',
 	component: StatusBar,
 } satisfies Meta<typeof StatusBar>
 

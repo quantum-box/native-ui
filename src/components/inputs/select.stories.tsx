@@ -12,6 +12,7 @@ import {
 
 const meta = {
 	title: '入力/Select',
+	id: 'select',
 	component: Select,
 } satisfies Meta<typeof Select>
 

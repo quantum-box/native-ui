@@ -23,6 +23,7 @@ import {
  */
 const meta = {
 	title: '重なる物/Sheet',
+	id: 'sheet',
 	parameters: { layout: 'fullscreen' },
 } satisfies Meta
 

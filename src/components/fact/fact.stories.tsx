@@ -22,6 +22,7 @@ import { Label } from '../basics/label'
  */
 const meta = {
 	title: 'データ基盤の値/Fact',
+	id: 'fact',
 	component: FactLabel,
 } satisfies Meta<typeof FactLabel>
 
