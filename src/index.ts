@@ -347,6 +347,16 @@ export {
 	type FloatingPanelSize,
 } from './components/app-frame/floating-panel'
 export { Input, type InputProps } from './components/inputs/input'
+export {
+	InputGroup,
+	InputGroupAddon,
+	type InputGroupAddonProps,
+	InputGroupButton,
+	type InputGroupButtonProps,
+	InputGroupInput,
+	InputGroupText,
+	InputGroupTextarea,
+} from './components/inputs/input-group'
 export { Kbd, type KbdProps } from './components/basics/kbd'
 export { Label } from './components/basics/label'
 export {
@@ -454,6 +464,7 @@ export {
 	type StatusBarSide,
 } from './components/app-frame/status-bar-layout'
 export { Switch } from './components/inputs/switch'
+export { Textarea, type TextareaProps } from './components/inputs/textarea'
 export {
 	Table,
 	TableBody,
