@@ -280,9 +280,7 @@ const InlineField = React.forwardRef<HTMLDivElement, InlineFieldProps>(
 						)}
 					>
 						{control}
-						{suffix == null ? null : (
-							<span className='shrink-0'>{suffix}</span>
-						)}
+						{suffix == null ? null : <span className='shrink-0'>{suffix}</span>}
 					</div>
 				)}
 			</div>

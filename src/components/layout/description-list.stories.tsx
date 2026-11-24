@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 /** 名前を上、値を下に置いた組を、箱の幅に入るだけ横に並べる。 */
 export const 基本: Story = {
 	render: () => (
-		<div className='w-[48rem] max-w-full'>
+		<div className='w-[48rem] max-w-[calc(100vw-2rem)]'>
 			<DescriptionList columns={4}>
 				<DescriptionItem label='取引先'>読取文具店</DescriptionItem>
 				<DescriptionItem label='取引日'>2026-11-23</DescriptionItem>
@@ -46,7 +46,7 @@ export const 基本: Story = {
 /** 値が無いときは「—」。文は並び全体でも、1 組だけでも変えられる。 */
 export const 値が無いとき: Story = {
 	render: () => (
-		<div className='w-[36rem] max-w-full'>
+		<div className='w-[36rem] max-w-[calc(100vw-2rem)]'>
 			<DescriptionList columns={3} empty='未設定'>
 				<DescriptionItem label='比重（g/ml）' />
 				<DescriptionItem label='歩留まり' />
@@ -62,7 +62,7 @@ export const 値が無いとき: Story = {
  */
 export const 長い名前と長い値: Story = {
 	render: () => (
-		<div className='w-[26rem] max-w-full rounded-md border border-border p-4'>
+		<div className='w-[26rem] max-w-[calc(100vw-2rem)] rounded-md border border-border p-4'>
 			<DescriptionList columns={3}>
 				<DescriptionItem label='請求書に書かれた口座（取引先マスタには反映しない）'>
 					みずほ銀行 渋谷支店 普通 1234567
@@ -82,7 +82,7 @@ export const 長い名前と長い値: Story = {
 /** 名前を左、値を右に置いた行を縦に並べる。狭い箱では名前が上に来る。 */
 export const 横に並べる行: Story = {
 	render: () => (
-		<div className='w-[36rem] max-w-full'>
+		<div className='w-[36rem] max-w-[calc(100vw-2rem)]'>
 			<DescriptionList labelWidth='9rem' layout='inline'>
 				<DescriptionItem label='種類'>問い合わせ</DescriptionItem>
 				<DescriptionItem label='回答者'>
@@ -100,7 +100,7 @@ export const 横に並べる行: Story = {
 /** 値に、AI の値・データ基盤の値の印を置ける。 */
 export const AIの値とデータ基盤の値: Story = {
 	render: () => (
-		<div className='w-[42rem] max-w-full'>
+		<div className='w-[42rem] max-w-[calc(100vw-2rem)]'>
 			<DescriptionList columns={3}>
 				<DescriptionItem label='取引先'>
 					<AiValue kind='AI の読み取り'>読取文具店</AiValue>
