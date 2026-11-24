@@ -72,7 +72,7 @@ interface AiFieldProps {
 	/**
 	 * 人が文字を打ったときに呼ばれる（input・textarea の入力で発火）。
 	 * ここで status を `edited` にすると、AI の見た目が消える。
-	 * 選択欄（Select）は `onValueChange` の中で同じことをする。
+	 * 選択欄は `AiSelect` を使う（選び直したときに呼ばれる）。
 	 */
 	onEdit?: () => void
 	/** 渡すと、`filled`・`uncertain` のときに「確かめた」ボタンが出る。 */
