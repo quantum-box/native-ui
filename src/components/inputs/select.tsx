@@ -217,9 +217,12 @@ SelectScrollDownButton.displayName = 'SelectScrollDownButton'
 
 /** 閉じているあいだ、項目を DOM の外に描いて文字を集める（Radix と同じやり方） */
 function SelectCollector({ children }: { children?: React.ReactNode }) {
-	const [fragment] = React.useState(() =>
-		typeof document === 'undefined' ? null : document.createDocumentFragment(),
-	)
+	// Radix と同じく、描いた後（ブラウザの中）で初めて DOM の外の入れ物を作る。
+	// はじめの描画ではポータルを出さないので、サーバーや renderToStaticMarkup でも描ける
+	const [fragment, setFragment] = React.useState<DocumentFragment | null>(null)
+	React.useEffect(() => {
+		setFragment(document.createDocumentFragment())
+	}, [])
 	if (!fragment) return null
 	return createPortal(
 		<CollectContext.Provider value>
