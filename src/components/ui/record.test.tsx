@@ -176,6 +176,31 @@ describe('フォームで記録を選ぶ', () => {
 		await press('Enter')
 		expect(onChange).toHaveBeenCalledWith(BETA)
 	})
+	it('name を渡すと、フォームで送るときに選んでいる記録の ID が入る', async () => {
+		await render(
+			<form>
+				<RecordPicker<Customer>
+					aria-label='取引先'
+					name='customerId'
+					kind='customer'
+					value={BETA}
+					onChange={vi.fn()}
+				/>
+				<RecordPicker<Customer>
+					aria-label='請求先'
+					name='billingId'
+					kind='customer'
+					value={ACME}
+					onChange={vi.fn()}
+					disabled
+				/>
+			</form>,
+		)
+		const data = new FormData(document.querySelector('form') as HTMLFormElement)
+		expect(data.get('customerId')).toBe('c2')
+		// 使えない欄は送らない（ふつうの入力欄と同じ）。
+		expect(data.has('billingId')).toBe(false)
+	})
 	it('今の画面と同じシステムなら、ふつうの候補の枠', async () => {
 		await render(
 			<RecordPicker<Customer>
