@@ -98,4 +98,15 @@ describe('DescriptionList', () => {
 		expect(list.style.getPropertyValue('--description-label')).toBe('10rem')
 		view.unmount()
 	})
+
+	it('列の数を決めずに 1 列のいちばん狭い幅だけ渡しても、その幅が効く', () => {
+		const view = render(
+			<DescriptionList minColumnWidth='24rem'>
+				<DescriptionItem label='メモ'>長い文</DescriptionItem>
+			</DescriptionList>,
+		)
+		const list = view.container.querySelector('dl') as HTMLElement
+		expect(list.style.gridTemplateColumns).toContain('24rem')
+		view.unmount()
+	})
 })

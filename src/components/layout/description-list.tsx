@@ -35,7 +35,10 @@ export interface DescriptionListProps
 	 * 画面の幅ではなく、箱の幅で決まる。省くと、10rem ずつ入るだけ並べる。
 	 */
 	columns?: number
-	/** `stacked` のときの、1 列のいちばん狭い幅（CSS の長さ）。既定は 9rem */
+	/**
+	 * `stacked` のときの、1 列のいちばん狭い幅（CSS の長さ）。既定は、`columns` を決めたとき 9rem、
+	 * 決めないとき 10rem。
+	 */
 	minColumnWidth?: string
 	/** `inline` のときの、名前の列の幅（CSS の長さ）。既定は 8rem */
 	labelWidth?: string
@@ -57,7 +60,7 @@ const DescriptionList = React.forwardRef<
 		{
 			layout = 'stacked',
 			columns,
-			minColumnWidth = '9rem',
+			minColumnWidth,
 			labelWidth = '8rem',
 			empty = '—',
 			className,
@@ -79,6 +82,7 @@ const DescriptionList = React.forwardRef<
 							? [
 									'gap-x-4 gap-y-3',
 									columns === undefined &&
+										minColumnWidth === undefined &&
 										'grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))]',
 								]
 							: 'gap-y-2',
@@ -91,11 +95,17 @@ const DescriptionList = React.forwardRef<
 									...style,
 								} as React.CSSProperties)
 							: columns === undefined
-								? style
+								? minColumnWidth === undefined
+									? style
+									: {
+											// 列の数を決めないときは、minColumnWidth ずつ入るだけ並べる
+											gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${minColumnWidth}), 1fr))`,
+											...style,
+										}
 								: {
 										// 広ければ columns 列ちょうど、狭ければ minColumnWidth を下回らない数、
 										// もっと狭ければ 1 列（min(100%, …)）。列の間は gap-x-4（1rem）
-										gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, max(${minColumnWidth}, calc((100% - ${columns - 1} * 1rem) / ${columns}))), 1fr))`,
+										gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, max(${minColumnWidth ?? '9rem'}, calc((100% - ${columns - 1} * 1rem) / ${columns}))), 1fr))`,
 										...style,
 									}
 					}
