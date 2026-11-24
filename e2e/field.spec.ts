@@ -67,3 +67,15 @@ test('エラーと説明は読み上げで入力欄に結びつく', async ({ pa
 		'1パックに何個入りか',
 	)
 })
+
+test('説明もエラーも無い欄は、右に下ぞろえで並べたボタンと入力欄の下端がそろう', async ({
+	page,
+}) => {
+	await page.goto(story('field--ボタンと並べる'))
+	const input = page.getByLabel('開始日')
+	const button = page.getByRole('button', { name: '表示' })
+	await expect(button).toBeVisible()
+	const bottom = (locator: typeof input) =>
+		locator.evaluate(el => el.getBoundingClientRect().bottom)
+	expect(Math.abs((await bottom(input)) - (await bottom(button)))).toBeLessThanOrEqual(1)
+})

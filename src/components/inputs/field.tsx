@@ -80,13 +80,15 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 				data-slot='field'
 				data-invalid={error ? '' : undefined}
 				className={cn(
-					// 余りの高さは下に寄せる（既定の stretch だと、余りがラベルの段に入って入力欄が下がる）
-					'grid min-w-0 content-start gap-1',
+					// 余りの高さは下に寄せる（既定の stretch だと、余りがラベルの段に入って入力欄が下がる）。
+					// 段の間は gap でなく余白で空ける。説明もエラーも無い欄の下に空きを作らず、
+					// 横に並べたボタンと入力欄の下端がそろうようにする
+					'grid min-w-0 content-start gap-0',
 					className,
 				)}
 				{...props}
 			>
-				<Label htmlFor={id} className='leading-snug text-muted-foreground'>
+				<Label htmlFor={id} className='pb-1 leading-snug text-muted-foreground'>
 					{label}
 					{required ? (
 						<span className='ml-1 text-destructive'>必須</span>
@@ -97,11 +99,15 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 				</div>
 				<div data-slot='field-note' className='min-w-0'>
 					{error ? (
-						<p id={noteId} role='alert' className='text-xs text-destructive'>
+						<p
+							id={noteId}
+							role='alert'
+							className='pt-1 text-xs text-destructive'
+						>
 							{error}
 						</p>
 					) : description ? (
-						<p id={noteId} className='text-xs text-muted-foreground'>
+						<p id={noteId} className='pt-1 text-xs text-muted-foreground'>
 							{description}
 						</p>
 					) : null}
@@ -139,7 +145,7 @@ const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
 				'grid min-w-0 gap-x-3 gap-y-3',
 				columns === undefined &&
 					'grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))]',
-				'[&>[data-slot=field]]:row-span-3 [&>[data-slot=field]]:grid-rows-subgrid [&>[data-slot=field]]:gap-y-1',
+				'[&>[data-slot=field]]:row-span-3 [&>[data-slot=field]]:grid-rows-subgrid [&>[data-slot=field]]:gap-y-0',
 				className,
 			)}
 			style={
