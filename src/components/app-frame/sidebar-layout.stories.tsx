@@ -50,7 +50,7 @@ function Demo() {
 }
 
 const meta: Meta<typeof Demo> = {
-	title: 'Components/SidebarLayout',
+	title: '画面の枠/SidebarLayout',
 	component: Demo,
 	parameters: { layout: 'fullscreen' },
 }
