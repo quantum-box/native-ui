@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -13,6 +14,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from './form'
+import { FieldActions, FieldGroup } from './field'
 import { Input } from './input'
 import {
 	Select,
@@ -134,4 +136,94 @@ const TransferForm = () => {
 export const SelectInForm: Story = {
 	name: 'Select を中に置く',
 	render: () => <TransferForm />,
+}
+
+/** FormItem を FieldGroup に並べる。説明・エラー・長いラベルが混ざっても入力欄の上端がそろう */
+const PackageItemsForm = () => {
+	const form = useForm<{
+		name: string
+		count: string
+		jan: string
+		note: string
+	}>({
+		defaultValues: { name: '有機トマト', count: '12', jan: '4901', note: '' },
+	})
+	React.useEffect(() => {
+		form.setError('jan', { message: '13 桁の数字で入れてください。' })
+	}, [form])
+	return (
+		<Form {...form}>
+			<form
+				onSubmit={form.handleSubmit(() => undefined)}
+				className='w-[60rem] min-w-0 max-w-full rounded-md border border-border p-4'
+			>
+				<FieldGroup columns={4}>
+					<FormField
+						control={form.control}
+						name='name'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>商品名</FormLabel>
+								<FormControl>
+									<Input {...field} />
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+					<FormField
+						control={form.control}
+						name='count'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>入数</FormLabel>
+								<FormControl>
+									<Input inputMode='numeric' {...field} />
+								</FormControl>
+								<FormDescription>1 箱に入っている数</FormDescription>
+							</FormItem>
+						)}
+					/>
+					<FormField
+						control={form.control}
+						name='jan'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>JAN コード</FormLabel>
+								<FormControl>
+									<Input inputMode='numeric' {...field} />
+								</FormControl>
+								<FormDescription>商品の箱のバーコード</FormDescription>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					<FormField
+						control={form.control}
+						name='note'
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>
+									仕入れ先への伝え方（電話・メール・発注書の備考など）
+								</FormLabel>
+								<FormControl>
+									<Input {...field} />
+								</FormControl>
+							</FormItem>
+						)}
+					/>
+					<FieldActions>
+						<Button type='submit' variant='primary'>
+							保存
+						</Button>
+					</FieldActions>
+				</FieldGroup>
+			</form>
+		</Form>
+	)
+}
+
+/** FormItem（react-hook-form）を FieldGroup に並べる */
+export const FormItemを並べる: Story = {
+	name: 'FormItem を並べる',
+	render: () => <PackageItemsForm />,
 }

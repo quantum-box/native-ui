@@ -9,7 +9,7 @@ import { defineConfig } from 'tsup'
  * Storybook build that the Cloud App deployment consumes.
  */
 export default defineConfig({
-	entry: ['src/index.ts', 'src/tailwind-preset.ts'],
+	entry: ['src/index.ts', 'src/tailwind-preset.ts', 'src/testing.ts'],
 	format: ['esm', 'cjs'],
 	dts: true,
 	sourcemap: true,

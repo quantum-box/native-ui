@@ -72,19 +72,43 @@ const useFormField = () => {
 	}
 }
 
+/**
+ * 1 つの欄の箱（ラベル・入力欄・説明・エラーの順）。
+ *
+ * - 親の grid の行の高さまで引き伸ばされても、中身は上に寄せる（content-start）。
+ *   引き伸ばされた分がラベルの段に入って、入力欄が下がることが無い。
+ * - 縮められる（min-w-0）。入力欄が箱の外へはみ出さない。
+ * - 説明（FormDescription）とエラー（FormMessage）は、1 つの段にまとめる。
+ *   FieldGroup の中に置くと、Field と同じく、同じ行の欄の「ラベルの段・入力欄の段・
+ *   説明の段」がそろう。
+ */
 const FormItem = React.forwardRef<
 	HTMLDivElement,
 	React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
 	const id = React.useId()
+	const items = React.Children.toArray(children)
+	const isNote = (child: React.ReactNode) =>
+		React.isValidElement(child) &&
+		(child.type === FormDescription || child.type === FormMessage)
+	const notes = items.filter(isNote)
+	const rest = items.filter(child => !isNote(child))
 
 	return (
 		<FormItemContext.Provider value={{ id }}>
 			<div
 				ref={ref}
-				className={cn('flex flex-col gap-1.5', className)}
+				data-slot='field'
+				className={cn('grid min-w-0 content-start gap-1.5', className)}
 				{...props}
-			/>
+			>
+				{rest}
+				{notes.length > 0 ? (
+					<div data-slot='field-note' className='grid min-w-0 gap-1'>
+						{notes}
+					</div>
+				) : null}
+			</div>
 		</FormItemContext.Provider>
 	)
 })

@@ -346,7 +346,13 @@ export {
 	type FloatingPanelProps,
 	type FloatingPanelSize,
 } from './components/app-frame/floating-panel'
-export { Field, FieldGroup, type FieldProps } from './components/inputs/field'
+export {
+	Field,
+	FieldActions,
+	FieldGroup,
+	type FieldGroupProps,
+	type FieldProps,
+} from './components/inputs/field'
 export { Input, type InputProps } from './components/inputs/input'
 export {
 	InputGroup,
