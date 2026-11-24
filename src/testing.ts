@@ -148,8 +148,10 @@ export function findLayoutProblems(
 						} の右端から ${Math.round(right - edge)}px はみ出している`,
 						kind: 'overflow',
 					})
+					break
 				}
-				break
+				// この箱には収まっていても、外の箱（より狭く中身を切る箱など）からは
+				// はみ出しているかもしれないので、さらに外を見る
 			}
 			parent = parent.parentElement
 		}

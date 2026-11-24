@@ -95,3 +95,18 @@ test('findLayoutProblems は、ずれとはみ出しを見つける', async ({ p
 		'overflow',
 	])
 })
+
+test('findLayoutProblems は、内の箱に収まっていても外の狭い箱からのはみ出しを見つける', async ({
+	page,
+}) => {
+	await page.setContent(`
+		<div id="root" style="width:300px;overflow:hidden">
+			<form style="width:600px">
+				<button style="width:600px">外の箱からはみ出すボタン</button>
+			</form>
+		</div>`)
+	const problems = await page.locator('#root').evaluate(findLayoutProblems)
+	expect(problems).toHaveLength(1)
+	expect(problems[0]?.kind).toBe('overflow')
+	expect(problems[0]?.detail).toContain('div の右端から 300px')
+})
