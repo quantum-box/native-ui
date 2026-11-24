@@ -1,22 +1,32 @@
 'use client'
 
-import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import * as React from 'react'
 
 import { cn } from '../../lib/utils'
+import {
+	Dialog,
+	DialogClose,
+	type DialogContentBaseProps,
+	DialogDescription,
+	DialogOverlay,
+	DialogPopupCompat,
+	DialogPortal,
+	DialogTitle,
+	DialogTrigger,
+} from './dialog'
 
 /**
  * 画面の右端から出る詳細の画面。一覧をその場に残したまま、選んだ行の中身を
- * 横に出すために使う。中身は Radix の Dialog なので、×・Esc・外側を押すと閉じる。
+ * 横に出すために使う。中身は Dialog（base-ui）なので、×・Esc・外側を押すと閉じる。
  */
-const Sheet = DialogPrimitive.Root
+const Sheet = Dialog
 
-const SheetTrigger = DialogPrimitive.Trigger
+const SheetTrigger = DialogTrigger
 
-const SheetClose = DialogPrimitive.Close
+const SheetClose = DialogClose
 
-const SheetPortal = DialogPrimitive.Portal
+const SheetPortal = DialogPortal
 
 /** 幅は 3 段。広い画面では上限の幅、狭い画面では画面いっぱいになる。 */
 const SHEET_WIDTHS = {
@@ -28,10 +38,10 @@ const SHEET_WIDTHS = {
 type SheetWidth = keyof typeof SHEET_WIDTHS
 
 const SheetOverlay = React.forwardRef<
-	React.ElementRef<typeof DialogPrimitive.Overlay>,
-	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+	React.ElementRef<typeof DialogOverlay>,
+	React.ComponentPropsWithoutRef<typeof DialogOverlay>
 >(({ className, ...props }, ref) => (
-	<DialogPrimitive.Overlay
+	<DialogOverlay
 		ref={ref}
 		className={cn(
 			'fixed inset-0 z-50 bg-black/40 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 dark:bg-black/60',
@@ -42,8 +52,7 @@ const SheetOverlay = React.forwardRef<
 ))
 SheetOverlay.displayName = 'SheetOverlay'
 
-interface SheetContentProps
-	extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
+interface SheetContentProps extends DialogContentBaseProps {
 	/** 右端から出る画面の幅。既定は `lg`。 */
 	width?: SheetWidth
 	/** 右上の × を出さないときは `true`。 */
@@ -56,10 +65,7 @@ interface SheetContentProps
  * 右端に張り付く本体。中は縦に並べ、`SheetHeader` は上に残したまま
  * `SheetBody` だけがスクロールする。
  */
-const SheetContent = React.forwardRef<
-	React.ElementRef<typeof DialogPrimitive.Content>,
-	SheetContentProps
->(
+const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
 	(
 		{
 			className,
@@ -67,13 +73,14 @@ const SheetContent = React.forwardRef<
 			width = 'lg',
 			hideClose = false,
 			closeLabel = '閉じる',
+			forceMount,
 			...props
 		},
 		ref,
 	) => (
-		<SheetPortal>
+		<SheetPortal forceMount={forceMount}>
 			<SheetOverlay />
-			<DialogPrimitive.Content
+			<DialogPopupCompat
 				ref={ref}
 				className={cn(
 					'fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full flex-col overflow-hidden border-border border-l bg-background shadow-modal duration-slow data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-right-full',
@@ -84,12 +91,12 @@ const SheetContent = React.forwardRef<
 			>
 				{children}
 				{hideClose ? null : (
-					<DialogPrimitive.Close className='absolute top-3 right-3 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none'>
+					<DialogClose className='absolute top-3 right-3 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none'>
 						<X className='size-4' />
 						<span className='sr-only'>{closeLabel}</span>
-					</DialogPrimitive.Close>
+					</DialogClose>
 				)}
-			</DialogPrimitive.Content>
+			</DialogPopupCompat>
 		</SheetPortal>
 	),
 )
@@ -135,10 +142,10 @@ const SheetFooter = ({
 SheetFooter.displayName = 'SheetFooter'
 
 const SheetTitle = React.forwardRef<
-	React.ElementRef<typeof DialogPrimitive.Title>,
-	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+	React.ElementRef<typeof DialogTitle>,
+	React.ComponentPropsWithoutRef<typeof DialogTitle>
 >(({ className, ...props }, ref) => (
-	<DialogPrimitive.Title
+	<DialogTitle
 		ref={ref}
 		className={cn('truncate font-semibold text-base leading-6', className)}
 		{...props}
@@ -147,10 +154,10 @@ const SheetTitle = React.forwardRef<
 SheetTitle.displayName = 'SheetTitle'
 
 const SheetDescription = React.forwardRef<
-	React.ElementRef<typeof DialogPrimitive.Description>,
-	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+	React.ElementRef<typeof DialogDescription>,
+	React.ComponentPropsWithoutRef<typeof DialogDescription>
 >(({ className, ...props }, ref) => (
-	<DialogPrimitive.Description
+	<DialogDescription
 		ref={ref}
 		className={cn('text-muted-foreground text-xs', className)}
 		{...props}
