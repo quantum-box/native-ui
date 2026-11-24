@@ -70,6 +70,16 @@
 	--color-accent: hsl(var(--nui-muted));
 	--color-accent-foreground: hsl(var(--nui-foreground));
 	--color-selected: hsl(var(--nui-selected));
+	--color-ai-1: hsl(var(--nui-ai-1));
+	--color-ai-2: hsl(var(--nui-ai-2));
+	--color-ai-3: hsl(var(--nui-ai-3));
+	--color-ai-foreground: hsl(var(--nui-ai-foreground));
+	--color-ai-subtle: hsl(var(--nui-ai-subtle));
+	--color-ai-border: hsl(var(--nui-ai-border));
+	--color-fact: hsl(var(--nui-fact));
+	--color-fact-foreground: hsl(var(--nui-fact-foreground));
+	--color-fact-subtle: hsl(var(--nui-fact-subtle));
+	--color-fact-border: hsl(var(--nui-fact-border));
 	--color-popover: hsl(var(--nui-popover));
 	--color-popover-foreground: hsl(var(--nui-popover-foreground));
 	--color-card: hsl(var(--nui-background));
