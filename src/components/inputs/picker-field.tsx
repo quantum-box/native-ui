@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { useMergedRefs } from '../../lib/overlay'
 import { cn } from '../../lib/utils'
 import {
 	Popover,
@@ -28,7 +29,7 @@ import {
  * - 使えない・読むだけになったら、開いていても閉じる。
  */
 
-/** 見えない入力欄が入っているフォームの reset を聞く */
+/** その入力欄が入っているフォームの reset を聞く */
 export function useFormReset(
 	ref: React.RefObject<HTMLInputElement | null>,
 	onReset: () => void,
@@ -154,9 +155,12 @@ export const PickerField = React.forwardRef<HTMLInputElement, PickerFieldProps>(
 		// 打っている途中の文字。null のあいだは、値を表示の形にした物を見せる
 		const [draft, setDraft] = React.useState<string | null>(null)
 
-		// フォームの reset で、はじめの値に戻す（外で値を持つときは、外に任せる）
-		const hiddenRef = React.useRef<HTMLInputElement>(null)
-		useFormReset(hiddenRef, () => {
+		// フォームの reset で、はじめの値に戻し、打ちかけの文字も捨てる（外で値を持つときは、
+		// 値は外に任せる）。name が無くても聞く（ブラウザの入力欄と同じ。DateTimePicker の中の
+		// 欄のように、値を外で持つ欄でも、打ちかけの文字は捨てる）
+		const inputRef = React.useRef<HTMLInputElement>(null)
+		const mergedRef = useMergedRefs(ref, inputRef)
+		useFormReset(inputRef, () => {
 			setInnerValue(defaultValue)
 			setDraft(null)
 		})
@@ -187,7 +191,7 @@ export const PickerField = React.forwardRef<HTMLInputElement, PickerFieldProps>(
 				<PopoverAnchor asChild>
 					<InputGroup data-slot={slot} className={className}>
 						<InputGroupInput
-							ref={ref}
+							ref={mergedRef}
 							type='text'
 							inputMode='numeric'
 							autoComplete='off'
@@ -235,7 +239,6 @@ export const PickerField = React.forwardRef<HTMLInputElement, PickerFieldProps>(
 						{name && (
 							// 使えない欄の値は、ブラウザの入力欄と同じく送らない
 							<input
-								ref={hiddenRef}
 								type='hidden'
 								form={form}
 								name={name}

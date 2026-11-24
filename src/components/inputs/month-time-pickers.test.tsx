@@ -458,6 +458,39 @@ describe('DateTimePicker', () => {
 		expect(new FormData(form).has('at')).toBe(false)
 	})
 
+	it('打ちかけのまま reset されたら、打ちかけの文字も捨てる', async () => {
+		await render(
+			<form>
+				<DateTimePicker
+					today={TODAY}
+					name='at'
+					defaultValue='2026-11-24T09:30'
+				/>
+			</form>,
+		)
+		const form = find<HTMLFormElement>('form')
+		const setter = Object.getOwnPropertyDescriptor(
+			HTMLInputElement.prototype,
+			'value',
+		)?.set
+		// 欄を離れずに打ちかける
+		await act(async () => {
+			time().focus()
+			setter?.call(time(), '11')
+			time().dispatchEvent(new Event('input', { bubbles: true }))
+		})
+		expect(time().value).toBe('11')
+		await act(async () => {
+			form.reset()
+			await wait()
+		})
+		expect(time().value).toBe('09:30')
+		await act(async () => {
+			time().blur()
+		})
+		expect(new FormData(form).get('at')).toBe('2026-11-24T09:30')
+	})
+
 	it('form を渡すと、見える 2 つの欄も、値を送る欄も、そのフォームに入る', async () => {
 		await render(
 			<>
