@@ -192,8 +192,7 @@ function AiField({
 							'rounded-md',
 							(status === 'filled' || status === 'filling') &&
 								'nui-ai-gradient-faint',
-							status === 'uncertain' &&
-								'nui-ai-gradient-uncertain-faint',
+							status === 'uncertain' && 'nui-ai-gradient-uncertain-faint',
 						)}
 					>
 						{field}
