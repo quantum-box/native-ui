@@ -451,6 +451,28 @@ export {
 	SidebarSectionLabel,
 } from './components/app-frame/sidebar'
 export {
+	SIDEBAR_DEFAULT_WIDTH,
+	SIDEBAR_MAX_WIDTH,
+	SIDEBAR_MIN_WIDTH,
+	SIDEBAR_TOGGLE_SHORTCUT_LABEL,
+	type SidebarLayout,
+	type SidebarLayoutPreference,
+	type SidebarLayoutStorage,
+	SidebarPanel,
+	type SidebarPanelProps,
+	SidebarResizeHandle,
+	type SidebarResizeHandleProps,
+	SidebarToggle,
+	type SidebarToggleProps,
+	type SidebarWidthLimits,
+	type UseSidebarLayoutOptions,
+	clampSidebarWidth,
+	isSidebarToggleShortcut,
+	readSidebarLayoutPreference,
+	useSidebarLayout,
+	writeSidebarLayoutPreference,
+} from './components/app-frame/sidebar-layout'
+export {
 	StatusBar,
 	type StatusBarItemDefinition,
 	statusBarItemClass,
