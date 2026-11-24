@@ -99,7 +99,7 @@ function mount(node: ReactNode) {
 
 function button(name: string) {
 	const found = document.querySelector<HTMLButtonElement>(
-		`button[title^="${name}"]:not([inert] *)`,
+		`button[aria-label="${name}"][aria-keyshortcuts]:not([inert] *)`,
 	)
 	if (!found) throw new Error(`no button ${name}`)
 	return found

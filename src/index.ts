@@ -473,6 +473,17 @@ export {
 	writeSidebarLayoutPreference,
 } from './components/app-frame/sidebar-layout'
 export {
+	type KeyboardShortcutGroup,
+	type KeyboardShortcutItem,
+	KeyboardShortcutsDialog,
+	type KeyboardShortcutsDialogProps,
+	ShortcutKeys,
+	type ShortcutKeysProps,
+	ShortcutTooltip,
+	type ShortcutTooltipProps,
+	splitShortcut,
+} from './components/overlays/keyboard-shortcuts'
+export {
 	StatusBar,
 	type StatusBarItemDefinition,
 	statusBarItemClass,

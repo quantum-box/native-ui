@@ -3,6 +3,7 @@ import * as React from 'react'
 
 import { cn } from '../../lib/utils'
 import { Button, type ButtonProps } from '../basics/button'
+import { ShortcutTooltip } from '../overlays/keyboard-shortcuts'
 
 /**
  * Shared open / hide / resize behaviour for the app sidebar.
@@ -380,29 +381,31 @@ export interface SidebarToggleProps extends Omit<ButtonProps, 'children'> {
 /**
  * Icon button that hides / shows the sidebar. Put one in the sidebar header
  * (to hide) and one at the top left of the content while hidden (to open).
+ * Hovering or focusing it shows what it does and the ⌘B shortcut.
  */
 const SidebarToggle = React.forwardRef<HTMLButtonElement, SidebarToggleProps>(
 	({ className, layout, onClick, ...props }, ref) => {
 		const label = layout.open ? 'サイドバーを隠す' : 'サイドバーを開く'
 		return (
-			<Button
-				ref={ref}
-				type='button'
-				size='icon'
-				variant='ghost'
-				aria-expanded={layout.open}
-				aria-keyshortcuts='Meta+B Control+B'
-				aria-label={label}
-				title={`${label} (${SIDEBAR_TOGGLE_SHORTCUT_LABEL})`}
-				className={cn('shrink-0 text-muted-foreground', className)}
-				onClick={event => {
-					onClick?.(event)
-					if (!event.defaultPrevented) layout.toggle()
-				}}
-				{...props}
-			>
-				<PanelLeft />
-			</Button>
+			<ShortcutTooltip label={label} shortcut={SIDEBAR_TOGGLE_SHORTCUT_LABEL}>
+				<Button
+					ref={ref}
+					type='button'
+					size='icon'
+					variant='ghost'
+					aria-expanded={layout.open}
+					aria-keyshortcuts='Meta+B Control+B'
+					aria-label={label}
+					className={cn('shrink-0 text-muted-foreground', className)}
+					onClick={event => {
+						onClick?.(event)
+						if (!event.defaultPrevented) layout.toggle()
+					}}
+					{...props}
+				>
+					<PanelLeft />
+				</Button>
+			</ShortcutTooltip>
 		)
 	},
 )
