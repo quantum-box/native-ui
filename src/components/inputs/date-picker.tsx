@@ -9,6 +9,7 @@ import {
 	parseDateText,
 	todayString,
 } from '../../lib/calendar-date'
+import { useMergedRefs } from '../../lib/overlay'
 import { cn } from '../../lib/utils'
 import { Button } from '../basics/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../overlays/popover'
@@ -248,8 +249,10 @@ const DateRangePicker = React.forwardRef<
 		const [draft, setDraft] = React.useState<DateRange | null>(null)
 
 		// フォームの reset で、はじめの値に戻す
-		const hiddenRef = React.useRef<HTMLInputElement>(null)
-		useFormReset(hiddenRef, () => {
+		// reset は、押す所（ボタン）のフォームで聞く（names が無くても、はじめの値に戻る）
+		const triggerRef = React.useRef<HTMLButtonElement>(null)
+		const mergedRef = useMergedRefs(ref, triggerRef)
+		useFormReset(triggerRef, () => {
 			setInnerValue(defaultValue)
 			setDraft(null)
 		})
@@ -280,7 +283,7 @@ const DateRangePicker = React.forwardRef<
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild disabled={disabled}>
 					<button
-						ref={ref}
+						ref={mergedRef}
 						type='button'
 						data-slot='date-range-picker'
 						aria-haspopup='dialog'
@@ -310,7 +313,6 @@ const DateRangePicker = React.forwardRef<
 				{names && (
 					<>
 						<input
-							ref={hiddenRef}
 							type='hidden'
 							form={form}
 							name={names[0]}

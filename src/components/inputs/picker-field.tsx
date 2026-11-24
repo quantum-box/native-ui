@@ -31,7 +31,7 @@ import {
 
 /** その入力欄が入っているフォームの reset を聞く */
 export function useFormReset(
-	ref: React.RefObject<HTMLInputElement | null>,
+	ref: React.RefObject<{ form: HTMLFormElement | null } | null>,
 	onReset: () => void,
 ) {
 	const latest = React.useRef(onReset)

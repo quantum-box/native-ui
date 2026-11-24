@@ -491,6 +491,22 @@ describe('DateTimePicker', () => {
 		expect(new FormData(form).get('at')).toBe('2026-11-24T09:30')
 	})
 
+	it('name が無くても、reset ではじめの値に戻る', async () => {
+		await render(
+			<form>
+				<DateTimePicker today={TODAY} defaultValue='2026-11-24T09:30' />
+			</form>,
+		)
+		await type(time(), '11')
+		expect(time().value).toBe('11:00')
+		await act(async () => {
+			find<HTMLFormElement>('form').reset()
+			await wait()
+		})
+		expect(date().value).toBe('2026/11/24')
+		expect(time().value).toBe('09:30')
+	})
+
 	it('form を渡すと、見える 2 つの欄も、値を送る欄も、そのフォームに入る', async () => {
 		await render(
 			<>

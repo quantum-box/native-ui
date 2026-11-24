@@ -122,8 +122,9 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 			setPartial(split(value))
 		}, [value])
 
-		const hiddenRef = React.useRef<HTMLInputElement>(null)
-		useFormReset(hiddenRef, () => {
+		// reset は、見える日付の欄のフォームで聞く（name が無くても、はじめの値に戻る）
+		const dateRef = React.useRef<HTMLInputElement>(null)
+		useFormReset(dateRef, () => {
 			const initial = asDateTime(defaultValue)
 			emitted.current = initial
 			setInnerValue(initial)
@@ -163,6 +164,7 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 				{...props}
 			>
 				<DatePicker
+					ref={dateRef}
 					id={id}
 					className='min-w-0 flex-1'
 					aria-label={ariaLabel ? `${prefix}${labels.date}` : undefined}
@@ -200,7 +202,6 @@ const DateTimePicker = React.forwardRef<HTMLDivElement, DateTimePickerProps>(
 				/>
 				{name && (
 					<input
-						ref={hiddenRef}
 						type='hidden'
 						form={form}
 						name={name}
