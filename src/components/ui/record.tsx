@@ -252,6 +252,11 @@ export type RecordChipProps<T = unknown> = {
 	showDescription?: boolean
 	/** 別のシステムの記録なら、絵をシステムの色にする（付け替えの候補など）。 */
 	toned?: boolean
+	/**
+	 * 見た目。`chip`（既定）は表・一覧向けの形。`inline` は文の中で使う控えめな形で、
+	 * まわりの文字の大きさのまま、小さな絵と点線の下線で記録だと分かるようにする。
+	 */
+	variant?: 'chip' | 'inline'
 	className?: string
 }
 
@@ -534,16 +539,23 @@ export function RecordChip<T = unknown>({
 	interactive = true,
 	showDescription = false,
 	toned = false,
+	variant = 'chip',
 	className,
 }: RecordChipProps<T>) {
 	const { definition, navigate } = useRecordKind<T>(kind)
 	const system = useRecordSystem(definition)
+	const inline = variant === 'inline'
 	const toneStyle =
-		toned && system?.external ? recordToneStyle(system.tone) : undefined
+		(toned || inline) && system?.external
+			? recordToneStyle(system.tone)
+			: undefined
 	const base = cn(
-		'inline-flex min-w-0 max-w-full items-center gap-1.5 align-middle text-sm',
+		inline
+			? 'inline-flex max-w-full items-baseline gap-1 align-baseline'
+			: 'inline-flex min-w-0 max-w-full items-center gap-1.5 align-middle text-sm',
 		className,
 	)
+	const iconSize = inline ? 'h-[0.85em] w-[0.85em] self-center' : 'h-3.5 w-3.5'
 	const focusRing =
 		'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -582,7 +594,7 @@ export function RecordChip<T = unknown>({
 				className={cn(base, 'text-muted-foreground', props && focusRing)}
 				title={props ? undefined : shown}
 			>
-				<Icon aria-hidden className='h-3.5 w-3.5 shrink-0' />
+				<Icon aria-hidden className={cn(iconSize, 'shrink-0')} />
 				<span className={cn('truncate', state === 'missing' && 'line-through')}>
 					{shown}
 				</span>
@@ -604,15 +616,20 @@ export function RecordChip<T = unknown>({
 	const href = interactive ? definition.getHref?.(record) : undefined
 	const content = (
 		<>
-			{definition.renderAvatar ? (
+			{/* 文の中では、記録ごとの絵（顔など）より控えめな種類の絵を使う。 */}
+			{definition.renderAvatar && !(inline && Icon) ? (
 				<span aria-hidden className='inline-flex shrink-0'>
 					{definition.renderAvatar(record)}
 				</span>
 			) : Icon ? (
-				<span aria-hidden style={toneStyle} className='inline-flex shrink-0'>
+				<span
+					aria-hidden
+					style={toneStyle}
+					className={cn('inline-flex shrink-0', inline && 'self-center')}
+				>
 					<Icon
 						className={cn(
-							'h-3.5 w-3.5',
+							iconSize,
 							toneStyle
 								? 'text-[hsl(var(--record-tone))]'
 								: 'text-muted-foreground',
@@ -640,7 +657,9 @@ export function RecordChip<T = unknown>({
 				className={cn(
 					base,
 					focusRing,
-					'text-foreground underline-offset-2 hover:underline',
+					inline
+						? 'font-medium text-foreground underline decoration-muted-foreground/60 decoration-dotted underline-offset-4 hover:decoration-solid'
+						: 'text-foreground underline-offset-2 hover:underline',
 				)}
 			>
 				{content}
@@ -650,7 +669,12 @@ export function RecordChip<T = unknown>({
 				{...props}
 				role='button'
 				tabIndex={0}
-				className={cn(base, focusRing)}
+				className={cn(
+					base,
+					focusRing,
+					inline &&
+						'cursor-default font-medium underline decoration-muted-foreground/60 decoration-dotted underline-offset-4',
+				)}
 			>
 				{content}
 			</span>
@@ -663,4 +687,17 @@ export function RecordChip<T = unknown>({
 			<RecordCard kind={kind} record={record} />
 		</HoverPeek>
 	)
+}
+
+/** 記録へのリンク（`RecordChip` と同じ物）。表の外の一覧などで、名前を分かりやすくしたいときに使う。 */
+export const RecordLink = RecordChip
+
+/**
+ * 文の中の記録（控えめな形）。まわりの文字の大きさのまま、小さな絵と点線の下線で記録だと分かる。
+ * 触れる・フォーカスすると、表のセルと同じ要点のカードが出る。例「{RecordMention}の請求書を見直しました」。
+ */
+export function RecordMention<T = unknown>(
+	props: Omit<RecordChipProps<T>, 'variant' | 'showDescription'>,
+) {
+	return <RecordChip {...props} variant='inline' />
 }

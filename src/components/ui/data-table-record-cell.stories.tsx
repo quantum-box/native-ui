@@ -1,15 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { ColumnDef } from '@tanstack/react-table'
-import {
-	Building2,
-	ClipboardList,
-	FileText,
-	List,
-	Package,
-	Plus,
-	Store,
-	UserRound,
-} from 'lucide-react'
 import * as React from 'react'
 
 import { DataTable } from './data-table'
@@ -20,14 +10,7 @@ import {
 	dataTableRecordColumn,
 	recordPlaceholder,
 } from './data-table-record-cell'
-import {
-	RecordCard,
-	RecordKindProvider,
-	type RecordSystemDefinition,
-	defineRecordKind,
-	recordActions,
-	useRecordKind,
-} from './record'
+import { RecordKindProvider, useRecordKind } from './record'
 import {
 	Table,
 	TableBody,
@@ -37,225 +20,19 @@ import {
 	TableRow,
 } from './table'
 
-// ---- アプリが 1 か所で決める、記録の種類ごとの決まり（例） --------------------
-
-type Customer = {
-	id: string
-	name: string
-	code: string
-	city: string
-	balance: number
-}
-type Product = {
-	id: string
-	name: string
-	sku: string
-	price: number
-	stock: number
-}
-type Shop = { id: string; name: string; area: string }
-type Member = { id: string; name: string; kana: string; team: string }
-
-const yen = (value: number) => `¥${value.toLocaleString('ja-JP')}`
-
-function Facts({ rows }: { rows: [string, string][] }) {
-	return (
-		<dl className='grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs'>
-			{rows.map(([term, value]) => (
-				<React.Fragment key={term}>
-					<dt className='text-muted-foreground'>{term}</dt>
-					<dd className='text-foreground'>{value}</dd>
-				</React.Fragment>
-			))}
-		</dl>
-	)
-}
-function PreviewTitle({ children }: { children: React.ReactNode }) {
-	return <p className='mb-2 font-medium text-sm'>{children}</p>
-}
-
-const CUSTOMERS: Customer[] = [
-	{
-		id: 'c1',
-		name: '山田商店',
-		code: 'C-0001',
-		city: '大阪市',
-		balance: 128000,
-	},
-	{ id: 'c2', name: '鈴木食品', code: 'C-0002', city: '京都市', balance: 0 },
-	{
-		id: 'c3',
-		name: 'みどり青果',
-		code: 'C-0003',
-		city: '神戸市',
-		balance: 46200,
-	},
-]
-const PRODUCTS: Product[] = [
-	{
-		id: 'p1',
-		name: 'りんごジュース 1L',
-		sku: 'SKU-1001',
-		price: 380,
-		stock: 120,
-	},
-	{
-		id: 'p2',
-		name: '冷凍ブルーベリー',
-		sku: 'SKU-1002',
-		price: 1280,
-		stock: 8,
-	},
-	{ id: 'p3', name: '紙コップ 200ml', sku: 'SKU-2001', price: 540, stock: 300 },
-	{ id: 'p4', name: 'ボールペン 黒', sku: 'SKU-3001', price: 120, stock: 0 },
-]
-const SHOPS: Shop[] = [
-	{ id: 's1', name: '梅田店', area: '大阪' },
-	{ id: 's2', name: '四条店', area: '京都' },
-	{ id: 's3', name: '三宮店', area: '神戸' },
-]
-const MEMBERS: Member[] = [
-	{ id: 'm1', name: '佐藤 花子', kana: 'さとう はなこ', team: '営業1課' },
-	{ id: 'm2', name: '高橋 健', kana: 'たかはし けん', team: '営業2課' },
-	{ id: 'm3', name: '伊藤 美咲', kana: 'いとう みさき', team: '店舗運営' },
-]
-
-/** システムごとの決まり（名前・絵・色の印）。アプリが 1 か所で決める。 */
-const SYSTEMS = {
-	catalog: { name: '商品管理', icon: Package, tone: 'amber' },
-	crm: { name: '顧客管理', icon: Building2, tone: 'blue' },
-	stores: { name: '店舗管理', icon: Store, tone: 'teal' },
-	hr: { name: '人事', icon: UserRound, tone: 'violet' },
-} satisfies Record<string, RecordSystemDefinition>
-
-const KINDS = {
-	customer: defineRecordKind<Customer>({
-		name: '取引先',
-		icon: Building2,
-		getId: customer => customer.id,
-		getLabel: customer => customer.name,
-		getDescription: customer => customer.code,
-		system: 'crm',
-		getHref: customer => `/customers/${customer.id}`,
-		getActions: customer => [
-			recordActions.newTab(`/customers/${customer.id}`),
-			{
-				label: 'この取引先の請求書を見る',
-				icon: FileText,
-				href: `/invoices?customer=${customer.id}`,
-			},
-			recordActions.copy(customer.code, 'コードをコピー'),
-		],
-		renderPreview: customer => (
-			<>
-				<PreviewTitle>{customer.name}</PreviewTitle>
-				<Facts
-					rows={[
-						['コード', customer.code],
-						['所在地', customer.city],
-						['売掛残高', yen(customer.balance)],
-					]}
-				/>
-			</>
-		),
-		useCandidates: () => ({ records: CUSTOMERS }),
-		missingText: '削除された取引先',
-	}),
-	product: defineRecordKind<Product>({
-		name: '商品',
-		icon: Package,
-		getId: product => product.id,
-		getLabel: product => product.name,
-		getDescription: product => product.sku,
-		system: 'catalog',
-		getHref: product => `/products/${product.id}`,
-		getActions: product => [
-			recordActions.newTab(`/products/${product.id}`),
-			{
-				label: 'この商品の受注を見る',
-				icon: ClipboardList,
-				href: `/orders?product=${product.id}`,
-			},
-			recordActions.copy(product.sku, '品番をコピー'),
-		],
-		renderPreview: product => (
-			<>
-				<PreviewTitle>{product.name}</PreviewTitle>
-				<Facts
-					rows={[
-						['品番', product.sku],
-						['単価', yen(product.price)],
-						['在庫', product.stock ? `${product.stock}個` : '在庫なし'],
-					]}
-				/>
-			</>
-		),
-		useCandidates: () => ({ records: PRODUCTS }),
-		missingText: '販売をやめた商品',
-	}),
-	shop: defineRecordKind<Shop>({
-		name: '店',
-		icon: Store,
-		getId: shop => shop.id,
-		getLabel: shop => shop.name,
-		getDescription: shop => shop.area,
-		system: 'stores',
-		getHref: shop => `/shops/${shop.id}`,
-		renderPreview: shop => (
-			<>
-				<PreviewTitle>{shop.name}</PreviewTitle>
-				<Facts rows={[['地域', shop.area]]} />
-			</>
-		),
-		getActions: shop => [recordActions.newTab(`/shops/${shop.id}`)],
-		pickerActions: [
-			{ label: '店舗管理で新しく作る', icon: Plus, href: '/shops/new' },
-			{ label: '店舗管理で一覧を開く', icon: List, href: '/shops' },
-		],
-		useCandidates: () => ({ records: SHOPS }),
-		forbiddenText: 'ほかの地域の店です',
-	}),
-	member: defineRecordKind<Member>({
-		name: '担当者',
-		icon: UserRound,
-		getId: member => member.id,
-		getLabel: member => member.name,
-		getDescription: member => member.team,
-		getKeywords: member => [member.kana],
-		system: 'hr',
-		getHref: member => `/staff/${member.id}`,
-		openLabel: '社員名簿で開く',
-		pickerActions: [
-			{ label: '社員名簿で一覧を開く', icon: List, href: '/staff' },
-		],
-		getActions: member => [
-			{
-				label: 'この担当者の作業を見る',
-				icon: ClipboardList,
-				href: `/tasks?member=${member.id}`,
-			},
-			recordActions.copy(member.id),
-		],
-		renderAvatar: member => (
-			<span className='flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 font-medium text-[10px] text-primary'>
-				{member.name.slice(0, 1)}
-			</span>
-		),
-		renderPreview: member => (
-			<>
-				<PreviewTitle>{member.name}</PreviewTitle>
-				<Facts
-					rows={[
-						['よみ', member.kana],
-						['所属', member.team],
-					]}
-				/>
-			</>
-		),
-		useCandidates: () => ({ records: MEMBERS }),
-		missingText: '退職した担当者',
-	}),
-}
+import {
+	CUSTOMERS,
+	type Customer,
+	KINDS,
+	MEMBERS,
+	type Member,
+	PRODUCTS,
+	type Product,
+	SHOPS,
+	SYSTEMS,
+	type Shop,
+	yen,
+} from './record-story-data'
 
 /**
  * 表のセルに、別の業務の記録（取引先・商品・店・担当者など）を出す。
@@ -269,8 +46,11 @@ const KINDS = {
  * 下の「{システム}で開く」も同じ色。システムの名前・絵・色は `systems` に 1 か所で決める。
  * 消えた・見る権限が無い記録では、開けないことと理由を出す。
  *
+ * 記録の部品そのもの（要点のカード・付け替えの候補・文の中・表の外での使い方）は「Components/Record」にある。
+ * ここは表のセルでの使い方の例。
+ *
  * この例では、記録を押したときの移動先を下に出している（実際のアプリでは画面が移る）。
- * 使い方は `docs/data-table.md`。
+ * 使い方は `docs/data-table.md`・`docs/record.md`。
  */
 const meta = {
 	title: 'Components/DataTableRecordCell',
@@ -407,87 +187,6 @@ export const Table_: Story = {
 			onPageChange={() => {}}
 			hidePagination
 		/>
-	),
-}
-
-// ---- 要点の枠 -----------------------------------------------------------------
-
-function CardFrame({ children }: { children: React.ReactNode }) {
-	return (
-		<div className='w-80 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-overlay'>
-			{children}
-		</div>
-	)
-}
-
-/**
- * 触れたときに出る枠を、4 種類並べて開いたまま見せる。
- * 上に種類とシステム、下に「{システム}で開く」と種類ごとの操作が出る。
- * 最後の 2 つは消えた記録と見る権限が無い記録で、開けないことと理由を出す。
- */
-export const Cards: Story = {
-	name: '要点の枠',
-	render: () => (
-		<div className='flex flex-wrap items-start gap-4'>
-			<CardFrame>
-				<RecordCard kind='product' record={PRODUCTS[0]} />
-			</CardFrame>
-			<CardFrame>
-				<RecordCard kind='customer' record={CUSTOMERS[0]} />
-			</CardFrame>
-			<CardFrame>
-				<RecordCard kind='shop' record={SHOPS[0]} />
-			</CardFrame>
-			<CardFrame>
-				<RecordCard kind='member' record={MEMBERS[0]} />
-			</CardFrame>
-			<CardFrame>
-				<RecordCard kind='product' status='missing' />
-			</CardFrame>
-			<CardFrame>
-				<RecordCard kind='customer' status='forbidden' />
-			</CardFrame>
-		</div>
-	),
-}
-
-// ---- 同じシステムと別のシステム ------------------------------------------------
-
-/**
- * 今の画面が「商品管理」のとき。同じ商品管理の記録（商品）はふつうの枠、
- * 別のシステムの記録（取引先・担当者）は、色の帯と線のある枠で出る。
- * `RecordKindProvider` の `currentSystem` で今の画面のシステムを決める。
- */
-export const SameAndOtherSystem: Story = {
-	name: '同じシステムと別のシステム',
-	render: () => (
-		<RecordKindProvider kinds={KINDS} systems={SYSTEMS} currentSystem='catalog'>
-			<p className='mb-3 text-muted-foreground text-xs'>今の画面: 商品管理</p>
-			<div className='flex flex-wrap items-start gap-4'>
-				<div className='space-y-1'>
-					<p className='text-muted-foreground text-xs'>同じシステム（商品）</p>
-					<CardFrame>
-						<RecordCard kind='product' record={PRODUCTS[1]} />
-					</CardFrame>
-				</div>
-				<div className='space-y-1'>
-					<p className='text-muted-foreground text-xs'>
-						別のシステム（取引先）
-					</p>
-					<CardFrame>
-						<RecordCard kind='customer' record={CUSTOMERS[2]} />
-					</CardFrame>
-				</div>
-				<div className='space-y-1'>
-					<p className='text-muted-foreground text-xs'>
-						別のシステム（担当者）
-					</p>
-					<CardFrame>
-						<RecordCard kind='member' record={MEMBERS[1]} />
-					</CardFrame>
-				</div>
-			</div>
-		</RecordKindProvider>
 	),
 }
 
