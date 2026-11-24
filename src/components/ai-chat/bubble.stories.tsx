@@ -5,6 +5,7 @@ import { Bubble, BubbleContent, BubbleGroup, BubbleReactions } from './bubble'
 /** 発言の吹き出し。色は 7 通り。押せる吹き出しは `asChild` でボタンを渡す。 */
 const meta = {
 	title: 'AI チャット/Bubble',
+	id: 'bubble',
 	component: Bubble,
 } satisfies Meta<typeof Bubble>
 

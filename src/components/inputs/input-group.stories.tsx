@@ -18,6 +18,7 @@ import {
  */
 const meta = {
 	title: '入力/InputGroup',
+	id: 'input-group',
 	component: InputGroup,
 } satisfies Meta<typeof InputGroup>
 

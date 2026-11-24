@@ -13,6 +13,7 @@ import {
  */
 const meta = {
 	title: 'AI/AiSuggestion',
+	id: 'ai-suggestion',
 	component: AiSuggestion,
 } satisfies Meta<typeof AiSuggestion>
 

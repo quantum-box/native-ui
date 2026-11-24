@@ -12,6 +12,7 @@ import {
 
 const meta: Meta<typeof Tooltip> = {
 	title: '重なる物/Tooltip',
+	id: 'tooltip',
 	component: Tooltip,
 	decorators: [
 		Story => (

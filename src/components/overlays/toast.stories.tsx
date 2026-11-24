@@ -5,6 +5,7 @@ import { Toaster, toast } from './toast'
 
 const meta = {
 	title: '重なる物/Toast',
+	id: 'toast',
 	component: Toaster,
 } satisfies Meta<typeof Toaster>
 

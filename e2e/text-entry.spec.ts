@@ -21,7 +21,7 @@ async function typeLines(page: Page, count: number) {
 test('Textarea は中身に合わせて伸び、最大の行数を超えると欄の中でスクロールする', async ({
 	page,
 }) => {
-	await page.goto(story('入力-textarea--外で値を持つ'))
+	await page.goto(story('textarea--外で値を持つ'))
 	const textarea = page.getByRole('textbox', { name: '返信' })
 	const line = await lineHeight(textarea)
 
@@ -61,7 +61,7 @@ test('Textarea は中身に合わせて伸び、最大の行数を超えると�
 test('InputGroup の中の欄にフォーカスすると、囲みに輪が出る。付けた物の余白を押すと欄に移る', async ({
 	page,
 }) => {
-	await page.goto(story('入力-inputgroup--状態の一覧'))
+	await page.goto(story('input-group--状態の一覧'))
 	const textarea = page.getByRole('textbox', { name: '質問' }).first()
 	const group = textarea.locator('xpath=ancestor::*[@data-slot="input-group"][1]')
 
@@ -91,7 +91,7 @@ test('InputGroup の中の欄にフォーカスすると、囲みに輪が出る
 test('class で高さの上限（max-h-*）を決めた欄も、そこで止まってスクロールする', async ({
 	page,
 }) => {
-	await page.goto(story('入力-inputgroup--送る欄'))
+	await page.goto(story('input-group--送る欄'))
 	const textarea = page.getByRole('textbox', { name: '質問' })
 	const submit = page.getByRole('button', { name: '質問する' })
 	await expect(submit).toBeDisabled()
@@ -117,7 +117,7 @@ test('class で高さの上限（max-h-*）を決めた欄も、そこで止ま�
 test('囲みの中の長い文の欄も、rows を渡すとそれが最小の行数になる', async ({
 	page,
 }) => {
-	await page.goto(story('入力-inputgroup--行数を決める'))
+	await page.goto(story('input-group--行数を決める'))
 	const textarea = page.getByRole('textbox', { name: '依頼' })
 	const line = await lineHeight(textarea)
 	const empty = await height(textarea)

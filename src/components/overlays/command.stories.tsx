@@ -14,6 +14,7 @@ import {
 
 const meta = {
 	title: '重なる物/Command',
+	id: 'command',
 	component: Command,
 } satisfies Meta<typeof Command>
 

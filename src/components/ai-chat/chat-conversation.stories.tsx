@@ -31,6 +31,7 @@ import { Trace } from './trace'
  */
 const meta = {
 	title: 'AI チャット/ChatConversation',
+	id: 'chat-conversation',
 	parameters: { layout: 'fullscreen' },
 } satisfies Meta
 

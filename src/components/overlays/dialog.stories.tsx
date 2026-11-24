@@ -16,6 +16,7 @@ import { Label } from '../basics/label'
 
 const meta = {
 	title: '重なる物/Dialog',
+	id: 'dialog',
 	component: Dialog,
 } satisfies Meta<typeof Dialog>
 

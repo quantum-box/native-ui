@@ -4,6 +4,7 @@ import { Kbd } from './kbd'
 
 const meta = {
 	title: '基本/Kbd',
+	id: 'kbd',
 	component: Kbd,
 	args: {
 		children: '⌘K',

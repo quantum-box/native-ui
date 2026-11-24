@@ -10,6 +10,7 @@ import {
 /** AI が何かを変える前に「この操作をしてよいか」を聞く枠。 */
 const meta = {
 	title: 'AI チャット/ApprovalRequest',
+	id: 'chat-approval',
 } satisfies Meta
 
 export default meta

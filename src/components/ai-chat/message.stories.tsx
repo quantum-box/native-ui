@@ -23,6 +23,7 @@ import {
 /** AI とのやりとりの 1 件分。自分の発言は右、AI の答えは左に並ぶ。 */
 const meta = {
 	title: 'AI チャット/Message',
+	id: 'message',
 	component: Message,
 } satisfies Meta<typeof Message>
 

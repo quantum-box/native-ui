@@ -26,6 +26,7 @@ import {
 
 const meta: Meta<typeof Sidebar> = {
 	title: '画面の枠/Sidebar',
+	id: 'sidebar',
 	component: Sidebar,
 	parameters: {
 		layout: 'fullscreen',

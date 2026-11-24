@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './popover'
 
 const meta = {
 	title: '重なる物/Popover',
+	id: 'popover',
 	component: Popover,
 } satisfies Meta<typeof Popover>
 

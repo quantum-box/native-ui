@@ -18,6 +18,7 @@ class ClipboardItemMock {
 
 const meta = {
 	title: '画面の枠/MacOSWebLinkCopyShortcut',
+	id: 'macos-web-link-copy-shortcut',
 	component: MacOSWebLinkCopyShortcut,
 	tags: ['autodocs', 'keyboard', 'tauri'],
 	args: {

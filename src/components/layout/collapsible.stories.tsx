@@ -11,6 +11,7 @@ import {
 /** 押すと開いたり閉じたりする囲み。 */
 const meta = {
 	title: '並べる・見せる/Collapsible',
+	id: 'collapsible',
 	component: Collapsible,
 } satisfies Meta<typeof Collapsible>
 

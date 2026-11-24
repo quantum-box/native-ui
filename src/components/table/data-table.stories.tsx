@@ -20,6 +20,7 @@ import { DataTableViewNotice } from './data-table-view-notice'
  */
 const meta = {
 	title: '表/DataTable',
+	id: 'data-table',
 	parameters: { layout: 'padded' },
 } satisfies Meta
 
