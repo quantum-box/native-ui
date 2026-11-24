@@ -3,11 +3,11 @@
 import * as React from 'react'
 import {
 	Controller,
-	FormProvider,
-	useFormContext,
 	type ControllerProps,
 	type FieldPath,
 	type FieldValues,
+	FormProvider,
+	useFormContext,
 } from 'react-hook-form'
 
 import { Slot } from '../../lib/slot'
@@ -99,12 +99,16 @@ const FormItem = React.forwardRef<
 			<div
 				ref={ref}
 				data-slot='field'
-				className={cn('grid min-w-0 content-start gap-1.5', className)}
+				// 段の間は gap でなく余白で空け、説明もエラーも無いときは入力欄の下に空きを作らない
+				className={cn(
+					'grid min-w-0 content-start gap-0 [&>label]:pb-1.5',
+					className,
+				)}
 				{...props}
 			>
 				{rest}
 				{notes.length > 0 ? (
-					<div data-slot='field-note' className='grid min-w-0 gap-1'>
+					<div data-slot='field-note' className='grid min-w-0 gap-1 pt-1'>
 						{notes}
 					</div>
 				) : null}

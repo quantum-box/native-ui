@@ -169,3 +169,21 @@ export const 包装規格を追加: Story = {
 		</div>
 	),
 }
+
+/**
+ * 絞り込みの行のように、欄の右にボタンを下ぞろえで並べる。説明もエラーも無い欄は
+ * 入力欄の下に空きを作らないので、入力欄とボタンの下端がそろう。
+ */
+export const ボタンと並べる: Story = {
+	render: () => (
+		<form className='flex max-w-xl flex-wrap items-end gap-3 rounded-md border border-border p-3'>
+			<Field className='w-40' label='開始日'>
+				<Input type='date' />
+			</Field>
+			<Field className='w-40' label='終了日'>
+				<Input type='date' />
+			</Field>
+			<Button type='submit'>表示</Button>
+		</form>
+	),
+}
