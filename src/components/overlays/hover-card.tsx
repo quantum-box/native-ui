@@ -1,32 +1,231 @@
 'use client'
 
-import * as HoverCardPrimitive from '@radix-ui/react-hover-card'
+import { PreviewCard as PreviewCardPrimitive } from '@base-ui/react/preview-card'
 import * as React from 'react'
 
+import {
+	type PositionProps,
+	compatRender,
+	openState,
+	positionerCompat,
+	radixCssVars,
+} from '../../lib/overlay'
 import { cn } from '../../lib/utils'
 
-/** 触れると出る小さな枠。補足を見せるだけで、大事な操作は置かない。 */
-const HoverCard = HoverCardPrimitive.Root
+// 中身は base-ui の PreviewCard。使い方（openDelay・closeDelay・asChild・data-state・
+// 位置の props）は Radix の HoverCard のときと同じ。
 
-const HoverCardTrigger = HoverCardPrimitive.Trigger
+/** Radix と同じ既定の待ち時間（ミリ秒） */
+const DEFAULT_OPEN_DELAY = 700
+const DEFAULT_CLOSE_DELAY = 300
+
+/**
+ * 中身の文を選んでいるあいだ・選んだ文があるあいだは、指が離れても閉じない
+ * （Radix と同じ。閉じると選んだ文が消えて写せないため）。外を押す・Esc では閉じる
+ */
+interface SelectionState {
+	pointerDownOnContent: boolean
+	hasSelection: boolean
+}
+const SelectionContext = React.createContext<
+	React.MutableRefObject<SelectionState> | undefined
+>(undefined)
+
+const DelayContext = React.createContext({
+	openDelay: DEFAULT_OPEN_DELAY,
+	closeDelay: DEFAULT_CLOSE_DELAY,
+})
+
+export interface HoverCardProps {
+	open?: boolean
+	defaultOpen?: boolean
+	onOpenChange?(open: boolean): void
+	/** 触れてから出るまでの時間。既定は 700 */
+	openDelay?: number
+	/** 離れてから消えるまでの時間。既定は 300 */
+	closeDelay?: number
+	children?: React.ReactNode
+}
+
+/** 触れると出る小さな枠。補足を見せるだけで、大事な操作は置かない。 */
+function HoverCard({
+	open,
+	defaultOpen,
+	onOpenChange,
+	openDelay = DEFAULT_OPEN_DELAY,
+	closeDelay = DEFAULT_CLOSE_DELAY,
+	children,
+}: HoverCardProps) {
+	const delays = React.useMemo(
+		() => ({ openDelay, closeDelay }),
+		[openDelay, closeDelay],
+	)
+	const selection = React.useRef<SelectionState>({
+		pointerDownOnContent: false,
+		hasSelection: false,
+	})
+	return (
+		<PreviewCardPrimitive.Root
+			open={open}
+			defaultOpen={defaultOpen}
+			onOpenChange={(
+				next: boolean,
+				details: PreviewCardPrimitive.Root.ChangeEventDetails,
+			) => {
+				const leaving =
+					details.reason === 'trigger-hover' ||
+					details.reason === 'trigger-focus'
+				const selecting =
+					selection.current.pointerDownOnContent ||
+					selection.current.hasSelection
+				if (!next && leaving && selecting) {
+					details.cancel()
+					return
+				}
+				if (!next) selection.current.hasSelection = false
+				onOpenChange?.(next)
+			}}
+		>
+			<SelectionContext.Provider value={selection}>
+				<DelayContext.Provider value={delays}>{children}</DelayContext.Provider>
+			</SelectionContext.Provider>
+		</PreviewCardPrimitive.Root>
+	)
+}
+
+const HoverCardTrigger = React.forwardRef<
+	HTMLAnchorElement,
+	React.AnchorHTMLAttributes<HTMLAnchorElement> & { asChild?: boolean }
+>(({ asChild, children, ...props }, ref) => {
+	const { openDelay, closeDelay } = React.useContext(DelayContext)
+	return (
+		<PreviewCardPrimitive.Trigger
+			ref={ref}
+			delay={openDelay}
+			closeDelay={closeDelay}
+			render={compatRender('a', asChild, children, openState)}
+			{...props}
+		>
+			{asChild ? undefined : children}
+		</PreviewCardPrimitive.Trigger>
+	)
+})
+HoverCardTrigger.displayName = 'HoverCardTrigger'
+
+export interface HoverCardContentProps
+	extends React.HTMLAttributes<HTMLDivElement>,
+		PositionProps {
+	asChild?: boolean
+	forceMount?: boolean
+}
 
 const HoverCardContent = React.forwardRef<
-	React.ElementRef<typeof HoverCardPrimitive.Content>,
-	React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>
->(({ className, align = 'start', sideOffset = 4, ...props }, ref) => (
-	<HoverCardPrimitive.Portal>
-		<HoverCardPrimitive.Content
-			ref={ref}
-			align={align}
-			sideOffset={sideOffset}
-			className={cn(
-				'z-50 w-72 rounded-lg border border-border bg-popover p-3 text-popover-foreground text-sm shadow-overlay outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1',
-				className,
-			)}
-			{...props}
-		/>
-	</HoverCardPrimitive.Portal>
-))
-HoverCardContent.displayName = HoverCardPrimitive.Content.displayName
+	HTMLDivElement,
+	HoverCardContentProps
+>(
+	(
+		{
+			className,
+			style,
+			asChild,
+			children,
+			forceMount,
+			side = 'bottom',
+			sideOffset = 4,
+			align = 'start',
+			alignOffset,
+			avoidCollisions,
+			collisionBoundary,
+			collisionPadding,
+			sticky,
+			hideWhenDetached,
+			...props
+		},
+		ref,
+	) => {
+		const selection = React.useContext(SelectionContext)
+		// 中身の上で押したら、離すまで「文を選んでいる」とみなす。離したあと、
+		// 選んだ文が残っていれば、指が離れても閉じない
+		// 押しているあいだの後片付け（指を離した・取り消された・中身が消えた、のどれでも呼ぶ）
+		const endGesture = React.useRef<(() => void) | null>(null)
+		React.useEffect(() => () => endGesture.current?.(), [])
+		const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+			props.onPointerDown?.(event)
+			if (!selection || event.button !== 0 || event.defaultPrevented) return
+			endGesture.current?.()
+			selection.current.pointerDownOnContent = true
+			const { body } = document
+			const previous = body.style.userSelect
+			// 選ぶ範囲が中身の外へ広がらないようにする（Radix と同じ）
+			body.style.userSelect = 'none'
+			const content = event.currentTarget
+			content.style.userSelect = 'text'
+			const restore = () => {
+				document.removeEventListener('pointerup', onPointerUp)
+				document.removeEventListener('pointercancel', onPointerCancel)
+				body.style.userSelect = previous
+				content.style.userSelect = ''
+				endGesture.current = null
+			}
+			const onPointerUp = () => {
+				restore()
+				// 選んだ文は、離したあとに決まる。決まるまでは「選んでいる」のままにして、
+				// その間に閉じないようにする
+				window.setTimeout(() => {
+					selection.current.hasSelection =
+						(document.getSelection()?.toString() ?? '') !== ''
+					selection.current.pointerDownOnContent = false
+				}, 0)
+			}
+			// 指で触れてスクロールに変わったときなどは、pointerup の代わりに
+			// pointercancel が来る。文は選ばれていないので、すぐ元に戻す
+			const onPointerCancel = () => {
+				restore()
+				selection.current.pointerDownOnContent = false
+			}
+			document.addEventListener('pointerup', onPointerUp)
+			document.addEventListener('pointercancel', onPointerCancel)
+			endGesture.current = () => {
+				restore()
+				selection.current.pointerDownOnContent = false
+			}
+		}
+		return (
+			<PreviewCardPrimitive.Portal keepMounted={forceMount}>
+				<PreviewCardPrimitive.Positioner
+					className={cn(
+						'z-50',
+						hideWhenDetached && 'data-[anchor-hidden]:invisible',
+					)}
+					{...positionerCompat({
+						side,
+						sideOffset,
+						align,
+						alignOffset,
+						avoidCollisions,
+						collisionBoundary,
+						collisionPadding,
+						sticky,
+					})}
+				>
+					<PreviewCardPrimitive.Popup
+						ref={ref}
+						className={cn(
+							'z-50 w-72 rounded-lg border border-border bg-popover p-3 text-popover-foreground text-sm shadow-overlay outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1 data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1',
+							className,
+						)}
+						style={{ ...radixCssVars('hover-card'), ...style }}
+						render={compatRender('div', asChild, children, openState)}
+						{...props}
+						onPointerDown={onPointerDown}
+					>
+						{asChild ? undefined : children}
+					</PreviewCardPrimitive.Popup>
+				</PreviewCardPrimitive.Positioner>
+			</PreviewCardPrimitive.Portal>
+		)
+	},
+)
+HoverCardContent.displayName = 'HoverCardContent'
 
 export { HoverCard, HoverCardTrigger, HoverCardContent }

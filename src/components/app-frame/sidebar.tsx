@@ -1,6 +1,6 @@
-import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
 
+import { Slot } from '../../lib/slot'
 import { cn } from '../../lib/utils'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
