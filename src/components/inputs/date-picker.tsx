@@ -218,7 +218,15 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 								</InputGroupButton>
 							</PopoverTrigger>
 						</InputGroupAddon>
-						{name && <input type='hidden' name={name} value={value} />}
+						{name && (
+							// 使えない欄の値は、ブラウザの入力欄と同じく送らない
+							<input
+								type='hidden'
+								name={name}
+								value={value}
+								disabled={disabled}
+							/>
+						)}
 					</InputGroup>
 				</PopoverAnchor>
 				<PopoverContent
@@ -380,6 +388,11 @@ const DateRangePicker = React.forwardRef<
 			onOpenChange?.(next)
 		}
 
+		// 外から open を false にして閉じたときも、選んでいる途中の期間を捨てる
+		React.useEffect(() => {
+			if (!open) setDraft(null)
+		}, [open])
+
 		const commit = (next: DateRange) => {
 			if (valueProp === undefined) setInnerValue(next)
 			onValueChange?.(next)
@@ -420,8 +433,18 @@ const DateRangePicker = React.forwardRef<
 				</PopoverTrigger>
 				{names && (
 					<>
-						<input type='hidden' name={names[0]} value={value.from} />
-						<input type='hidden' name={names[1]} value={value.to} />
+						<input
+							type='hidden'
+							name={names[0]}
+							value={value.from}
+							disabled={disabled}
+						/>
+						<input
+							type='hidden'
+							name={names[1]}
+							value={value.to}
+							disabled={disabled}
+						/>
 					</>
 				)}
 				<PopoverContent

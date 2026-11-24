@@ -519,6 +519,24 @@ describe('DatePicker', () => {
 		expect(new FormData(form).get('dueDate')).toBe('2026-11-18')
 	})
 
+	it('disabled のときは、フォームで値を送らない', async () => {
+		await render(
+			<form>
+				<DatePicker today={TODAY} name='dueDate' value='2026-11-18' disabled />
+				<DateRangePicker
+					today={TODAY}
+					names={['from', 'to']}
+					value={{ from: '2026-11-01', to: '2026-11-30' }}
+					disabled
+				/>
+			</form>,
+		)
+		const data = new FormData(document.querySelector('form') as HTMLFormElement)
+		expect(data.has('dueDate')).toBe(false)
+		expect(data.has('from')).toBe(false)
+		expect(data.has('to')).toBe(false)
+	})
+
 	it('disabled と readOnly では開けない', async () => {
 		await render(
 			<>
@@ -593,6 +611,28 @@ describe('DateRangePicker', () => {
 		})
 		expect(trigger().textContent).toBe('2026/11/10 〜 2026/11/18')
 		expect(document.querySelector('[data-slot="calendar"]')).toBeNull()
+	})
+
+	it('外から open を false にして閉じても、選んでいる途中の期間は残らない', async () => {
+		const onValueChange = vi.fn<(value: DateRange) => void>()
+		const view = (open: boolean) => (
+			<DateRangePicker
+				today={TODAY}
+				open={open}
+				onValueChange={onValueChange}
+			/>
+		)
+		await render(view(true))
+		await act(wait)
+		await click(day('2026-11-10'))
+		await act(async () => root?.render(view(false)))
+		await act(() => wait(300))
+		await act(async () => root?.render(view(true)))
+		await act(wait)
+		// 途中の期間が残っていれば、ここで 10 日〜20 日に決まってしまう
+		await click(day('2026-11-20'))
+		expect(onValueChange).not.toHaveBeenCalled()
+		expect(document.body.textContent).toContain('終わりの日を選んでください')
 	})
 
 	it('names を渡すと、はじめと終わりをフォームで送れる', async () => {
