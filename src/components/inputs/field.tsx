@@ -104,28 +104,70 @@ const Field = React.forwardRef<HTMLDivElement, FieldProps>(
 )
 Field.displayName = 'Field'
 
+export interface FieldGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+	/**
+	 * いちばん多いときの列の数。箱が狭くなると（右の詳細の中など）、1 列が
+	 * minColumnWidth を下回らないよう列を減らし、もっと狭ければ 1 列にする。
+	 * 画面の幅ではなく、箱の幅で決まる。省くと、12rem ずつ入るだけ並べる。
+	 */
+	columns?: number
+	/** 1 列のいちばん狭い幅（CSS の長さ）。既定は 10rem */
+	minColumnWidth?: string
+}
+
 /**
  * 欄を横に並べる箱。同じ行の欄どうしで、ラベル・入力欄・説明の段の高さを共有する
- * （CSS の subgrid）。列の数は className で決める（例: `sm:grid-cols-2 lg:grid-cols-4`）。
- * 何も決めないと、狭い画面では 1 列、広がると 12rem ずつ並ぶ。
+ * （CSS の subgrid）。Field と FormItem のどちらを並べてもよい。
  *
- * 欄でない物（ボタンなど）を並べるときは `col-span-full` などで 1 行を使う。
+ * 列の数は `columns` で決める（または className で `sm:grid-cols-2` などを決める）。
+ * 欄でない物（ボタンの並びなど）は FieldActions に入れると、最後の 1 行を使う。
  */
-const FieldGroup = React.forwardRef<
+const FieldGroup = React.forwardRef<HTMLDivElement, FieldGroupProps>(
+	({ className, style, columns, minColumnWidth = '10rem', ...props }, ref) => (
+		<div
+			ref={ref}
+			data-slot='field-group'
+			className={cn(
+				'grid min-w-0 gap-x-3 gap-y-3',
+				columns === undefined &&
+					'grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))]',
+				'[&>[data-slot=field]]:row-span-3 [&>[data-slot=field]]:grid-rows-subgrid [&>[data-slot=field]]:gap-y-1',
+				className,
+			)}
+			style={
+				columns === undefined
+					? style
+					: {
+							// 広ければ columns 列ちょうど、狭ければ minColumnWidth を下回らない数、
+							// もっと狭ければ 1 列（min(100%, …)）。列の間は gap-x-3（0.75rem）
+							gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, max(${minColumnWidth}, calc((100% - ${columns - 1} * 0.75rem) / ${columns}))), 1fr))`,
+							...style,
+						}
+			}
+			{...props}
+		/>
+	),
+)
+FieldGroup.displayName = 'FieldGroup'
+
+/**
+ * FieldGroup の最後に置くボタンの並び（保存・やめる など）。1 行を使い、右へ寄せる。
+ * 狭い箱では折り返し、箱の外へはみ出さない。
+ */
+const FieldActions = React.forwardRef<
 	HTMLDivElement,
 	React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
 	<div
 		ref={ref}
-		data-slot='field-group'
+		data-slot='field-actions'
 		className={cn(
-			'grid min-w-0 grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))] gap-x-3 gap-y-3',
-			'[&>[data-slot=field]]:row-span-3 [&>[data-slot=field]]:grid-rows-subgrid [&>[data-slot=field]]:gap-y-1',
+			'col-span-full flex min-w-0 flex-wrap items-center justify-end gap-2',
 			className,
 		)}
 		{...props}
 	/>
 ))
-FieldGroup.displayName = 'FieldGroup'
+FieldActions.displayName = 'FieldActions'
 
-export { Field, FieldGroup }
+export { Field, FieldActions, FieldGroup }

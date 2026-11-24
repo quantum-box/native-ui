@@ -127,6 +127,41 @@ import { Button } from '@tachyon-sdk/native-ui'
 />
 ```
 
+## フォームの欄を並べる
+
+欄は `Field`（または react-hook-form の `FormItem`）、横に並べる箱は `FieldGroup`。同じ行の欄は、説明・エラー・長いラベルが混ざっても入力欄の上端がそろい、入力欄もボタンも箱の右端からはみ出さない。
+
+```tsx
+import { Button, Field, FieldActions, FieldGroup, Input } from '@tachyon-sdk/native-ui'
+
+<FieldGroup columns={4}>
+  <Field label='商品名' required>
+    <Input />
+  </Field>
+  <Field label='入数' description='1 箱に入っている数'>
+    <Input inputMode='numeric' />
+  </Field>
+  <Field label='JAN コード' error={errors.jan}>
+    <Input inputMode='numeric' />
+  </Field>
+  <FieldActions>
+    <Button variant='ghost'>やめる</Button>
+    <Button type='submit' variant='primary'>保存</Button>
+  </FieldActions>
+</FieldGroup>
+```
+
+- `columns` はいちばん多いときの列の数。箱が狭いと（右の詳細の中など）列を減らし、もっと狭ければ 1 列。画面の幅ではなく箱の幅で決まる。
+- react-hook-form なら、`Field` の代わりに `FormItem`（`FormLabel`・`FormControl`・`FormDescription`・`FormMessage`）をそのまま `FieldGroup` に入れてよい。
+
+形の崩れ（同じ行の入力欄の上端のずれ・右へのはみ出し）は、テスト用の入口の `findLayoutProblems` で見つけられる。外の物を使わない 1 つの関数なので、Playwright の `evaluate` にそのまま渡せる。
+
+```ts
+import { findLayoutProblems } from '@tachyon-sdk/native-ui/testing'
+
+expect(await page.locator('form').evaluate(findLayoutProblems)).toEqual([])
+```
+
 ## 開発
 
 ```bash

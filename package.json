@@ -32,6 +32,16 @@
         "default": "./dist/tailwind-preset.js"
       }
     },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.mts",
+        "default": "./dist/testing.mjs"
+      },
+      "require": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      }
+    },
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/theme.css": "./src/styles/theme.css",
     "./src/*": "./src/*"

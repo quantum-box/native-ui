@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { Button } from '../basics/button'
-import { Field, FieldGroup } from './field'
+import { Field, FieldActions, FieldGroup } from './field'
 import { Input } from './input'
 import {
 	Select,
@@ -104,5 +104,68 @@ export const 狭い箱: Story = {
 				</Field>
 			</FieldGroup>
 		</form>
+	),
+}
+
+/** 「包装規格を追加」のような欄。説明の有る欄・無い欄・エラーが 4 列に混ざる */
+function PackageForm({ title }: { title?: string }) {
+	return (
+		<form
+			aria-label={title ?? '包装規格を追加'}
+			className='min-w-0 rounded-md border border-border bg-background p-4 text-foreground'
+		>
+			{title ? (
+				<p className='mb-3 text-muted-foreground text-xs'>{title}</p>
+			) : null}
+			<FieldGroup columns={4}>
+				<Field label='商品名' required>
+					<Input defaultValue='有機トマト 500g' />
+				</Field>
+				<Field description='1 箱に入っている数' label='入数'>
+					<Input defaultValue='12' inputMode='numeric' />
+				</Field>
+				<Field label='内容量'>
+					<div className='flex min-w-0 gap-2'>
+						<Input aria-label='内容量' defaultValue='500' inputMode='decimal' />
+						{units}
+					</div>
+				</Field>
+				<Field error='13 桁の数字で入れてください。' label='JAN コード'>
+					<Input defaultValue='4901' inputMode='numeric' />
+				</Field>
+				<Field label='包装の種類（段ボール・袋・パックなど、仕入れ先の呼び方で）'>
+					<Input />
+				</Field>
+				<Field description='空なら商品名と同じ' label='表示名'>
+					<Input />
+				</Field>
+				<FieldActions>
+					<Button type='button' variant='ghost'>
+						やめる
+					</Button>
+					<Button type='submit' variant='primary'>
+						保存
+					</Button>
+				</FieldActions>
+			</FieldGroup>
+		</form>
+	)
+}
+
+/**
+ * 4 列（`columns={4}`）。箱が狭くなると列を減らし、もっと狭ければ 1 列にする。
+ * ライトとダーク、右の詳細ほどの狭い箱を並べる。
+ */
+export const 包装規格を追加: Story = {
+	render: () => (
+		<div className='grid w-[60rem] max-w-full gap-4'>
+			<PackageForm />
+			<div className='dark rounded-md bg-background p-3'>
+				<PackageForm title='ダーク' />
+			</div>
+			<div className='w-[22rem]' data-testid='sheet-width'>
+				<PackageForm title='右の詳細ほどの幅（22rem）' />
+			</div>
+		</div>
 	),
 }
