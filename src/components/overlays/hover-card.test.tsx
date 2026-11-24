@@ -99,6 +99,47 @@ describe('HoverCard', () => {
 	})
 })
 
+describe('HoverCard の中身の文を選ぶとき', () => {
+	const pointer = (type: string) =>
+		new MouseEvent(type, { bubbles: true, cancelable: true, button: 0 })
+
+	it('押すと、選ぶ範囲を中身だけにし、取り消されたら（pointercancel）元に戻す', async () => {
+		await render(
+			<HoverCard defaultOpen>
+				<HoverCardTrigger href='#c'>名前</HoverCardTrigger>
+				<HoverCardContent data-testid='content'>中身の文</HoverCardContent>
+			</HoverCard>,
+		)
+		const content = document.querySelector(
+			'[data-testid="content"]',
+		) as HTMLElement
+		await act(async () => content.dispatchEvent(pointer('pointerdown')))
+		expect(document.body.style.userSelect).toBe('none')
+		expect(content.style.userSelect).toBe('text')
+
+		await act(async () => document.dispatchEvent(pointer('pointercancel')))
+		expect(document.body.style.userSelect).toBe('')
+		expect(content.style.userSelect).toBe('')
+	})
+
+	it('押しているあいだに中身が消えても、選ぶ範囲を元に戻す', async () => {
+		await render(
+			<HoverCard defaultOpen>
+				<HoverCardTrigger href='#c'>名前</HoverCardTrigger>
+				<HoverCardContent data-testid='content'>中身の文</HoverCardContent>
+			</HoverCard>,
+		)
+		const content = document.querySelector(
+			'[data-testid="content"]',
+		) as HTMLElement
+		await act(async () => content.dispatchEvent(pointer('pointerdown')))
+		expect(document.body.style.userSelect).toBe('none')
+		await act(async () => root?.unmount())
+		root = undefined
+		expect(document.body.style.userSelect).toBe('')
+	})
+})
+
 describe('asChild（Radix の Slot をやめた後）', () => {
 	it('SidebarItem asChild は子のリンクを使い、class・選んだ印・ref を足す', async () => {
 		const ref = createRef<HTMLButtonElement>()

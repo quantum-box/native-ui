@@ -146,20 +146,29 @@ const HoverCardContent = React.forwardRef<
 		const selection = React.useContext(SelectionContext)
 		// 中身の上で押したら、離すまで「文を選んでいる」とみなす。離したあと、
 		// 選んだ文が残っていれば、指が離れても閉じない
+		// 押しているあいだの後片付け（指を離した・取り消された・中身が消えた、のどれでも呼ぶ）
+		const endGesture = React.useRef<(() => void) | null>(null)
+		React.useEffect(() => () => endGesture.current?.(), [])
 		const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
 			props.onPointerDown?.(event)
 			if (!selection || event.button !== 0 || event.defaultPrevented) return
+			endGesture.current?.()
 			selection.current.pointerDownOnContent = true
 			const { body } = document
 			const previous = body.style.userSelect
 			// 選ぶ範囲が中身の外へ広がらないようにする（Radix と同じ）
 			body.style.userSelect = 'none'
-			event.currentTarget.style.userSelect = 'text'
 			const content = event.currentTarget
-			const onPointerUp = () => {
+			content.style.userSelect = 'text'
+			const restore = () => {
 				document.removeEventListener('pointerup', onPointerUp)
+				document.removeEventListener('pointercancel', onPointerCancel)
 				body.style.userSelect = previous
 				content.style.userSelect = ''
+				endGesture.current = null
+			}
+			const onPointerUp = () => {
+				restore()
 				// 選んだ文は、離したあとに決まる。決まるまでは「選んでいる」のままにして、
 				// その間に閉じないようにする
 				window.setTimeout(() => {
@@ -168,7 +177,18 @@ const HoverCardContent = React.forwardRef<
 					selection.current.pointerDownOnContent = false
 				}, 0)
 			}
+			// 指で触れてスクロールに変わったときなどは、pointerup の代わりに
+			// pointercancel が来る。文は選ばれていないので、すぐ元に戻す
+			const onPointerCancel = () => {
+				restore()
+				selection.current.pointerDownOnContent = false
+			}
 			document.addEventListener('pointerup', onPointerUp)
+			document.addEventListener('pointercancel', onPointerCancel)
+			endGesture.current = () => {
+				restore()
+				selection.current.pointerDownOnContent = false
+			}
 		}
 		return (
 			<PreviewCardPrimitive.Portal keepMounted={forceMount}>
