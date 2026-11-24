@@ -41,8 +41,9 @@ colors:
     primary-foreground: "0 0% 100%"
     selected: "233 60% 96%"        # 選択行・選択項目の背景（アクセント淡色）
     popover: "0 0% 100%"
-    destructive: "4 72% 55%"
+    destructive: "4 72% 43%"          # 文字・枠・薄い地の赤
     destructive-foreground: "0 0% 100%"
+    destructive-strong: "4 72% 43%"   # 白い文字をのせる地（destructive の Button）
     success: "152 50% 40%"
     warning: "36 92% 50%"
     ring: "234 59% 60%"            # フォーカスリング＝アクセント
@@ -60,8 +61,9 @@ colors:
     primary-foreground: "0 0% 100%"
     selected: "234 35% 22%"
     popover: "228 7% 13%"
-    destructive: "4 70% 60%"
+    destructive: "4 80% 68%"          # 暗い地の上の文字は明るい赤
     destructive-foreground: "0 0% 100%"
+    destructive-strong: "4 70% 51%"   # 白い文字をのせる地は濃い赤
     success: "152 45% 50%"
     warning: "36 90% 60%"
     ring: "235 70% 70%"
@@ -363,6 +365,7 @@ kbd:
 | `text-foreground` / `text-muted-foreground` / `text-subtle-foreground` | colors.* |
 | `border-border` / `border-border-strong` | colors.border* |
 | `bg-primary` `text-primary` / `bg-destructive` / `text-success` / `text-warning` | colors.* |
+| `bg-destructive-strong` | 白い文字をのせる赤の地。`text-destructive-foreground` と組で使う（色の差 4.5:1 以上） |
 | `text-2xs`〜`text-2xl` | typography.scale（デフォルトスケールを上書き） |
 | `rounded-sm/md/lg/xl` | radius（4/6/8/12px に上書き） |
 | `shadow-overlay` / `shadow-modal` | elevation level_1 / level_2 |
