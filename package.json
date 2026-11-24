@@ -83,7 +83,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9",
     "@playwright/test": "1.65.1",
-    "@storybook/react-vite": "^10.6.8",
+    "@storybook/react-vite": "^9.1.21",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.3.0",
@@ -93,7 +93,7 @@
     "postcss": "^8.5.33",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "storybook": "^10.6.8",
+    "storybook": "^9.1.21",
     "tailwindcss": "^3.4.1",
     "tsup": "^8.5.1",
     "typescript": "~5.6.2",
