@@ -60,6 +60,28 @@ export const datePickerLabels: DatePickerLabels = {
 	clear: '消す',
 }
 
+/** 見えない入力欄が入っているフォームの reset を聞く */
+function useFormReset(
+	ref: React.RefObject<HTMLInputElement | null>,
+	onReset: () => void,
+) {
+	const latest = React.useRef(onReset)
+	latest.current = onReset
+	React.useEffect(() => {
+		const form = ref.current?.form
+		if (!form) return
+		// reset は取り消せる（onReset で preventDefault）。このリスナーは React の onReset より
+		// 先に呼ばれるので、イベントが配り終わるのを待ってから、取り消されていないときだけ戻す
+		const handle = (event: Event) => {
+			setTimeout(() => {
+				if (!event.defaultPrevented) latest.current()
+			}, 0)
+		}
+		form.addEventListener('reset', handle)
+		return () => form.removeEventListener('reset', handle)
+	})
+}
+
 const focusCalendarDay = (event: Event) => {
 	// 開いたら、選んだ日（無ければ今日）にフォーカスを置く（Calendar の autoFocus がやる）
 	event.preventDefault()
@@ -144,6 +166,13 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 
 		// 打っている途中の文字。null のあいだは、値を表示の形にした物を見せる
 		const [draft, setDraft] = React.useState<string | null>(null)
+
+		// フォームの reset で、はじめの値に戻す（外で値を持つときは、外に任せる）
+		const hiddenRef = React.useRef<HTMLInputElement>(null)
+		useFormReset(hiddenRef, () => {
+			setInnerValue(defaultValue)
+			setDraft(null)
+		})
 		const text = draft ?? (value ? formatDate(value) : '')
 
 		const selectable = (date: string) =>
@@ -223,6 +252,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>(
 						{name && (
 							// 使えない欄の値は、ブラウザの入力欄と同じく送らない
 							<input
+								ref={hiddenRef}
 								type='hidden'
 								form={form}
 								name={name}
@@ -384,6 +414,13 @@ const DateRangePicker = React.forwardRef<
 		// 開いているあいだに選んでいる途中の期間。閉じたら捨てる
 		const [draft, setDraft] = React.useState<DateRange | null>(null)
 
+		// フォームの reset で、はじめの値に戻す
+		const hiddenRef = React.useRef<HTMLInputElement>(null)
+		useFormReset(hiddenRef, () => {
+			setInnerValue(defaultValue)
+			setDraft(null)
+		})
+
 		const [innerOpen, setInnerOpen] = React.useState(defaultOpen)
 		// 使えなくなったら、開いていても閉じる
 		const open = (openProp ?? innerOpen) && !disabled
@@ -440,6 +477,7 @@ const DateRangePicker = React.forwardRef<
 				{names && (
 					<>
 						<input
+							ref={hiddenRef}
 							type='hidden'
 							form={form}
 							name={names[0]}
