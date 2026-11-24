@@ -117,8 +117,8 @@ const Combobox = ({
 									value={option.value}
 									keywords={[option.label, ...(option.keywords ?? [])]}
 									disabled={option.disabled}
-									// cmdk lowercases item values in onSelect, so pass
-									// the original value from the closure instead.
+									// 選んだ値は、ここで持っている元の値を渡す
+									// （onSelect に渡る値に頼らない）
 									onSelect={() => {
 										onValueChange?.(option.value)
 										setOpen(false)

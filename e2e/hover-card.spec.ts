@@ -52,6 +52,11 @@ test('中身の文を選んでいるあいだは、指が離れても閉じな�
 
 	await trigger.hover()
 	await expect(line).toBeVisible()
+	// 開く動き（少し大きくなる）が終わってから場所を測る。動いている途中に測ると、
+	// なぞり始める場所が中身の外にずれることがある
+	await page.waitForFunction(() =>
+		document.getAnimations().every(animation => animation.playState !== 'running'),
+	)
 
 	// 中身の 1 行を、左から右へなぞって選び、そのまま指を遠くへ動かしてから離す
 	const box = await line.boundingBox()
