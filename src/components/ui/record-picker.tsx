@@ -149,6 +149,7 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 		allowEmpty = false,
 		placeholder,
 		disabled,
+		name,
 		className,
 		...aria
 	}: RecordPickerProps<T>,
@@ -191,82 +192,95 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 		),
 	)
 	return (
-		<Popover
-			open={open}
-			onOpenChange={next => {
-				if (next) setActive(currentId)
-				setOpen(next)
-			}}
-		>
-			<PopoverTrigger asChild>
-				<button
-					ref={ref}
-					type='button'
-					disabled={disabled}
-					aria-haspopup='listbox'
-					{...aria}
-					className={cn(
-						'flex h-8 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-background px-2 text-left text-sm transition-colors duration-fast hover:bg-muted/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive',
-						className,
-					)}
-				>
-					<span className='flex min-w-0 flex-1 items-center'>
-						{value ? (
-							<RecordChip
-								kind={kind}
-								record={value}
-								interactive={false}
-								showDescription
-							/>
-						) : (
-							<span className='truncate text-subtle-foreground'>
-								{placeholder ?? `${definition.name}を選ぶ`}
-							</span>
-						)}
-					</span>
-					<ChevronsUpDown
-						aria-hidden
-						className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
-					/>
-				</button>
-			</PopoverTrigger>
-			<PopoverContent
-				align='start'
-				sideOffset={4}
-				style={chrome.style}
-				className={cn(
-					'w-[var(--radix-popover-trigger-width)] min-w-64 max-w-[calc(100vw-24px)] overflow-hidden p-0',
-					chrome.className,
-				)}
-				aria-label={`${definition.name}を選ぶ`}
+		<>
+			<Popover
+				open={open}
+				onOpenChange={next => {
+					if (next) setActive(currentId)
+					setOpen(next)
+				}}
 			>
-				{chrome.header}
-				<Command value={active} onValueChange={setActive}>
-					<CommandInput
-						aria-label={`${definition.name}を検索`}
-						placeholder={chrome.searchPlaceholder}
-					/>
-					<CommandList aria-label={`${definition.name}の候補`}>
-						<CommandEmpty>一致する{definition.name}はありません。</CommandEmpty>
-						<CommandGroup>
-							{allowEmpty ? (
-								<CommandItem value='' onSelect={() => pick(null)}>
-									<span className='text-muted-foreground'>未設定</span>
-									{!currentId ? (
-										<Check
-											aria-label='未設定を選んでいる'
-											className='ml-auto'
-										/>
-									) : null}
-								</CommandItem>
-							) : null}
-							{items}
-						</CommandGroup>
-					</CommandList>
-				</Command>
-				{chrome.footer}
-			</PopoverContent>
-		</Popover>
+				<PopoverTrigger asChild>
+					<button
+						ref={ref}
+						type='button'
+						disabled={disabled}
+						aria-haspopup='listbox'
+						{...aria}
+						className={cn(
+							'flex h-8 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-background px-2 text-left text-sm transition-colors duration-fast hover:bg-muted/50 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive',
+							className,
+						)}
+					>
+						<span className='flex min-w-0 flex-1 items-center'>
+							{value ? (
+								<RecordChip
+									kind={kind}
+									record={value}
+									interactive={false}
+									showDescription
+								/>
+							) : (
+								<span className='truncate text-subtle-foreground'>
+									{placeholder ?? `${definition.name}を選ぶ`}
+								</span>
+							)}
+						</span>
+						<ChevronsUpDown
+							aria-hidden
+							className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
+						/>
+					</button>
+				</PopoverTrigger>
+				<PopoverContent
+					align='start'
+					sideOffset={4}
+					style={chrome.style}
+					className={cn(
+						'w-[var(--radix-popover-trigger-width)] min-w-64 max-w-[calc(100vw-24px)] overflow-hidden p-0',
+						chrome.className,
+					)}
+					aria-label={`${definition.name}を選ぶ`}
+				>
+					{chrome.header}
+					<Command value={active} onValueChange={setActive}>
+						<CommandInput
+							aria-label={`${definition.name}を検索`}
+							placeholder={chrome.searchPlaceholder}
+						/>
+						<CommandList aria-label={`${definition.name}の候補`}>
+							<CommandEmpty>
+								一致する{definition.name}はありません。
+							</CommandEmpty>
+							<CommandGroup>
+								{allowEmpty ? (
+									<CommandItem value='' onSelect={() => pick(null)}>
+										<span className='text-muted-foreground'>未設定</span>
+										{!currentId ? (
+											<Check
+												aria-label='未設定を選んでいる'
+												className='ml-auto'
+											/>
+										) : null}
+									</CommandItem>
+								) : null}
+								{items}
+							</CommandGroup>
+						</CommandList>
+					</Command>
+					{chrome.footer}
+				</PopoverContent>
+			</Popover>
+			{/* フォームで送るときに、選んでいる記録の ID が入るようにする（使えないときは送らない）。 */}
+			{name ? (
+				<input
+					type='hidden'
+					name={name}
+					value={currentId}
+					disabled={disabled}
+				/>
+			) : null}
+		</>
 	)
 }) as <T = unknown>(
 	props: RecordPickerProps<T> & { ref?: Ref<HTMLButtonElement> },
