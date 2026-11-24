@@ -118,7 +118,7 @@ for (const width of [320, 820, 1280]) {
 		await page.setViewportSize({ width, height: 900 })
 		await page.goto(story('field--横1行の欄'))
 		const forms = page.locator('form')
-		await expect(forms).toHaveCount(3)
+		await expect(forms).toHaveCount(4)
 		for (const form of await forms.all()) {
 			expect(await form.evaluate(findLayoutProblems)).toEqual([])
 		}
@@ -140,4 +140,11 @@ test('横 1 行の欄: 名前を押すと入力欄に移り、名前の列の幅
 			inputs.map(input => Math.round(input.getBoundingClientRect().left)),
 		)
 	expect(new Set(lefts).size).toBe(1)
+	// 箱が狭いと、広い画面でも入力欄が名前の下へ回る
+	const narrow = page.locator('form').nth(2)
+	const [name, input] = await Promise.all([
+		narrow.locator('label').boundingBox(),
+		narrow.locator('input').boundingBox(),
+	])
+	expect(input?.y ?? 0).toBeGreaterThan((name?.y ?? 0) + (name?.height ?? 0) - 1)
 })

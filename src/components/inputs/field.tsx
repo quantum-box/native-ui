@@ -198,7 +198,8 @@ export interface InlineFieldProps
 	dense?: boolean
 	/**
 	 * 名前の列の幅（CSS の長さ。例 `12rem`）。渡すと名前の列の幅がそろう
-	 * （設定の行を縦に何行も並べるとき）。狭い画面では名前を上、入力欄を下に積む。
+	 * （設定の行を縦に何行も並べるとき）。箱が狭くて入力欄の幅（12rem）が取れないときは、
+	 * 名前を上、入力欄を下に積む（画面の幅ではなく、箱の幅で決まる）。
 	 */
 	labelWidth?: string
 }
@@ -242,7 +243,8 @@ const InlineField = React.forwardRef<HTMLDivElement, InlineFieldProps>(
 				className={cn(
 					'min-w-0',
 					labelWidth
-						? 'grid gap-x-3 gap-y-1 sm:grid-cols-[var(--inline-field-label)_minmax(0,1fr)] sm:items-center'
+						? // 名前の列の幅と、入力欄に要る幅（12rem）が箱に入らなければ、入力欄が下へ回る
+							'flex flex-wrap items-center gap-x-3 gap-y-1'
 						: ['flex items-center', dense ? 'gap-1.5' : 'gap-2'],
 					dense ? 'text-xs' : 'text-sm',
 					className,
@@ -262,21 +264,25 @@ const InlineField = React.forwardRef<HTMLDivElement, InlineFieldProps>(
 					className={cn(
 						'shrink-0 font-normal leading-snug text-muted-foreground',
 						dense ? 'text-xs' : 'text-sm',
+						labelWidth && 'max-w-full basis-[var(--inline-field-label)]',
 					)}
 				>
 					{label}
 				</Label>
-				{suffix == null ? (
+				{suffix == null && !labelWidth ? (
 					control
 				) : (
 					<div
 						className={cn(
 							'flex min-w-0 items-center',
 							dense ? 'gap-1.5' : 'gap-2',
+							labelWidth && 'flex-[1_1_12rem]',
 						)}
 					>
 						{control}
-						<span className='shrink-0'>{suffix}</span>
+						{suffix == null ? null : (
+							<span className='shrink-0'>{suffix}</span>
+						)}
 					</div>
 				)}
 			</div>

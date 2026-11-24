@@ -138,3 +138,17 @@ export const 狭い箱: Story = {
 		</div>
 	),
 }
+
+/** 広い画面でも、箱が狭ければ（右の詳細の中など）名前が上、値が下に来る。 */
+export const 狭い箱の横に並べる行: Story = {
+	render: () => (
+		<div className='w-56 rounded-md border border-border p-3'>
+			<DescriptionList labelWidth='9rem' layout='inline'>
+				<DescriptionItem label='種類'>問い合わせ</DescriptionItem>
+				<DescriptionItem label='回答者'>
+					山田 太郎（yamada@example.com）
+				</DescriptionItem>
+			</DescriptionList>
+		</div>
+	),
+}

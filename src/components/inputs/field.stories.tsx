@@ -214,6 +214,11 @@ export const 横1行の欄: Story = {
 					<Input defaultValue='金額' />
 				</InlineField>
 			</form>
+			<form className='grid w-56 gap-2 rounded-md border border-border p-2'>
+				<InlineField label='日付の列' labelWidth='12rem'>
+					<Input defaultValue='取引日' />
+				</InlineField>
+			</form>
 			<form className='w-40 overflow-hidden rounded-md border border-border p-2'>
 				<InlineField label='店舗・レジ'>
 					<Input className='min-w-0 flex-1' defaultValue='本店 / 1 番レジ' />

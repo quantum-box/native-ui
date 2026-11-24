@@ -40,6 +40,7 @@ for (const id of [
 	'description-list--横に並べる行',
 	'description-list--aiの値とデータ基盤の値',
 	'description-list--狭い箱',
+	'description-list--狭い箱の横に並べる行',
 ]) {
 	for (const width of [320, 820, 1280]) {
 		test(`${id}: 幅 ${width}px で、値の上端がそろい、何もはみ出さない`, async ({
@@ -111,6 +112,11 @@ test('横に並べる行: 広いと名前が左、狭いと名前が上', async 
 	await expect(page.locator('[data-slot=description-list]')).toBeVisible()
 	expect(await sideBySide()).toBe(true)
 	await page.setViewportSize({ width: 320, height: 900 })
+	expect(await sideBySide()).toBe(false)
+	// 広い画面でも、箱が狭ければ名前が上（画面の幅ではなく、箱の幅で決まる）
+	await page.setViewportSize({ width: 1280, height: 900 })
+	await page.goto(story('description-list--狭い箱の横に並べる行'))
+	await expect(page.locator('[data-slot=description-list]')).toBeVisible()
 	expect(await sideBySide()).toBe(false)
 })
 

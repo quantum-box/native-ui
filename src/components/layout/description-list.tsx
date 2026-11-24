@@ -25,7 +25,8 @@ export interface DescriptionListProps
 	/**
 	 * 並べ方。
 	 * - `stacked`（既定）: 名前を上、値を下に置いた組を、横に何列か並べる。
-	 * - `inline`: 名前を左、値を右に置いた行を、縦に並べる（狭い箱では名前が上に来る）。
+	 * - `inline`: 名前を左、値を右に置いた行を、縦に並べる。箱が狭くて値の幅（12rem）が
+	 *   取れないときは、名前が上、値が下に来る（画面の幅ではなく、箱の幅で決まる）。
 	 */
 	layout?: DescriptionListLayout
 	/**
@@ -179,20 +180,28 @@ const DescriptionItem = React.forwardRef<HTMLDivElement, DescriptionItemProps>(
 					list.layout === 'stacked'
 						? // 名前の段と値の段を、同じ行の組と共有する
 							'row-span-2 grid grid-rows-subgrid gap-y-0'
-						: 'grid gap-x-4 gap-y-0.5 sm:grid-cols-[var(--description-label)_minmax(0,1fr)]',
+						: // 名前の列の幅と、値に要る幅（12rem）が箱に入らなければ、値が下へ回る。
+							// 画面の幅ではなく、箱の幅で決まる
+							'flex flex-wrap gap-x-4 gap-y-0.5',
 					full && 'col-span-full',
 					className,
 				)}
 				style={style}
 				{...props}
 			>
-				<dt className='min-w-0 break-words text-muted-foreground text-xs leading-snug'>
+				<dt
+					className={cn(
+						'min-w-0 break-words text-muted-foreground text-xs leading-snug',
+						list.layout === 'inline' &&
+							'max-w-full shrink-0 basis-[var(--description-label)] pt-0.5',
+					)}
+				>
 					{label}
 				</dt>
 				<dd
 					className={cn(
 						'min-w-0',
-						list.layout === 'stacked' && 'pt-1',
+						list.layout === 'stacked' ? 'pt-1' : 'flex-[1_1_12rem]',
 						WRAP[wrap],
 						mono && 'font-mono text-xs',
 						numeric && 'tabular-nums',
