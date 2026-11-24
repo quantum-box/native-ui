@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, expect, it } from 'vitest'
 
-import { Field } from './field'
+import { Field, InlineField } from './field'
 import { Input } from './input'
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true })
@@ -45,6 +45,44 @@ describe('Field', () => {
 		expect(view.container.querySelectorAll('#amount')).toHaveLength(1)
 		const label = view.container.querySelector('label') as HTMLLabelElement
 		expect(label.control).toBe(view.container.querySelector('input'))
+		view.unmount()
+	})
+})
+
+describe('InlineField', () => {
+	it('名前と入力欄を結び付け、単位を入力欄の後ろに置く', () => {
+		const view = render(
+			<InlineField label='写真' suffix='枚'>
+				<Input type='number' />
+			</InlineField>,
+		)
+		const label = view.container.querySelector('label') as HTMLLabelElement
+		const input = view.container.querySelector('input') as HTMLInputElement
+		expect(label.control).toBe(input)
+		expect(input.nextElementSibling?.textContent).toBe('枚')
+		view.unmount()
+	})
+
+	it('入力欄に id が付いていれば、それを使う', () => {
+		const view = render(
+			<InlineField label='対象月'>
+				<Input id='period' type='month' />
+			</InlineField>,
+		)
+		expect(view.container.querySelector('label')?.htmlFor).toBe('period')
+		view.unmount()
+	})
+
+	it('名前の列の幅を渡すと、その幅で名前の列をそろえる', () => {
+		const view = render(
+			<InlineField label='日付の列' labelWidth='12rem'>
+				<select />
+			</InlineField>,
+		)
+		const box = view.container.querySelector(
+			'[data-slot=inline-field]',
+		) as HTMLElement
+		expect(box.style.getPropertyValue('--inline-field-label')).toBe('12rem')
 		view.unmount()
 	})
 })

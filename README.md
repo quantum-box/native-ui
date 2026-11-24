@@ -162,6 +162,35 @@ import { findLayoutProblems } from '@tachyon-sdk/native-ui/testing'
 expect(await page.locator('form').evaluate(findLayoutProblems)).toEqual([])
 ```
 
+横 1 行の欄（名前が左・入力欄が右。絞り込みの帯や表の行の中の小さい欄）は `InlineField`。単位は `suffix`、名前の列の幅をそろえるときは `labelWidth`。
+
+```tsx
+<InlineField label='写真' suffix='枚'>
+  <Input className='w-20' type='number' />
+</InlineField>
+```
+
+## 名前と値を並べる（表示だけ）
+
+詳細の画面の「取引先：〇〇商店」のような表示だけの値は `DescriptionList` と `DescriptionItem`。入力欄ではないので `Field` は使わない。
+
+```tsx
+import { AiValue, DescriptionItem, DescriptionList } from '@tachyon-sdk/native-ui'
+
+<DescriptionList columns={4}>
+  <DescriptionItem label='取引先'>{supplier}</DescriptionItem>
+  <DescriptionItem label='合計' numeric emphasis>{total}</DescriptionItem>
+  <DescriptionItem label='登録番号' mono>{registrationNumber}</DescriptionItem>
+  <DescriptionItem label='取引日'><AiValue kind='AI の読み取り'>{date}</AiValue></DescriptionItem>
+  <DescriptionItem label='メモ' full wrap='pre'>{note}</DescriptionItem>
+</DescriptionList>
+```
+
+- 値が無いとき（null・undefined・空の文字）は「—」を出す。`empty` で文を変えられる（並び全体でも、1 組だけでも）。
+- `columns` はいちばん多いときの列の数。箱が狭いと列を減らす（画面の幅ではなく箱の幅で決まる）。同じ行の組は、名前が折り返しても値の上端がそろう。
+- 長い値は箱の中で折り返す。ID・URL は `wrap='anywhere'`、改行をそのまま出すメモは `wrap='pre'`、1 行に収めるなら `wrap='truncate'`。
+- 名前を左・値を右に置いた行を縦に並べるときは `layout='inline'`（名前の列の幅は `labelWidth`）。
+
 ## 開発
 
 ```bash
@@ -186,7 +215,7 @@ pnpm build:lib # ライブラリビルド（dist/ に ESM + CJS + d.ts）
 | `basics/` | 基本 | Button・Badge・Label・Separator・Kbd |
 | `inputs/` | 入力 | Input・Textarea・InputGroup・Checkbox・Switch・Select・Combobox・Form・Calendar・DatePicker・DateRangePicker |
 | `overlays/` | 重なる物 | Dialog・Sheet・Popover・Tooltip・DropdownMenu・Command・Toast・HoverCard・HoverPeek |
-| `layout/` | 並べる・見せる | Tabs・Collapsible |
+| `layout/` | 並べる・見せる | Tabs・Collapsible・DescriptionList（名前と値の並び） |
 | `table/` | 表 | Table・DataTable と表のセル（その場で直すセル・記録のセル・計算した値のセル・密度） |
 | `record/` | 記録 | 別の業務の記録（取引先・商品・店・担当者など）の見せ方。表の外でも使う物（RecordChip・RecordCard・RecordPicker など） |
 | `ai/` | AI | AiField（AI が入れた入力欄）・AiReasoning（判断の中身）・AiSuggestion（候補） |
