@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import * as React from 'react'
 
 import {
+	MAX_DATE,
+	MIN_DATE,
 	addDays,
 	addMonths,
 	addMonthsToMonth,
@@ -206,11 +208,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
 			() => monthGrid(month, weekStartsOn),
 			[month, weekStartsOn],
 		)
-		const firstShown = weeks[0][0]
-		const lastShown = weeks[5][6]
 		// 表の中に Tab で止まる日が必ず 1 つあるようにする
+		// （文字の大小では比べない。10000 年のマスが混ざると順が崩れる）
 		const tabDate =
-			focusedDate >= firstShown && focusedDate <= lastShown
+			isDateString(focusedDate) &&
+			weeks.some(week => week.indexOf(focusedDate) >= 0)
 				? focusedDate
 				: clampDate(`${month}-01`, min, max)
 
@@ -250,9 +252,7 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
 		const moveFocus = (date: string) => {
 			const next = clampDate(date, min, max)
 			setFocusedDate(next)
-			if (next < firstShown || next > lastShown || monthOf(next) !== month) {
-				setMonth(monthOf(next))
-			}
+			if (monthOf(next) !== month) setMonth(monthOf(next))
 			focusAfterRender.current = true
 		}
 
@@ -317,10 +317,11 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
 			)
 		}
 
-		const previousDisabled = Boolean(min && `${month}-01` <= min)
-		const nextDisabled = Boolean(
-			max && `${addMonthsToMonth(month, 1)}-01` > max,
-		)
+		const previousDisabled =
+			month === monthOf(MIN_DATE) || Boolean(min && `${month}-01` <= min)
+		const nextDisabled =
+			month === monthOf(MAX_DATE) ||
+			Boolean(max && `${addMonthsToMonth(month, 1)}-01` > max)
 
 		// 期間の見た目。選んでいる途中は、乗せている日（無ければフォーカスの日）までを見せる
 		const picking = mode === 'range' && Boolean(range.from) && !range.to
@@ -409,6 +410,8 @@ const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
 						{weeks.map(week => (
 							<tr key={week[0]}>
 								{week.map((date, column) => {
+									// 扱える範囲（1 年〜9999 年）の外のマスは、空のまま
+									if (!isDateString(date)) return <td key={date} />
 									const outside = monthOf(date) !== month
 									const isDisabled = disabled(date)
 									const isToday = date === today

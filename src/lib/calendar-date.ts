@@ -8,6 +8,12 @@
  */
 
 const DATE = /^(\d{4})-(\d{2})-(\d{2})$/
+// 計算の途中だけ、扱える範囲の外（10000 年など）も読めるようにする
+const LOOSE_DATE = /^(\d{4,})-(\d{2})-(\d{2})$/
+
+/** 扱える最初の日と最後の日 */
+export const MIN_DATE = '0001-01-01'
+export const MAX_DATE = '9999-12-31'
 const MONTH = /^(\d{4})-(\d{2})$/
 const DAY_MS = 86_400_000
 
@@ -56,7 +62,7 @@ export function isDateString(value: unknown): value is string {
 }
 
 function parts(value: string) {
-	const match = DATE.exec(value)
+	const match = LOOSE_DATE.exec(value)
 	if (!match) throw new Error(`日付の形が違います: ${value}`)
 	return {
 		year: Number(match[1]),
@@ -110,11 +116,15 @@ export function todayString(now: Date = new Date()) {
 	return `${pad(now.getFullYear(), 4)}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
-/** min と max のあいだに収める（どちらも無ければそのまま） */
+/** min と max のあいだに収める */
 export function clampDate(value: string, min?: string, max?: string) {
-	if (min && value < min) return min
-	if (max && value > max) return max
-	return value
+	// 扱える範囲（1 年〜9999 年）の外へ出たら、端の日に寄せる
+	let date = value
+	const inDomain: boolean = isDateString(date)
+	if (!inDomain) date = date.length > 10 ? MAX_DATE : MIN_DATE
+	if (min && date < min) return min
+	if (max && date > max) return max
+	return date
 }
 
 /**

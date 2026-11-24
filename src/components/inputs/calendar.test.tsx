@@ -318,6 +318,37 @@ describe('Calendar: キーボード', () => {
 	})
 })
 
+describe('Calendar: 扱える範囲の端', () => {
+	it('9999 年 12 月を見せても落ちず、先の月へは動けない', async () => {
+		const onValueChange = vi.fn()
+		await render(
+			<Calendar
+				today={TODAY}
+				defaultValue='9999-12-01'
+				autoFocus
+				onValueChange={onValueChange}
+			/>,
+		)
+		expect(heading()).toBe('9999年12月')
+		expect(button('次の月').disabled).toBe(true)
+		expect(document.querySelector('[data-date^="10000"]')).toBeNull()
+		await key(day('9999-12-01'), 'PageDown')
+		expect(focused()).toBe('9999-12-31')
+		await key(day('9999-12-31'), 'ArrowRight')
+		expect(focused()).toBe('9999-12-31')
+		await key(day('9999-12-31'), 'Enter')
+		expect(onValueChange).toHaveBeenLastCalledWith('9999-12-31')
+	})
+
+	it('1 年 1 月を見せても落ちず、前の月へは動けない', async () => {
+		await render(<Calendar today={TODAY} defaultValue='0001-01-01' autoFocus />)
+		expect(heading()).toBe('1年1月')
+		expect(button('前の月').disabled).toBe(true)
+		await key(day('0001-01-01'), 'ArrowLeft')
+		expect(focused()).toBe('0001-01-01')
+	})
+})
+
 describe('Calendar: 期間を選ぶ', () => {
 	it('1 回目ではじめ、2 回目で終わりが決まる', async () => {
 		const onValueChange = vi.fn<(value: DateRange) => void>()
@@ -583,6 +614,38 @@ describe('DatePicker', () => {
 			await act(async () => root?.unmount())
 			el.remove()
 		}
+	})
+
+	it('フォームの reset で、はじめの値に戻る', async () => {
+		await render(
+			<form>
+				<DatePicker today={TODAY} name='dueDate' defaultValue='2026-11-18' />
+				<DateRangePicker
+					today={TODAY}
+					names={['from', 'to']}
+					defaultValue={{ from: '2026-11-01', to: '2026-11-30' }}
+				/>
+			</form>,
+		)
+		const form = document.querySelector('form') as HTMLFormElement
+		await type(input(), '12/5')
+		await blur(input())
+		await click(
+			document.querySelector('[data-slot="date-range-picker"]') as Element,
+		)
+		await act(wait)
+		await click(day('2026-11-10'))
+		await click(day('2026-11-12'))
+		await act(() => wait(300))
+		expect(new FormData(form).get('dueDate')).toBe('2026-12-05')
+		expect(new FormData(form).get('from')).toBe('2026-11-10')
+
+		await act(async () => form.reset())
+		expect(input().value).toBe('2026/11/18')
+		const data = new FormData(form)
+		expect(data.get('dueDate')).toBe('2026-11-18')
+		expect(data.get('from')).toBe('2026-11-01')
+		expect(data.get('to')).toBe('2026-11-30')
 	})
 
 	it('disabled と readOnly では開けない', async () => {
