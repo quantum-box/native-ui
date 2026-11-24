@@ -1,13 +1,15 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": {
-    "enabled": true,
-    "ignore": ["node_modules"]
-  },
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "formatter": {
     "enabled": true,
-    "include": ["./src/**/*.ts", "./src/**/*.tsx", "./tsconfig.json"],
-    "ignore": ["node_modules", "dist"]
+    "includes": [
+      "src/**/*.ts",
+      "src/**/*.tsx",
+      "tsconfig.json",
+      "!**/node_modules",
+      "!**/dist"
+    ]
   },
   "javascript": {
     "formatter": {
@@ -27,28 +29,47 @@
       "lineWidth": 80
     }
   },
+  "css": {
+    "parser": { "tailwindDirectives": true }
+  },
   "linter": {
     "enabled": true,
-    "ignore": ["node_modules", "dist"],
+    "includes": ["**", "!**/node_modules", "!**/dist"],
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "a11y": {
         "noSvgWithoutTitle": "off",
-        "useSemanticElements": "off"
+        "useSemanticElements": "off",
+        "noNoninteractiveElementToInteractiveRole": "warn",
+        "noStaticElementInteractions": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "useKeyWithClickEvents": "warn"
       },
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "off",
+        "usePlaywrightValidDescribeCallback": "off"
       },
       "complexity": {
         "useLiteralKeys": "off"
       },
       "suspicious": {
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "useIterableCallbackReturn": "warn"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": { "noComponentHookFactories": "off" }
+        }
+      }
+    }
+  ]
 }
