@@ -59,3 +59,56 @@
 
 - `meta` は右に小さく出す補足、`badge` は名前の横の小さな印（例 AI の返事で「変えた」）。
 - AI の返事では、文の中を `RecordMention`、下の一覧を `RecordList` にする。記録でない資料（明細の抜き出しなど）は、これまでどおりチャットの `CitationMark`・`SourceList` で出す。
+
+## 外の仕事を結ぶ（Linear の Issue など）
+
+外のサービスの仕事（Linear の Issue・プロジェクト、Field の問い合わせなど）を、行動などに結ぶ所。記録の部品の上に作ってあり、結んだ仕事は記録の名前の印と要点のカードで出す。Storybook の `Components/LinkedWork` に例がある。
+
+| 部品 | 役目 |
+| --- | --- |
+| `defineLinkedWorkKind` | 外の仕事の種類を記録の種類として決める（名前は「番号 題名」、要点は番号・題名・進み具合、「{システム}で開く」） |
+| `LinkedWorkList` | 結んだ仕事の一覧。まとめ（進行中 N 件 · 完了 N 件 · 読めない N 件）・読み直す・発生元・外した仕事（畳む）・空の状態 |
+| `LinkedWorkItem` | 結んだ仕事 1 つ。進み具合の札（進行中・完了・取消）・結び方の札（進める仕事・参考）・「{システム}で開く ↗」・「外す」 |
+| `UnlinkWorkDialog` | 外す理由（必須）を書かせる小さなダイアログ |
+| `LinkWorkDialog` | 結ぶ手順。何を（種類）→ どこから（チームなど）→ 探して選ぶ（`RecordPicker`、「続きを読む」）→ 結び方 → 結ぶ |
+| `WorkOrigin` | 「この行動は Linear の COM-912 … から生まれました（3 回受けました）」 |
+
+```tsx
+const kinds = {
+  'linear.issue': defineLinkedWorkKind({ name: 'Issue', system: 'linear', icon: CircleDot, openLabel: 'Linear で開く' }),
+}
+const systems = { linear: { name: 'Linear', icon: SquareKanban, tone: 'violet' } } // 商標の色は使わず、色の印から選ぶ
+
+<RecordKindProvider kinds={kinds} systems={systems} currentSystem='field'>
+  <LinkedWorkList
+    title='Linear の Issue'
+    links={links}            // { id, kind, relation, record: { id, publicId, title, url, progress }, read, withdrawn }
+    origin={{ kind: 'linear.issue', record: origin, receivedCount: 3 }}
+    onLink={() => setOpen(true)}
+    onUnlink={(work, reason) => withdraw(work.id, reason)}
+    onReload={reload}
+    onConnect={goToSettings}
+  />
+  <LinkWorkDialog
+    open={open}
+    onOpenChange={setOpen}
+    kinds={[{ kind: 'linear.issue', label: 'Linear の Issue', sources: teams, sourceLabel: 'チーム' }]}
+    candidates={page.records}
+    hasMore={page.hasMore}
+    onLoadMore={loadMore}
+    onSelectionChange={({ kind, source }) => loadCandidates(kind, source)}
+    onSubmit={({ kind, record, relation }) => link(kind, record, relation)}
+  />
+</RecordKindProvider>
+```
+
+- 読めない様子（`read`）は、記録の「消えた・見る権限が無い」と同じ考え方で出し、理由と次の一手を添える。
+  - `stale` 古い・`partial` 一部だけ → 「古い」の札と「読み直す」
+  - `revoked` 消えた・見られなくなった → 「{システム}をつなぎ直す」「外す」
+  - `unconnected` つないでいない → 「{システム}をつなぐ」
+  - `forbidden` 見る権限が無い・`unavailable` 今は読めない（読み直す）
+  - 読めないときも、分かっている番号・題名は添える。
+- 種類が 1 つしか無ければ、手順に「何を結ぶか」の段は出ない。どこから（チームなど）が 1 つなら、その段も出ない。
+- 結べないとき（つないでいない）は `canLink={false}`・`cannotLinkReason`・`connectAction` で、理由と次の一手を出す。
+- 外のサービスの場所（http・https）は、記録のカードでも新しいタブで開く（アプリの画面の移動は使わない）。
+- 英字と日本語が隣り合う文言（例「Linear の Issue を検索…」）は `spaceLatin` で空白を入れて作る。
