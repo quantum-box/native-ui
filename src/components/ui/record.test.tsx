@@ -143,6 +143,39 @@ describe('フォームで記録を選ぶ', () => {
 		expect(changes[1]).toBeNull()
 		expect(field.textContent).toContain('取引先を選ぶ')
 	})
+	it('選んでいる記録があっても、矢印キーで候補を動かして Enter で選べる', async () => {
+		const onChange = vi.fn()
+		await render(
+			<RecordPicker<Customer>
+				aria-label='取引先'
+				kind='customer'
+				value={ACME}
+				onChange={onChange}
+			/>,
+		)
+		await act(async () =>
+			document.querySelector<HTMLButtonElement>('[aria-label=取引先]')?.click(),
+		)
+		const search = document.querySelector(
+			'[role=dialog] input',
+		) as HTMLInputElement
+		const press = (key: string) =>
+			act(async () => {
+				search.dispatchEvent(
+					new KeyboardEvent('keydown', { key, bubbles: true }),
+				)
+			})
+		// 開いたときは、選んでいる記録にあたっている。
+		expect(
+			document.querySelector('[role=option][aria-selected=true]')?.textContent,
+		).toContain('山田商店')
+		await press('ArrowDown')
+		expect(
+			document.querySelector('[role=option][aria-selected=true]')?.textContent,
+		).toContain('鈴木食品')
+		await press('Enter')
+		expect(onChange).toHaveBeenCalledWith(BETA)
+	})
 	it('今の画面と同じシステムなら、ふつうの候補の枠', async () => {
 		await render(
 			<RecordPicker<Customer>

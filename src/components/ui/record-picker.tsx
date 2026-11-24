@@ -170,6 +170,8 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 	const { byId } = useRecordCandidates(definition, value, candidates)
 	const chrome = useRecordPickerChrome(kind)
 	const [open, setOpen] = useState(false)
+	// 候補の中で今あたっている物（矢印キーで動く）。選んでいる記録とは別に持ち、開くたびに選んでいる記録から始める。
+	const [active, setActive] = useState('')
 	const currentId = value ? definition.getId(value) : ''
 	const pick = (record: T | null) => {
 		onChange(record)
@@ -201,7 +203,13 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 		),
 	)
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover
+			open={open}
+			onOpenChange={next => {
+				if (next) setActive(currentId)
+				setOpen(next)
+			}}
+		>
 			<PopoverTrigger asChild>
 				<button
 					ref={ref}
@@ -245,7 +253,7 @@ export const RecordPicker = forwardRef(function RecordPicker<T = unknown>(
 				aria-label={spaceLatin(`${definition.name}を選ぶ`)}
 			>
 				{chrome.header}
-				<Command value={currentId || undefined}>
+				<Command value={active} onValueChange={setActive}>
 					<CommandInput
 						aria-label={spaceLatin(`${definition.name}を検索`)}
 						placeholder={chrome.searchPlaceholder}
