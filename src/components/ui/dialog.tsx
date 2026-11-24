@@ -24,7 +24,7 @@ export interface DialogProps {
 	open?: boolean
 	defaultOpen?: boolean
 	/** 開く・閉じるときに呼ぶ */
-	onOpenChange?: (open: boolean) => void
+	onOpenChange?(open: boolean): void
 	/** 既定は true（外を触れなくし、スクロールを止める） */
 	modal?: boolean
 	children?: React.ReactNode
@@ -137,9 +137,9 @@ export interface DialogContentBaseProps
 	/** 閉じても DOM に残す */
 	forceMount?: boolean
 	/** 開いたときのフォーカス。`preventDefault()` で動かさない */
-	onOpenAutoFocus?: (event: Event) => void
+	onOpenAutoFocus?(event: Event): void
 	/** 閉じたときのフォーカス。`preventDefault()` で動かさない */
-	onCloseAutoFocus?: (event: Event) => void
+	onCloseAutoFocus?(event: Event): void
 }
 
 /**

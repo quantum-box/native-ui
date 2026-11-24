@@ -37,7 +37,7 @@ export interface PopoverProps {
 	open?: boolean
 	defaultOpen?: boolean
 	/** 開く・閉じるときに呼ぶ */
-	onOpenChange?: (open: boolean) => void
+	onOpenChange?(open: boolean): void
 	/** 既定は false。true で外を触れなくし、スクロールを止める */
 	modal?: boolean
 	children?: React.ReactNode
@@ -121,9 +121,9 @@ export interface PopoverContentProps
 	/** 閉じても DOM に残す */
 	forceMount?: boolean
 	/** 開いたときのフォーカス。`preventDefault()` で動かさない */
-	onOpenAutoFocus?: (event: Event) => void
+	onOpenAutoFocus?(event: Event): void
 	/** 閉じたときのフォーカス。`preventDefault()` で動かさない */
-	onCloseAutoFocus?: (event: Event) => void
+	onCloseAutoFocus?(event: Event): void
 }
 
 const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(

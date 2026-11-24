@@ -60,13 +60,13 @@ export function isNativeButtonChild(
 
 export interface DismissHandlers {
 	/** Esc で閉じる前に呼ぶ。`preventDefault()` で閉じない */
-	onEscapeKeyDown?: (event: KeyboardEvent) => void
+	onEscapeKeyDown?(event: KeyboardEvent): void
 	/** 外側を押して閉じる前に呼ぶ。`preventDefault()` で閉じない */
-	onPointerDownOutside?: (event: Event) => void
+	onPointerDownOutside?(event: Event): void
 	/** フォーカスが外へ出て閉じる前に呼ぶ。`preventDefault()` で閉じない */
-	onFocusOutside?: (event: Event) => void
+	onFocusOutside?(event: Event): void
 	/** 外側を押した・フォーカスが外へ出たときに呼ぶ。`preventDefault()` で閉じない */
-	onInteractOutside?: (event: Event) => void
+	onInteractOutside?(event: Event): void
 }
 
 interface DismissState {
