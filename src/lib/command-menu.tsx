@@ -253,8 +253,22 @@ const Root = React.forwardRef<HTMLDivElement, CommandRootProps>(
 		}, [filtering, scoreOf, groupBest])
 
 		// 打った文字が変わったら先頭を選ぶ。選んでいる項目が消えたときも先頭を選ぶ
-		const lastSearch = React.useRef<string | null>(null)
+		// はじめは「今の検索の文字」から始める（出た時は打ち変えたとみなさず、
+		// 渡された選んでいる値があればそのまま使う）
+		const lastSearch = React.useRef(search)
 		React.useLayoutEffect(() => {
+			// 値を中の文字から取る項目は、一度描いてから登録する。登録を待っている項目が
+			// あるあいだは、選び直さない（渡された選んでいる値を、先頭で上書きしないため）
+			const list = listRef.current
+			if (list) {
+				const registered = new Set(
+					[...registry.current.values()].map(info => info.domId),
+				)
+				const pending = Array.from(
+					list.querySelectorAll<HTMLElement>('[cmdk-item]'),
+				).some(el => !registered.has(el.id))
+				if (pending) return
+			}
 			const items = ordered()
 			const searchChanged = lastSearch.current !== search
 			lastSearch.current = search
@@ -577,24 +591,34 @@ const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 			if (valueProp === undefined && elementRef.current)
 				setTextValue(elementRef.current.textContent ?? '')
 		})
-		React.useLayoutEffect(
-			() =>
-				register(id, {
-					value,
-					keywords: keywords ?? [],
-					disabled,
-					forceMount,
-					groupId,
-					onSelect: next => onSelectRef.current?.(next),
-					domId,
-				}),
-			[register, id, value, keywordsKey, disabled, forceMount, groupId, domId],
-		)
+		// 値が分かってから登録する（値を中の文字から取るときは、一度描いた後）
+		const known = valueProp !== undefined || textValue !== ''
+		React.useLayoutEffect(() => {
+			if (!known) return
+			return register(id, {
+				value,
+				keywords: keywords ?? [],
+				disabled,
+				forceMount,
+				groupId,
+				onSelect: next => onSelectRef.current?.(next),
+				domId,
+			})
+		}, [
+			known,
+			register,
+			id,
+			value,
+			keywordsKey,
+			disabled,
+			forceMount,
+			groupId,
+			domId,
+		])
 
 		const score = command.scoreOf(id)
 		const selected = command.active === value && !disabled
 		// 値を中の文字から取るときは、一度描かないと文字が分からないので、隠さずに描く
-		const known = valueProp !== undefined || textValue !== ''
 		if (known && !forceMount && score <= 0) return null
 
 		const setRefs = (node: HTMLDivElement | null) => {
@@ -627,7 +651,11 @@ const Item = React.forwardRef<HTMLDivElement, CommandItemProps>(
 				}}
 				onClick={event => {
 					onClick?.(event)
-					if (!disabled) onSelectRef.current?.(value)
+					if (disabled) return
+					// 指を動かさずに押されたとき（指で触れる・読み上げの操作など）も、
+					// 押した項目を選んでから知らせる
+					if (!selected) command.setActive(value)
+					onSelectRef.current?.(value)
 				}}
 			>
 				{children}

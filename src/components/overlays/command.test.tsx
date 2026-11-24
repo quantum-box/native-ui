@@ -356,6 +356,64 @@ describe('Command（cmdk と同じ動き）', () => {
 		expect(input().getAttribute('aria-activedescendant')).toBe(active.id)
 	})
 
+	it('値を中の文字から取る項目でも、はじめに選んでいる値を変えない', async () => {
+		await render(
+			<Command defaultValue='Beta'>
+				<CommandInput />
+				<CommandList>
+					<CommandItem>Alpha</CommandItem>
+					<CommandItem>Beta</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		expect(selected()).toBe('Beta')
+
+		await act(async () => root?.unmount())
+		const onValueChange = vi.fn()
+		await render(
+			<Command value='Beta' onValueChange={onValueChange}>
+				<CommandInput />
+				<CommandList>
+					<CommandItem>Alpha</CommandItem>
+					<CommandItem>Beta</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		expect(selected()).toBe('Beta')
+		expect(onValueChange).not.toHaveBeenCalled()
+	})
+
+	it('指を動かさずに押しても（指で触れる・読み上げ）、押した項目を選んでから知らせる', async () => {
+		let activeAtSelect: string | null | undefined
+		await render(
+			<Command>
+				<CommandInput />
+				<CommandList>
+					<CommandItem value='a'>Alpha</CommandItem>
+					<CommandItem
+						value='b'
+						onSelect={() => {
+							activeAtSelect = selected()
+						}}
+					>
+						Beta
+					</CommandItem>
+				</CommandList>
+			</Command>,
+		)
+		expect(selected()).toBe('Alpha')
+		const beta = Array.from(document.querySelectorAll('[cmdk-item]')).find(
+			el => el.textContent === 'Beta',
+		) as HTMLElement
+		await act(async () => beta.click())
+		expect(selected()).toBe('Beta')
+		expect(input().getAttribute('aria-activedescendant')).toBe(beta.id)
+		// ↓ は押した項目から動く
+		await key('ArrowUp')
+		expect(selected()).toBe('Alpha')
+		expect(activeAtSelect).toBeDefined()
+	})
+
 	it('forceMount の項目は、合わなくても出す', async () => {
 		await render(
 			<Command>
