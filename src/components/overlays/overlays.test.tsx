@@ -186,6 +186,43 @@ describe('Dialog', () => {
 		expect(document.activeElement).toBe(byRole('dialog'))
 	})
 
+	it('中の欄に autoFocus があれば、その欄にフォーカスを置いたままにする', async () => {
+		const el = await render(
+			<Dialog>
+				<DialogTrigger asChild>
+					<button type='button'>開く</button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogTitle>見出し</DialogTitle>
+					<DialogDescription>説明</DialogDescription>
+					<input aria-label='検索' autoFocus />
+				</DialogContent>
+			</Dialog>,
+		)
+		await press(el.querySelector('button') as HTMLElement)
+		await act(async () => wait(50))
+		expect(document.activeElement?.getAttribute('aria-label')).toBe('検索')
+	})
+
+	it('2 つ目の欄に autoFocus があれば、先頭の欄へ動かし直さない', async () => {
+		const el = await render(
+			<Dialog>
+				<DialogTrigger asChild>
+					<button type='button'>開く</button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogTitle>見出し</DialogTitle>
+					<DialogDescription>説明</DialogDescription>
+					<input aria-label='1 つ目' />
+					<input aria-label='2 つ目' autoFocus />
+				</DialogContent>
+			</Dialog>,
+		)
+		await press(el.querySelector('button') as HTMLElement)
+		await act(async () => wait(50))
+		expect(document.activeElement?.getAttribute('aria-label')).toBe('2 つ目')
+	})
+
 	it('Esc で閉じ、フォーカスは開いたボタンへ戻る', async () => {
 		const onOpenChange = vi.fn()
 		const el = await render(<SimpleDialog onOpenChange={onOpenChange} />)

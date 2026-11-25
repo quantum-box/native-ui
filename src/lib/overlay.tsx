@@ -440,6 +440,9 @@ export function useRadixOpenFocus<T extends HTMLElement>(
 		const container = popupRef.current
 		if (!container) return true
 		const before = document.activeElement
+		// Radix と同じく、中の物がすでにフォーカスを持っていたら（autoFocus の欄など）動かさない
+		if (before && before !== container && container.contains(before))
+			return false
 		// Radix と同じく、はじめはリンクには置かない。右上の × にも置かない
 		const candidates = radixTabbables(container).filter(
 			el => el.tagName !== 'A' && !el.hasAttribute(CORNER_CLOSE_ATTR),
